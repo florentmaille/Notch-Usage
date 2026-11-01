@@ -24,6 +24,9 @@ encoche, une fausse encoche en haut de l'écran. Alertes à 80 % et 95 %."
   haut de l'écran. Les alertes restent visibles sous forme d'un point discret.
 - Q: Dans quelle langue l'interface est-elle affichée ? → A: Anglais pour le MVP, textes
   préparés pour la traduction. Le français vient dans une feature suivante.
+- Q (issue de la phase de plan, R4) : quelle cadence de rafraîchissement ? → A: 180 s par
+  défaut, plancher 60 s, plafond 15 min. L'endpoint d'usage est partagé avec le polling interne
+  de Claude Code et se fait limiter dès 60 s.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -171,13 +174,13 @@ apparaît et se comporte comme décrit en US1 et US2.
 - **FR-006**: Les limites prises en charge MUST inclure au minimum la fenêtre glissante de 5 h,
   la limite hebdomadaire tous modèles, et chaque limite hebdomadaire propre à un modèle que le
   service expose.
-- **FR-007**: L'app MUST rafraîchir les données toutes les 60 s par défaut. L'intervalle est
-  réglable entre 30 s et 15 min.
+- **FR-007**: L'app MUST rafraîchir les données toutes les 180 s par défaut. L'intervalle est
+  réglable entre 60 s et 15 min.
 - **FR-008**: L'app MUST suspendre le rafraîchissement pendant la veille, quand l'écran est
   verrouillé ou en mode économie d'énergie, et le reprendre au réveil.
 - **FR-009**: En cas d'erreur ou de limitation de débit du service, l'app MUST espacer les
   tentatives de façon progressive. Elle ne doit jamais interroger le service plus d'une fois
-  toutes les 30 s.
+  toutes les 60 s.
 - **FR-010**: L'app MUST afficher l'ancienneté des données quand elles datent de plus de
   2 cycles de rafraîchissement.
 
