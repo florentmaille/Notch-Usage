@@ -1,0 +1,25 @@
+import AppKit
+
+/// Panneau non activant collé au bord haut de l'écran (R5). `canBecomeKey` est vrai pour
+/// recevoir Échap et la saisie dans les réglages sans activer l'app (`.nonactivatingPanel`).
+final class NotchPanel: NSPanel {
+    init(contentRect: NSRect) {
+        super.init(contentRect: contentRect, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        hidesOnDeactivate = false
+        isFloatingPanel = true
+        isMovable = false
+        isMovableByWindowBackground = false
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        isReleasedWhenClosed = false
+        animationBehavior = .none
+        titleVisibility = .hidden
+        titlebarAppearsTransparent = true
+    }
+
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+}
