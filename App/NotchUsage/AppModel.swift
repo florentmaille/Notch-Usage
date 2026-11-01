@@ -4,7 +4,7 @@ import NotchUsageCore
 import Observation
 import SwiftUI
 
-/// Relie NotchUsageCore à l'UI : réglages, compte, états de relevé, interaction, écran, énergie.
+/// Relie NotchUsageCore à l'UI : réglages, compte, états de relevé, alertes, interaction, écran, énergie.
 @MainActor
 @Observable
 final class AppModel {
@@ -13,21 +13,27 @@ final class AppModel {
     @ObservationIgnored let snapshots = FileSnapshotStore()
     @ObservationIgnored let http = URLSessionHTTPClient()
     @ObservationIgnored let defaults = UserDefaults.standard
+    @ObservationIgnored let alertEvaluator = AlertEvaluator()
     @ObservationIgnored private(set) lazy var connection = ConnectionManager(credentials: credentials, claudeCode: ClaudeCodeKeychainReader(), http: http, snapshots: snapshots, defaults: defaults)
     @ObservationIgnored private let power = PowerObserver()
     @ObservationIgnored private let screens = ScreenObserver()
+    @ObservationIgnored private let fullscreenObserver = FullscreenObserver()
     @ObservationIgnored private var panel: NotchPanelController?
     @ObservationIgnored private var coordinator: RefreshCoordinator?
     @ObservationIgnored private var stateTask: Task<Void, Never>?
+    @ObservationIgnored private var alertTask: Task<Void, Never>?
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var loginWindow: BrowserLoginWindow?
 
     // État
     private(set) var account: Account?
     private(set) var refreshSettings: RefreshSettings
+    private(set) var alertSettings: AlertSettings
     private(set) var fetchState: FetchState = .idle(nil)
     private(set) var display: DisplayState
     private(set) var layout: NotchLayout
+    /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
+    private(set) var alertPulse = 0
     var hover = false { didSet { recompute() } }
     var pinned = false { didSet { recompute() } }
     var fullscreen = false { didSet { recompute() } }
@@ -35,11 +41,12 @@ final class AppModel {
     var isConnecting = false
     var connectionError: String?
     var claudeCodeAvailable = false
+    var launchAtLoginStatus: LaunchAtLogin.Status = .disabled
     var now = Date()
 
     private static let accountKey = "account"
     private static let intervalKey = "refreshIntervalSeconds"
-    private static let launchAtLoginKey = "launchAtLogin"
+    private static let alertsKey = "alertSettings"
 
     init() {
         let defaults = UserDefaults.standard
@@ -47,8 +54,12 @@ final class AppModel {
         if defaults.object(forKey: Self.intervalKey) != nil {
             settings.interval = .seconds(defaults.double(forKey: Self.intervalKey))
         }
-        settings.launchAtLogin = defaults.bool(forKey: Self.launchAtLoginKey)
         refreshSettings = settings
+        if let data = defaults.data(forKey: Self.alertsKey), let a = try? JSONDecoder().decode(AlertSettings.self, from: data) {
+            alertSettings = a
+        } else {
+            alertSettings = AlertSettings()
+        }
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
@@ -62,8 +73,11 @@ final class AppModel {
 
     func start() {
         claudeCodeAvailable = connection.isClaudeCodeAvailable
+        launchAtLoginStatus = LaunchAtLogin.status
         screens.onChange = { [weak self] target in self?.applyScreen(target) }
         screens.start()
+        fullscreenObserver.onChange = { [weak self] isFullscreen in self?.fullscreen = isFullscreen }
+        fullscreenObserver.start()
         power.onPause = { [weak self] reason in self?.pause(reason) }
         power.onResume = { [weak self] reason in self?.resume(reason) }
         power.start()
@@ -81,17 +95,20 @@ final class AppModel {
     func stop() {
         tickTask?.cancel()
         stateTask?.cancel()
+        alertTask?.cancel()
         let c = coordinator
         Task { await c?.stop() }
         coordinator = nil
         power.stop()
         screens.stop()
+        fullscreenObserver.stop()
         panel?.close()
         panel = nil
     }
 
     private func applyScreen(_ target: ScreenObserver.Target) {
         layout = target.layout
+        fullscreenObserver.screen = target.screen
         if let panel {
             panel.update(target: target)
         } else {
@@ -108,18 +125,30 @@ final class AppModel {
 
     private func startCoordinator(for account: Account) {
         stateTask?.cancel()
+        alertTask?.cancel()
         let old = coordinator
         Task { await old?.stop() }
+        let evaluator = alertEvaluator
+        let settings = alertSettings
         let c = RefreshCoordinator(provider: connection.makeProvider(for: account), policy: RefreshPolicy(settings: refreshSettings),
-                                   store: snapshots, clock: SystemClock(), alertHook: nil)
+                                   store: snapshots, clock: SystemClock(),
+                                   alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: settings, ledger: ledger ?? AlertLedger()) })
         coordinator = c
-        let stream = c.states
+        let states = c.states
         stateTask = Task { [weak self] in
-            for await state in stream {
+            for await state in states {
                 guard let self else { return }
                 self.fetchState = state
                 self.recompute()
                 if case .reauthRequired = state { await self.handleReauth() }
+            }
+        }
+        let alerts = c.alerts
+        alertTask = Task { [weak self] in
+            for await event in alerts {
+                guard let self else { return }
+                Log.refresh.notice("alert \(event.level.rawValue, privacy: .public) on \(event.limitID, privacy: .public)")
+                self.alertPulse += 1
             }
         }
         Task { await c.start() }
@@ -213,6 +242,7 @@ final class AppModel {
 
     func signOut() {
         stateTask?.cancel()
+        alertTask?.cancel()
         let c = coordinator
         Task { await c?.stop() }
         coordinator = nil
@@ -239,6 +269,36 @@ final class AppModel {
     func setRefreshInterval(seconds: Double) {
         refreshSettings.interval = .seconds(seconds)
         defaults.set(refreshSettings.interval.components.seconds, forKey: Self.intervalKey)
+        restartIfConnected()
+    }
+
+    func setAlertsEnabled(_ enabled: Bool) {
+        alertSettings.enabled = enabled
+        saveAlertSettings()
+    }
+
+    func setWarningThreshold(_ value: Int) {
+        alertSettings.setWarning(value)
+        saveAlertSettings()
+    }
+
+    func setCriticalThreshold(_ value: Int) {
+        alertSettings.setCritical(value)
+        saveAlertSettings()
+    }
+
+    /// Les nouveaux seuils s'appliquent au cycle suivant (US2 sc. 4) : le hook capture la valeur.
+    private func saveAlertSettings() {
+        if let data = try? JSONEncoder().encode(alertSettings) { defaults.set(data, forKey: Self.alertsKey) }
+        restartIfConnected()
+        recompute()
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        launchAtLoginStatus = LaunchAtLogin.set(enabled: enabled)
+    }
+
+    private func restartIfConnected() {
         if let account, account.status == .connected { startCoordinator(for: account) }
     }
 
@@ -259,7 +319,8 @@ final class AppModel {
     private func recompute() {
         let connected = account != nil && account?.status != .disconnected
         let state: FetchState = (account?.status == .expired) ? .reauthRequired(previous: nil) : fetchState
-        display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: .none,
+        let level = state.snapshot.map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
+        display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
                                              layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now)
         panel?.apply(display)
     }

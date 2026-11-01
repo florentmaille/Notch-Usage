@@ -105,3 +105,35 @@ struct DisplayStateReducerTests {
         #expect(d.mode == .notch)
     }
 }
+
+@Suite("DisplayStateReducer - plein écran (US3)")
+struct DisplayStateReducerFullscreenTests {
+    let now = Date.iso("2026-11-01T10:00:00Z")
+    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+
+    func reduce(hover: Bool, pinned: Bool = false, alertLevel: AlertLevel) -> DisplayState {
+        let snap = makeSnapshot([("session", 85)], fetchedAt: now)
+        return DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: RefreshSettings(), alertLevel: alertLevel,
+                                          layout: layout, fullscreen: true, hover: hover, pinned: pinned, now: now)
+    }
+
+    @Test func hiddenWithAlertShowsDot() {
+        let d = reduce(hover: false, alertLevel: .critical)
+        #expect(d.fullscreenHidden && d.showAlertDot && d.alertLevel == .critical)
+    }
+
+    @Test func hiddenWithoutAlertShowsNothing() {
+        let d = reduce(hover: false, alertLevel: .none)
+        #expect(d.fullscreenHidden && !d.showAlertDot)
+    }
+
+    @Test func hoverRevealsPanel() {
+        let d = reduce(hover: true, alertLevel: .warning)
+        #expect(!d.fullscreenHidden && !d.showAlertDot && d.panel == .hoverOpen)
+    }
+
+    @Test func pinnedStaysVisibleInFullscreen() {
+        let d = reduce(hover: false, pinned: true, alertLevel: .none)
+        #expect(!d.fullscreenHidden && d.panel == .pinned)
+    }
+}

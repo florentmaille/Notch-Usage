@@ -18,8 +18,8 @@ _Screenshot coming with the first release._
 
 ## Install
 
-Releases (signed and notarized DMG, Homebrew cask) will come with 0.1.0. Until then, build from
-source:
+Releases (signed and notarized DMG, Homebrew cask in `florentmaille/homebrew-tap`) will come
+with 0.1.0. Until then, build from source:
 
 ```bash
 brew install xcodegen
@@ -27,7 +27,8 @@ xcodegen generate
 xcodebuild -project NotchUsage.xcodeproj -scheme NotchUsage -configuration Debug build
 ```
 
-Run the core tests with `swift test`.
+Run the core tests with `swift test`. `scripts/build-app.sh` produces a Release archive and
+`scripts/release.sh <version>` signs, notarizes and packages a DMG (Developer ID required).
 
 ## Connecting your account
 
@@ -49,6 +50,13 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 - Secrets live in the macOS Keychain only. They never appear in logs.
 - The last reading is cached locally so the panel stays useful while offline, and is wiped on
   sign-out.
+
+## Alerts
+
+The notch turns amber at **80 %** and red at **95 %** of any limit (thresholds adjustable in
+Settings, alerts can be turned off). Each threshold fires once per limit and per reset period,
+so a value hovering around 80 % does not nag you. In full-screen apps the gauge hides; a small
+dot stays visible while an alert is active, and hovering the top edge brings the panel back.
 
 ## Rate limits and refresh cadence
 

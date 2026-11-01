@@ -108,7 +108,11 @@ actor TestClock: Clock {
             nowBox.value = current
             sleepers.removeAll { $0.id == next.id }
             next.continuation.resume()
-            await Task.yield()
+            // Laisse la boucle réveillée faire son relevé et réarmer son sommeil avant de continuer.
+            for _ in 0..<500 {
+                await Task.yield()
+                if !sleepers.isEmpty { break }
+            }
             await settle()
         }
         current = target
@@ -118,7 +122,7 @@ actor TestClock: Clock {
 
     /// Laisse les tâches en cours progresser jusqu'à leur prochain `sleep`.
     func settle() async {
-        for _ in 0..<20 { await Task.yield() }
+        for _ in 0..<50 { await Task.yield() }
     }
 
     var pendingSleepers: Int { sleepers.count }

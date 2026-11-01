@@ -126,17 +126,17 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 
 ### Tests for User Story 2
 
-- [ ] T052 [P] [US2] Écrire `Tests/NotchUsageCoreTests/AlertEvaluatorTests.swift` : 78 → 81 % émet `warning` une fois ; 93 → 96 % émet `critical` ; oscillation 81 → 79 → 82 n'émet rien de plus ; `resetsAt` qui change → registre réinitialisé, nouvelle alerte possible ; `enabled == false` → rien ; `level(for:)` = max des seuils franchis ; validation `warningThreshold` 1…99 strictement < `criticalThreshold` 2…100
-- [ ] T053 [P] [US2] Écrire `Tests/NotchUsageCoreTests/AlertLedgerCodableTests.swift` : aller-retour JSON de `AlertLedger` et `AlertSettings` (défauts 80 / 95 / `enabled`)
+- [x] T052 [P] [US2] Écrire `Tests/NotchUsageCoreTests/AlertEvaluatorTests.swift` : 78 → 81 % émet `warning` une fois ; 93 → 96 % émet `critical` ; oscillation 81 → 79 → 82 n'émet rien de plus ; `resetsAt` qui change → registre réinitialisé, nouvelle alerte possible ; `enabled == false` → rien ; `level(for:)` = max des seuils franchis ; validation `warningThreshold` 1…99 strictement < `criticalThreshold` 2…100
+- [x] T053 [P] [US2] Écrire `Tests/NotchUsageCoreTests/AlertLedgerCodableTests.swift` : aller-retour JSON de `AlertLedger` et `AlertSettings` (défauts 80 / 95 / `enabled`)
 
 ### Implementation for User Story 2
 
-- [ ] T054 [P] [US2] Créer `Sources/NotchUsageCore/Models/AlertSettings.swift` (défauts 80, 95, `enabled = true`, invariant `warning < critical`) et `Sources/NotchUsageCore/Models/AlertLedger.swift` (`entries: [String: AlertEntry]`, `AlertEntry { periodKey: Date?, firedLevels: Set<AlertLevel> }`), `AlertLevel { none, warning, critical }`, `AlertEvent { limitID, level }` (T053 vert)
-- [ ] T055 [US2] Implémenter `Sources/NotchUsageCore/Alerts/AlertEvaluator.swift` selon l'algorithme de data-model.md (T052 vert)
-- [ ] T056 [US2] Brancher `AlertEvaluator` dans `Sources/NotchUsageCore/Scheduling/RefreshCoordinator.swift` : après chaque snapshot, `evaluate` → `SnapshotStore.saveLedger` → émission sur `alerts` ; mettre à jour `RefreshCoordinatorTests.swift` (un événement par franchissement)
-- [ ] T057 [US2] Étendre `Sources/NotchUsageCore/Display/DisplayStateReducer.swift` et ses tests : `alertLevel` dérivé de `AlertEvaluator.level(for:)`
-- [ ] T058 [P] [US2] Styles « warning » (ambre) et « critical » (rouge) dans `App/NotchUsage/Views/CompactView.swift` et mise en évidence de la limite concernée dans `App/NotchUsage/Views/ExpandedView.swift` ; animation brève (≤ 600 ms) à la réception d'un `AlertEvent`, aucune animation continue
-- [ ] T059 [US2] Section Alerts dans `App/NotchUsage/Views/SettingsView.swift` : toggle `enabled`, deux steppers avec l'invariant appliqué à la saisie, effet au cycle suivant (US2 scénario 4)
+- [x] T054 [P] [US2] Créer `Sources/NotchUsageCore/Models/AlertSettings.swift` (défauts 80, 95, `enabled = true`, invariant `warning < critical`) et `Sources/NotchUsageCore/Models/AlertLedger.swift` (`entries: [String: AlertEntry]`, `AlertEntry { periodKey: Date?, firedLevels: Set<AlertLevel> }`), `AlertLevel { none, warning, critical }`, `AlertEvent { limitID, level }` (T053 vert)
+- [x] T055 [US2] Implémenter `Sources/NotchUsageCore/Alerts/AlertEvaluator.swift` selon l'algorithme de data-model.md (T052 vert)
+- [x] T056 [US2] Brancher `AlertEvaluator` dans `Sources/NotchUsageCore/Scheduling/RefreshCoordinator.swift` : après chaque snapshot, `evaluate` → `SnapshotStore.saveLedger` → émission sur `alerts` ; mettre à jour `RefreshCoordinatorTests.swift` (un événement par franchissement)
+- [x] T057 [US2] Étendre `Sources/NotchUsageCore/Display/DisplayStateReducer.swift` et ses tests : `alertLevel` dérivé de `AlertEvaluator.level(for:)`
+- [x] T058 [P] [US2] Styles « warning » (ambre) et « critical » (rouge) dans `App/NotchUsage/Views/CompactView.swift` et mise en évidence de la limite concernée dans `App/NotchUsage/Views/ExpandedView.swift` ; animation brève (≤ 600 ms) à la réception d'un `AlertEvent`, aucune animation continue
+- [x] T059 [US2] Section Alerts dans `App/NotchUsage/Views/SettingsView.swift` : toggle `enabled`, deux steppers avec l'invariant appliqué à la saisie, effet au cycle suivant (US2 scénario 4)
 - [ ] T060 [US2] Valider les scénarios 6 et 7 de quickstart.md
 
 **Checkpoint**: US1 et US2 fonctionnent indépendamment.
@@ -151,15 +151,15 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 
 ### Tests for User Story 3
 
-- [ ] T061 [P] [US3] Étendre `Tests/NotchUsageCoreTests/NotchGeometryTests.swift` : écran externe 2560 pt sans encoche → pilule centrée `originX 1205` ; écran interne avec encoche redevenu principal → `.notch`
-- [ ] T062 [P] [US3] Étendre `Tests/NotchUsageCoreTests/DisplayStateReducerTests.swift` : `fullscreen && !hover && alertLevel != .none` → `fullscreenHidden` avec `showAlertDot == true` ; `fullscreen && hover` → panneau visible
+- [x] T061 [P] [US3] Étendre `Tests/NotchUsageCoreTests/NotchGeometryTests.swift` : écran externe 2560 pt sans encoche → pilule centrée `originX 1205` ; écran interne avec encoche redevenu principal → `.notch`
+- [x] T062 [P] [US3] Étendre `Tests/NotchUsageCoreTests/DisplayStateReducerTests.swift` : `fullscreen && !hover && alertLevel != .none` → `fullscreenHidden` avec `showAlertDot == true` ; `fullscreen && hover` → panneau visible
 
 ### Implementation for User Story 3
 
-- [ ] T063 [US3] Mode pilule dans `App/NotchUsage/Notch/NotchPanelController.swift` : fond sombre arrondi 150 × 28 pt quand `layout.mode == .pill`, même tracking area, même épinglage ; transition notch ↔ pilule sur `ScreenObserver` en < 2 s sans fuite de fenêtre (ancien panneau fermé)
-- [ ] T064 [P] [US3] Implémenter `App/NotchUsage/Notch/FullscreenObserver.swift` : sur `NSWorkspace.activeSpaceDidChangeNotification` et `didChangeScreenParametersNotification`, `CGWindowListCopyWindowInfo(.optionOnScreenOnly)` filtré sur le PID de `NSWorkspace.shared.frontmostApplication`, couche 0, bounds ≈ `screen.frame` (tolérance 2 pt) → `isFullscreen` ; aucune API privée, aucune permission
-- [ ] T065 [US3] Comportement plein écran dans `App/NotchUsage/Notch/NotchPanelController.swift` : si `fullscreenHidden`, réduire le panneau à une bande de 2 pt en haut qui conserve la `NSTrackingArea` ; survol → affichage complet ; sortie → masquage
-- [ ] T066 [P] [US3] Implémenter `App/NotchUsage/Views/AlertDotView.swift` : point de 6 pt (ambre / rouge) affiché dans la bande quand `showAlertDot`
+- [x] T063 [US3] Mode pilule dans `App/NotchUsage/Notch/NotchPanelController.swift` : fond sombre arrondi 150 × 28 pt quand `layout.mode == .pill`, même tracking area, même épinglage ; transition notch ↔ pilule sur `ScreenObserver` en < 2 s sans fuite de fenêtre (ancien panneau fermé)
+- [x] T064 [P] [US3] Implémenter `App/NotchUsage/Notch/FullscreenObserver.swift` : sur `NSWorkspace.activeSpaceDidChangeNotification` et `didChangeScreenParametersNotification`, `CGWindowListCopyWindowInfo(.optionOnScreenOnly)` filtré sur le PID de `NSWorkspace.shared.frontmostApplication`, couche 0, bounds ≈ `screen.frame` (tolérance 2 pt) → `isFullscreen` ; aucune API privée, aucune permission
+- [x] T065 [US3] Comportement plein écran dans `App/NotchUsage/Notch/NotchPanelController.swift` : si `fullscreenHidden`, réduire le panneau à une bande de 2 pt en haut qui conserve la `NSTrackingArea` ; survol → affichage complet ; sortie → masquage
+- [x] T066 [P] [US3] Implémenter `App/NotchUsage/Views/AlertDotView.swift` : point de 6 pt (ambre / rouge) affiché dans la bande quand `showAlertDot`
 - [ ] T067 [US3] Valider les scénarios 10 et 11 de quickstart.md (écran externe, couvercle fermé, Safari plein écran)
 
 **Checkpoint**: les trois stories sont fonctionnelles indépendamment.
@@ -168,11 +168,11 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T068 [P] Implémenter `App/NotchUsage/System/LaunchAtLogin.swift` (`SMAppService.mainApp.register/unregister`, relecture de `.status` à l'activation, `.requiresApproval` affiché comme information) et le toggle dans `SettingsView.swift`, désactivé par défaut (FR-020)
+- [x] T068 [P] Implémenter `App/NotchUsage/System/LaunchAtLogin.swift` (`SMAppService.mainApp.register/unregister`, relecture de `.status` à l'activation, `.requiresApproval` affiché comme information) et le toggle dans `SettingsView.swift`, désactivé par défaut (FR-020)
 - [ ] T069 [P] Passer le budget énergie de quickstart.md (`xctrace` Energy Log 10 min, Activity Monitor) et consigner CPU moyen, RSS et nombre de requêtes dans `specs/001-claude-usage-notch/quickstart.md`
 - [ ] T070 [P] Passer les vérifications vie privée de quickstart.md (grep des hôtes, absence de `sk-ant-` dans les logs) et VoiceOver (scénario 15)
-- [ ] T071 [P] Créer `scripts/build-app.sh` (xcodegen + `xcodebuild archive`) et `scripts/release.sh` (codesign Developer ID `--options runtime --timestamp`, `notarytool submit --wait`, `stapler staple`, DMG via `hdiutil`, re-zip `ditto -c -k --keepParent`) + modèle `scripts/cask/notch-usage.rb` (`depends_on macos: ">= :sonoma"`, `zap trash:`)
-- [ ] T072 [P] Compléter `README.md` : capture d'écran, installation (DMG, tap Homebrew), les deux voies de connexion, cadence et limitation de débit, note de risque, dépannage (dialogue Trousseau, challenge Cloudflare, « open Claude Code to renew »)
+- [x] T071 [P] Créer `scripts/build-app.sh` (xcodegen + `xcodebuild archive`) et `scripts/release.sh` (codesign Developer ID `--options runtime --timestamp`, `notarytool submit --wait`, `stapler staple`, DMG via `hdiutil`, re-zip `ditto -c -k --keepParent`) + modèle `scripts/cask/notch-usage.rb` (`depends_on macos: ">= :sonoma"`, `zap trash:`)
+- [x] T072 [P] Compléter `README.md` : capture d'écran, installation (DMG, tap Homebrew), les deux voies de connexion, cadence et limitation de débit, note de risque, dépannage (dialogue Trousseau, challenge Cloudflare, « open Claude Code to renew »)
 - [ ] T073 Revue finale constitution : `grep -rn "^import" Sources/NotchUsageCore` = Foundation seul ; aucune dépendance dans `Package.swift` ; aucun entitlement supplémentaire ; `swift test` et CI verts ; scénario 12 (veille) et 14 (login item) de quickstart.md validés
 
 ---

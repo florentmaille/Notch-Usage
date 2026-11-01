@@ -25,3 +25,17 @@ struct NotchGeometryTests {
         #expect(l.mode == .pill)
     }
 }
+
+@Suite("NotchGeometry - écrans externes (US3)")
+struct NotchGeometryExternalTests {
+    @Test func externalDisplayWithoutNotchCentersPill() {
+        let l = NotchGeometry.layout(screenWidth: 2560, safeAreaTop: 0, auxLeftWidth: nil, auxRightWidth: nil)
+        #expect(l.mode == .pill)
+        #expect(l.originX == 1205)
+    }
+
+    @Test func builtInDisplayBackAsMainIsNotch() {
+        let l = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+        #expect(l.mode == .notch)
+    }
+}

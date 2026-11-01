@@ -4,6 +4,7 @@ import SwiftUI
 /// Bandeau permanent : pictogramme à gauche de l'encoche, jauge et pourcentage à droite (FR-011).
 struct CompactView: View {
     let display: DisplayState
+    var pulse: Int = 0
 
     var body: some View {
         HStack(spacing: 0) {
@@ -40,8 +41,9 @@ struct CompactView: View {
             Image(systemName: "wifi.exclamationmark").foregroundStyle(.secondary)
         case .limits:
             if let h = display.headline {
-                Image(systemName: icon(for: h.limit.kind))
-                    .foregroundStyle(display.banner == nil ? .white : .secondary)
+                Image(systemName: display.alertLevel == .none ? icon(for: h.limit.kind) : "exclamationmark.triangle.fill")
+                    .foregroundStyle(display.alertLevel == .none ? (display.banner == nil ? .white : .secondary) : tint)
+                    .symbolEffect(.bounce, value: pulse)
             }
         }
     }
