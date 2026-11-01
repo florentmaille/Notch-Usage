@@ -1,0 +1,9 @@
+{
+  "five_hour": {"utilization": 99, "resets_at": "2026-11-01T14:00:00Z"},
+  "seven_day": {"utilization": 99, "resets_at": "2026-11-06T00:00:00Z"},
+  "seven_day_sonnet": {"utilization": 99, "resets_at": "2026-11-06T00:00:00Z"},
+  "limits": [
+    {"kind": "session", "percent": 27.5, "resets_at": "2026-11-01T14:00:00Z"},
+    {"kind": "weekly_all", "percent": 12, "resets_at": "2026-11-06T00:00:00Z"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "limits": [
+    {"kind": "session", "percent": 5, "resets_at": "2026-11-01T14:00:00Z"},
+    {"kind": "weekly_scoped", "percent": 60, "resets_at": "2026-11-06T00:00:00Z",
+     "scope": {"model": {"id": "claude-opus-5-5", "display_name": "Opus"}}},
+    {"kind": "weekly_all", "percent": 30, "resets_at": "2026-11-06T00:00:00Z"},
+    {"kind": "weekly_scoped", "percent": 44, "resets_at": "2026-11-06T00:00:00Z",
+     "scope": {"model": {"id": "claude-fable-5-1", "display_name": "Fable"}}},
+    {"kind": "mystery_kind", "percent": 99, "resets_at": "2026-11-06T00:00:00Z"}
+  ]
+}

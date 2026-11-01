@@ -1,0 +1,17 @@
+{
+  "five_hour": null,
+  "seven_day": null,
+  "seven_day_opus": null,
+  "seven_day_sonnet": null,
+  "limits": [
+    {"kind": "weekly_scoped", "group": "weekly", "percent": 44, "resets_at": "2026-11-06T00:00:00Z",
+     "severity": "ok", "is_active": true,
+     "scope": {"model": {"id": "claude-fable-5-1", "display_name": "Fable"}, "surface": null}},
+    {"kind": "session", "group": "session", "percent": 27.5, "resets_at": "2026-11-01T14:00:00Z",
+     "severity": "ok", "is_active": true, "scope": null},
+    {"kind": "weekly_all", "group": "weekly", "percent": 12, "resets_at": "2026-11-06T00:00:00Z",
+     "severity": "ok", "is_active": true, "scope": null}
+  ],
+  "extra_usage": {"is_enabled": false, "used_credits": null, "monthly_limit": null, "utilization": null},
+  "member_dashboard_available": true
+}

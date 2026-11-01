@@ -1,0 +1,6 @@
+{
+  "limits": [
+    {"kind": "session", "percent": 140, "resets_at": "2026-11-01T14:00:00Z"},
+    {"kind": "weekly_all", "percent": -3, "resets_at": "2026-11-06T00:00:00Z"}
+  ]
+}
