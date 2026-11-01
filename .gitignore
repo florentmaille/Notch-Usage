@@ -1,0 +1,9 @@
+# Claude Code : réglages et jetons locaux
+.claude/settings.local.json
+
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+DerivedData/
+.build/
+*.xcuserstate
