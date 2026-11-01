@@ -30,12 +30,12 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 **Purpose**: squelette du dépôt, package SPM, projet Xcode généré, CI.
 
 - [x] T001 Vérifier les prérequis de quickstart.md (Xcode 16+ sélectionné via `xcode-select -p`, `xcodegen --version`) et noter les versions dans `specs/001-claude-usage-notch/quickstart.md` section Prérequis
-- [ ] T002 Créer `Package.swift` (swift-tools-version 6.0, platforms macOS 14, cible `NotchUsageCore` dans `Sources/NotchUsageCore/`, cible de test `NotchUsageCoreTests` dans `Tests/NotchUsageCoreTests/` avec ressources `Fixtures/`) et un fichier `Sources/NotchUsageCore/NotchUsageCore.swift` vide ; `swift build` passe
-- [ ] T003 [P] Créer `project.yml` (xcodegen) : cible app `NotchUsage` macOS 14, sources `App/NotchUsage/`, dépendance package local `NotchUsageCore`, `Info.plist` avec `LSUIElement = true` et `LSMinimumSystemVersion = 14.0`, entitlements `App/NotchUsage/Resources/NotchUsage.entitlements` (Hardened Runtime, aucun entitlement), Swift 6 strict concurrency, `SWIFT_EMIT_LOC_STRINGS`
-- [ ] T004 [P] Créer `App/NotchUsage/NotchUsageApp.swift` (`@main`, `NSApplicationDelegateAdaptor`, `AppDelegate` qui met `NSApp.setActivationPolicy(.accessory)`) et `App/NotchUsage/Resources/Assets.xcassets` (icône placeholder) ; `xcodegen generate && xcodebuild build` passe, l'app démarre sans Dock ni fenêtre
-- [ ] T005 [P] Créer `App/NotchUsage/Resources/Localizable.xcstrings` (base `en`) et la convention : toute chaîne UI passe par `String(localized:)` (FR-016a)
-- [ ] T006 [P] Créer `.github/workflows/ci.yml` : `swift test` puis `xcodegen generate` + `xcodebuild -scheme NotchUsage build` sur `macos-15`, sans secret
-- [ ] T007 [P] Mettre à jour `.gitignore` (`*.xcodeproj`, `.build/`, `DerivedData/`) et créer `README.md` avec : but, capture à venir, prérequis, **note de risque** CGU (endpoints non documentés, aucune donnée ne quitte la machine, User-Agent `claude-cli` imité), licence MIT
+- [x] T002 Créer `Package.swift` (swift-tools-version 6.0, platforms macOS 14, cible `NotchUsageCore` dans `Sources/NotchUsageCore/`, cible de test `NotchUsageCoreTests` dans `Tests/NotchUsageCoreTests/` avec ressources `Fixtures/`) et un fichier `Sources/NotchUsageCore/NotchUsageCore.swift` vide ; `swift build` passe
+- [x] T003 [P] Créer `project.yml` (xcodegen) : cible app `NotchUsage` macOS 14, sources `App/NotchUsage/`, dépendance package local `NotchUsageCore`, `Info.plist` avec `LSUIElement = true` et `LSMinimumSystemVersion = 14.0`, entitlements `App/NotchUsage/Resources/NotchUsage.entitlements` (Hardened Runtime, aucun entitlement), Swift 6 strict concurrency, `SWIFT_EMIT_LOC_STRINGS`
+- [x] T004 [P] Créer `App/NotchUsage/NotchUsageApp.swift` (`@main`, `NSApplicationDelegateAdaptor`, `AppDelegate` qui met `NSApp.setActivationPolicy(.accessory)`) et `App/NotchUsage/Resources/Assets.xcassets` (icône placeholder) ; `xcodegen generate && xcodebuild build` passe, l'app démarre sans Dock ni fenêtre
+- [x] T005 [P] Créer `App/NotchUsage/Resources/Localizable.xcstrings` (base `en`) et la convention : toute chaîne UI passe par `String(localized:)` (FR-016a)
+- [x] T006 [P] Créer `.github/workflows/ci.yml` : `swift test` puis `xcodegen generate` + `xcodebuild -scheme NotchUsage build` sur `macos-15`, sans secret
+- [x] T007 [P] Mettre à jour `.gitignore` (`*.xcodeproj`, `.build/`, `DerivedData/`) et créer `README.md` avec : but, capture à venir, prérequis, **note de risque** CGU (endpoints non documentés, aucune donnée ne quitte la machine, User-Agent `claude-cli` imité), licence MIT
 
 ---
 

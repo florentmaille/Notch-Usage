@@ -7,3 +7,9 @@ xcuserdata/
 DerivedData/
 .build/
 *.xcuserstate
+
+# Généré par xcodegen
+*.xcodeproj
+*.xcworkspace
+.swiftpm/
+Packages/
