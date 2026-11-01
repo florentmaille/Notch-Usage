@@ -71,9 +71,14 @@ au plus 4 requêtes réseau (180 s). Aucun réveil de timer plus fréquent que l
 grep -rn "api.anthropic.com\|claude.ai" Sources App | grep -v "^.*//"
 ```
 
-Attendu : uniquement dans `OAuthUsageProvider`, `WebUsageProvider`, `BrowserLoginWindow`.
-Aucune autre URL dans le code. Les logs (`Logger`, sous-système `com.notchusage`) ne
-contiennent jamais `sk-ant-`.
+Attendu : appels réseau uniquement dans `OAuthUsageProvider`, `WebUsageProvider`,
+`BrowserLoginWindow`. Les autres occurrences (`ConnectionManager`, vues) sont des textes
+d'interface ou la vérification du préfixe `sk-ant-sid01-`. Les logs (`Logger`, sous-système
+`com.notchusage`) ne contiennent jamais `sk-ant-`.
+
+Vérifié le 2026-11-02 (automatisable) : `Sources/NotchUsageCore` n'importe que Foundation,
+`Package.swift` sans dépendance, entitlements vides, aucun `sk-ant` journalisé, 102 tests verts,
+archive Release OK. Restent les scénarios manuels (compte Pro/Max requis).
 
 ## Release (hors MVP, référence)
 
