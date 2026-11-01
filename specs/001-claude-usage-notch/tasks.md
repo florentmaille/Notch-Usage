@@ -29,7 +29,7 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 
 **Purpose**: squelette du dépôt, package SPM, projet Xcode généré, CI.
 
-- [ ] T001 Vérifier les prérequis de quickstart.md (Xcode 16+ sélectionné via `xcode-select -p`, `xcodegen --version`) et noter les versions dans `specs/001-claude-usage-notch/quickstart.md` section Prérequis
+- [x] T001 Vérifier les prérequis de quickstart.md (Xcode 16+ sélectionné via `xcode-select -p`, `xcodegen --version`) et noter les versions dans `specs/001-claude-usage-notch/quickstart.md` section Prérequis
 - [ ] T002 Créer `Package.swift` (swift-tools-version 6.0, platforms macOS 14, cible `NotchUsageCore` dans `Sources/NotchUsageCore/`, cible de test `NotchUsageCoreTests` dans `Tests/NotchUsageCoreTests/` avec ressources `Fixtures/`) et un fichier `Sources/NotchUsageCore/NotchUsageCore.swift` vide ; `swift build` passe
 - [ ] T003 [P] Créer `project.yml` (xcodegen) : cible app `NotchUsage` macOS 14, sources `App/NotchUsage/`, dépendance package local `NotchUsageCore`, `Info.plist` avec `LSUIElement = true` et `LSMinimumSystemVersion = 14.0`, entitlements `App/NotchUsage/Resources/NotchUsage.entitlements` (Hardened Runtime, aucun entitlement), Swift 6 strict concurrency, `SWIFT_EMIT_LOC_STRINGS`
 - [ ] T004 [P] Créer `App/NotchUsage/NotchUsageApp.swift` (`@main`, `NSApplicationDelegateAdaptor`, `AppDelegate` qui met `NSApp.setActivationPolicy(.accessory)`) et `App/NotchUsage/Resources/Assets.xcassets` (icône placeholder) ; `xcodegen generate && xcodebuild build` passe, l'app démarre sans Dock ni fenêtre

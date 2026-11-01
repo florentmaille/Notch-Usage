@@ -7,8 +7,8 @@
 | Outil | Version | Pourquoi |
 |---|---|---|
 | macOS | 14+ | cible minimale ; machine de dev avec encoche recommandée |
-| Xcode | 16+ | Swift 6, Swift Testing, SwiftUI, archive. **Les Command Line Tools seuls ne suffisent pas** : `swift test` échoue (module `Testing` / `XCTest` introuvables, vérifié le 2026-11-01) |
-| xcodegen | 2.40+ | `brew install xcodegen` ; génère `NotchUsage.xcodeproj` depuis `project.yml` |
+| Xcode | 16+ (vérifié : Xcode 27.2, Swift 6.4.2, `swift test` OK le 2026-11-01) | Swift 6, Swift Testing, SwiftUI, archive. **Les Command Line Tools seuls ne suffisent pas** : `swift test` échoue (module `Testing` / `XCTest` introuvables) |
+| xcodegen | 2.40+ (vérifié : 2.46.0) | `brew install xcodegen` ; génère `NotchUsage.xcodeproj` depuis `project.yml` |
 | Compte Claude | Pro ou Max | validation manuelle |
 | Claude Code | connecté | validation de la voie 1 |
 
