@@ -112,7 +112,7 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 - [x] T048 [P] [US1] Implémenter `App/NotchUsage/Views/ExpandedView.swift` : liste des limites (libellé, pourcentage, barre, réinitialisation en heure locale et relative), ancienneté si `aging`/`stale`, bandeau « reconnect required » / « data unavailable » / « plan not supported », boutons « Refresh now », « Settings », « Sign out » ; aucune ligne pour un modèle absent ; VoiceOver sur chaque ligne (FR-016)
 - [x] T049 [US1] Câbler dans `App/NotchUsage/AppModel.swift` et `NotchPanelController.swift` : `ConnectView` si `disconnected`, sinon `CompactView` / `ExpandedView` selon `DisplayState.panel` ; relevé < 5 s après `resume()` (FR-008)
 - [x] T050 [US1] Implémenter `App/NotchUsage/Views/SettingsView.swift` (section minimale pour US1) : intervalle 60 s…15 min (stepper, défaut 180 s), « Paste session key », « Sign out » ; accessible depuis `ExpandedView`
-- [ ] T051 [US1] Valider manuellement les scénarios 1, 2, 3, 4, 5, 8, 9, 13 de quickstart.md et cocher les résultats dans `specs/001-claude-usage-notch/quickstart.md`
+- [x] T051 [US1] Valider manuellement les scénarios 1, 2, 3, 4, 5, 8, 9, 13 de quickstart.md et cocher les résultats dans `specs/001-claude-usage-notch/quickstart.md`
 
 **Checkpoint**: MVP livrable. Un abonné voit ses limites dans l'encoche, par l'une ou l'autre voie.
 

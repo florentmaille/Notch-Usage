@@ -127,7 +127,7 @@ Pour vérifier le panneau sans permission Accessibilité ni Enregistrement d'éc
 | 12 | OK : aucune requête entre la veille (11:13:59) et le réveil (11:16:56), relevé 1 s après | `pmset -g log`, journaux |
 | 13 | OK : entrées Trousseau `com.notchusage.credentials` et dossier de cache supprimés | `security`, `ls` |
 | 15 | OK : chaque limite annoncée en une phrase, boutons annoncés | Utilisateur |
-| 9 | À faire (révoque la session claude.ai partout) | Utilisateur |
+| 9 | OK : session révoquée (11:37:52) → « Reconnect required » sans chiffre, reconnexion par Claude Code (11:38:08) | Utilisateur, journaux |
 
 Défauts trouvés et corrigés pendant la validation : panneau décalé de 39 pt sous la barre de menus,
 panneau au niveau 3 (sous la barre de menus, niveau 24) qui ne recevait ni survol ni clic, zone de
