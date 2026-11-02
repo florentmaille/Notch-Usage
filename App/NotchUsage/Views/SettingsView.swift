@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var intervalMinutes: Double = 3
     @State private var pastedKey = ""
+    @State private var language = AppLanguage.storedChoice
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -18,6 +19,7 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
+                    languageSection
                     refreshSection
                     alertsSection
                     sessionSection
@@ -75,6 +77,28 @@ struct SettingsView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
         } label: { Text("Alerts").font(.caption) }
+    }
+
+    private var languageSection: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 6) {
+                Picker(selection: $language) {
+                    Text("System").tag(LanguageChoice.system)
+                    // Noms dans leur propre langue, reconnaissables quelle que soit la langue affichée.
+                    Text(verbatim: "English").tag(LanguageChoice.english)
+                    Text(verbatim: "Français").tag(LanguageChoice.french)
+                } label: { EmptyView() }
+                    .pickerStyle(.segmented)
+                    .onChange(of: language) { _, v in AppLanguage.store(v) }
+                if language != AppLanguage.launchedChoice {
+                    HStack {
+                        Text("Applies after a restart.").font(.caption2).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Restart") { AppLanguage.relaunch() }
+                    }
+                }
+            }
+        } label: { Text("Language").font(.caption) }
     }
 
     private var sessionSection: some View {

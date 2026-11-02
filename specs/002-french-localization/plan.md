@@ -38,7 +38,7 @@ source, français), à rendre les durées du core indépendantes de l'anglais vi
 | I. Local-first et vie privée | Aucun réseau, aucune donnée ; seulement des textes | PASS |
 | II. Sobriété | Aucun timer ni traitement ajouté | PASS |
 | III. Tests d'abord | Tests des durées en anglais et en français écrits avant la table ; contrôle catalogue en CI | PASS |
-| IV. YAGNI | Pas de réglage de langue (FR-002), deux langues seulement, table simple sans framework | PASS |
+| IV. YAGNI | Choix de langue appliqué au redémarrage via la préférence par app de macOS (pas de bascule à chaud), deux langues seulement, table simple sans framework | PASS |
 | Contraintes techniques | Core Foundation seul (table en Swift), pas de dépendance SPM | PASS |
 
 Re-check après conception : PASS, aucun écart.

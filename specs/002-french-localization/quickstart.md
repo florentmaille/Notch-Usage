@@ -28,3 +28,4 @@ Pour revenir à l'anglais : relancer sans argument (ou `-AppleLanguages "(en)"`)
 | 5 | « Sign in with browser » | Titre de la fenêtre en français |
 | 6 | VoiceOver, app en français | Chaque limite annoncée en français |
 | 7 | Mode démo Debug `critical`, `reauth` | Encoche et bandeaux en français |
+| 8 | Réglages → Langue → Français → Redémarrer (Mac en anglais) | App en français ; retour à « Système » → anglais |

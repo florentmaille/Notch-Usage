@@ -24,7 +24,14 @@
 
 - [x] T010 [US3] Rendre localisables les annonces d'accessibilité construites par interpolation (`CompactView`, `LimitRow`) et les traduire
 
-## Phase 5: Polish
+## Phase 5: US4 - Choix de la langue (P3)
+
+- [x] T015 [US4] Tests de `LanguageChoice` (valeur ↔ préférence `AppleLanguages`) dans `Tests/NotchUsageCoreTests/LanguageChoiceTests.swift` ; ils échouent
+- [x] T016 [US4] Créer `Sources/NotchUsageCore/Display/LanguageChoice.swift`
+- [x] T017 [US4] Lecture, écriture du choix et redémarrage dans `App/NotchUsage/System/AppLanguage.swift`
+- [x] T018 [US4] Section « Langue » dans `SettingsView.swift` (sélecteur à trois valeurs, bouton « Redémarrer ») et traductions
+
+## Phase 6: Polish
 
 - [x] T011 Créer `scripts/check-localizations.sh` (FR-008) et l'ajouter à `.github/workflows/ci.yml` après la build
 - [x] T012 Vérifier l'anglais : aucune valeur anglaise ne change par rapport à 0.1.0 (FR-007, SC-002)
@@ -33,4 +40,4 @@
 
 ## Dependencies
 
-T001 → T002 → T003 → T005. T004 → T005. T006 → T007, T008, T010. T011 après T006.
+T001 → T002 → T003 → T005. T004 → T005. T006 → T007, T008, T010. T011 après T006. T015 → T016 → T017 → T018.

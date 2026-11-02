@@ -64,6 +64,23 @@ suivre la langue.
 
 1. **Given** VoiceOver actif sur un Mac en français, **When** le focus arrive sur une limite, **Then** l'annonce est entièrement en français.
 
+### User Story 4 - Choisir la langue dans les réglages (Priority: P3)
+
+Un utilisateur dont le Mac est en anglais préfère l'app en français (ou l'inverse). Dans les réglages,
+il choisit « Français », redémarre l'app d'un clic et retrouve l'interface en français.
+
+**Why this priority**: la langue système ne reflète pas toujours la préférence de lecture ; le choix
+par app de macOS est peu connu.
+
+**Independent Test**: Mac en anglais, réglages → Langue → Français → Redémarrer : tout est en français ;
+revenir à « Système » → Redémarrer : tout est en anglais.
+
+**Acceptance Scenarios**:
+
+1. **Given** le choix « Système », **When** l'utilisateur sélectionne « Français », **Then** un bouton « Redémarrer » apparaît et, après redémarrage, l'interface est en français quelle que soit la langue du Mac.
+2. **Given** le choix « Français », **When** l'utilisateur revient à « Système » et redémarre, **Then** l'app suit à nouveau la langue du Mac.
+3. **Given** un choix identique à la langue en cours, **When** les réglages s'affichent, **Then** aucun bouton de redémarrage n'est proposé.
+
 ### Edge Cases
 
 - Langue système ni française ni anglaise (allemand, espagnol…) : l'app s'affiche en anglais.
@@ -71,6 +88,7 @@ suivre la langue.
 - Nom de modèle renvoyé par le service (« Fable ») : jamais traduit.
 - Pourcentages et seuils : notation française avec espace avant « % » si la langue le prévoit, chiffres inchangés.
 - Changement de langue système pendant que l'app tourne : la nouvelle langue s'applique au prochain lancement (comportement standard macOS).
+- Les noms « English » et « Français » restent dans leur propre langue dans le choix, pour être reconnus quelle que soit la langue affichée.
 - Pluriels : « 1 min », « 2 min » ; « 1 j », « 2 j » ; aucune forme incorrecte du type « 1 jours ».
 
 ## Requirements *(mandatory)*
@@ -78,7 +96,7 @@ suivre la langue.
 ### Functional Requirements
 
 - **FR-001**: L'app MUST afficher tous ses textes d'interface en français lorsque la langue préférée du système est le français, et en anglais dans tous les autres cas.
-- **FR-002**: L'app MUST NOT proposer de réglage de langue interne ; elle suit la préférence système (Réglages Système → Général → Langue et région, y compris le choix de langue par app).
+- **FR-002**: Les réglages MUST proposer un choix de langue à trois valeurs : « Système » (par défaut, suit Réglages Système → Général → Langue et région, y compris le choix par app), « English », « Français ». Le choix est mémorisé et s'applique après un redémarrage de l'app, proposé par un bouton dans les réglages.
 - **FR-003**: Les textes couverts MUST inclure : vue compacte de l'encoche, panneau déplié, écran de connexion, écran de reconnexion, réglages, bandeaux d'état, messages d'erreur de connexion, fenêtre de connexion au navigateur, annonces d'accessibilité.
 - **FR-004**: Les durées avant réinitialisation et l'ancienneté du relevé MUST être formulées dans la langue affichée (ex. « dans 2 h 14 min », « il y a 12 min », « à l'instant », « réinitialisation imminente »).
 - **FR-005**: Les dates et heures (jour de la semaine, heure) MUST suivre la langue et la région du système.
@@ -99,6 +117,7 @@ suivre la langue.
 - **SC-002**: Sur un Mac en anglais, 0 différence de texte avec la version 0.1.0.
 - **SC-003**: 100 % des textes du catalogue ont une traduction française au moment de la publication, vérifié automatiquement.
 - **SC-004**: Les durées et anciennetés en français sont correctes pour 100 % des cas testés (minutes, heures, jours, singulier et pluriel).
+- **SC-005**: Changer de langue dans les réglages demande au plus 2 clics plus le redémarrage.
 
 ## Assumptions
 

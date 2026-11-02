@@ -67,6 +67,16 @@
         }
       }
     },
+    "Applies after a restart.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S’applique après un redémarrage."
+          }
+        }
+      }
+    },
     "Back": {
       "localizations": {
         "fr": {
@@ -253,6 +263,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Signaler dans l’encoche une limite proche"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue"
           }
         }
       }
@@ -457,6 +477,16 @@
         }
       }
     },
+    "Restart": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarrer"
+          }
+        }
+      }
+    },
     "Session key": {
       "localizations": {
         "fr": {
@@ -523,6 +553,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Démarrage"
+          }
+        }
+      }
+    },
+    "System": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Système"
           }
         }
       }
