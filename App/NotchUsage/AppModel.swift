@@ -303,6 +303,9 @@ final class AppModel {
         Log.auth.notice("connect requested: browser (window open \(self.loginWindow != nil))")
         guard loginWindow == nil else { return }
         connectionError = nil
+        // Le panneau déplié passe au-dessus de la fenêtre de connexion : on le replie.
+        pinned = false
+        hover = false
         let window = BrowserLoginWindow(
             onCaptured: { [weak self] key, org in
                 self?.loginWindow = nil
