@@ -40,7 +40,11 @@ everything, click to pin.
 
 ## Install
 
-Signed and notarized releases (DMG and Homebrew cask) are coming with 0.1.0. Until then, build from source:
+**Download the [latest preview](https://github.com/florentmaille/Notch-Usage/releases/latest)**, unzip it and move
+**NotchUsage.app** to Applications. The preview is not notarized yet: the first time, open it, then click
+**Open Anyway** in System Settings → Privacy & Security. Step-by-step instructions are in the release notes.
+
+Signed and notarized builds (DMG and Homebrew cask) will follow. To build from source:
 
 ```bash
 brew install xcodegen
