@@ -1,20 +1,21 @@
 import AppKit
 import CoreGraphics
+import NotchUsageCore
 
-/// Heuristique plein écran sans API privée ni permission (R6) : une fenêtre de couche 0 de
-/// l'app frontale couvre tout l'écran principal. Faux négatifs acceptés.
+/// Suit l'état plein écran de l'écran du panneau (R6). La règle est dans `FullscreenHeuristic`.
 @MainActor
 final class FullscreenObserver {
     var onChange: ((Bool) -> Void)?
     var screen: NSScreen? { didSet { evaluate() } }
     private(set) var isFullscreen = false
     private var tokens: [any NSObjectProtocol] = []
+    private var followUps: [DispatchWorkItem] = []
 
     func start() {
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.activeSpaceDidChangeNotification, NSWorkspace.didActivateApplicationNotification] {
             tokens.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.evaluate() }
+                MainActor.assumeIsolated { self?.evaluateNowAndAfterTransition() }
             })
         }
         tokens.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
@@ -23,7 +24,21 @@ final class FullscreenObserver {
         evaluate()
     }
 
+    /// La notification arrive pendant l'animation de l'espace : à la sortie du plein écran, la fenêtre
+    /// couvre encore l'écran. Deux contrôles différés rattrapent l'état final.
+    private func evaluateNowAndAfterTransition() {
+        evaluate()
+        followUps.forEach { $0.cancel() }
+        followUps = [0.6, 1.5].map { delay in
+            let work = DispatchWorkItem { [weak self] in self?.evaluate() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+            return work
+        }
+    }
+
     func stop() {
+        followUps.forEach { $0.cancel() }
+        followUps.removeAll()
         tokens.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0); NotificationCenter.default.removeObserver($0) }
         tokens.removeAll()
     }
@@ -44,15 +59,19 @@ final class FullscreenObserver {
         else { return false }
         // CGWindowList : origine en haut à gauche de l'écran principal ; NSScreen : en bas à gauche.
         let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
-        let target = CGRect(x: screen.frame.minX, y: primaryHeight - screen.frame.maxY, width: screen.frame.width, height: screen.frame.height)
-        let tolerance: CGFloat = 2
-        return windows.contains { info in
-            guard (info[kCGWindowOwnerPID as String] as? pid_t) == app.processIdentifier,
-                  (info[kCGWindowLayer as String] as? Int) == 0,
+        let target = WindowFrame(x: screen.frame.minX, y: primaryHeight - screen.frame.maxY,
+                                 width: screen.frame.width, height: screen.frame.height)
+        var frontmost: [WindowFrame] = []
+        var others: [WindowFrame] = []
+        for info in windows {
+            guard (info[kCGWindowLayer as String] as? Int) == 0,
+                  (info[kCGWindowAlpha as String] as? Double ?? 1) > 0,
+                  let pid = info[kCGWindowOwnerPID as String] as? pid_t,
                   let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
-                  let bounds = CGRect(dictionaryRepresentation: boundsDict) else { return false }
-            return abs(bounds.minX - target.minX) <= tolerance && abs(bounds.minY - target.minY) <= tolerance
-                && abs(bounds.width - target.width) <= tolerance && abs(bounds.height - target.height) <= tolerance
+                  let b = CGRect(dictionaryRepresentation: boundsDict) else { continue }
+            let frame = WindowFrame(x: b.minX, y: b.minY, width: b.width, height: b.height)
+            if pid == app.processIdentifier { frontmost.append(frame) } else { others.append(frame) }
         }
+        return FullscreenHeuristic.isFullscreen(screen: target, frontmost: frontmost, others: others)
     }
 }
