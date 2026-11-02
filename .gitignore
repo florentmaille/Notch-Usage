@@ -14,3 +14,6 @@ DerivedData/
 .swiftpm/
 Packages/
 build/
+
+# Signature locale (scripts/setup-local-signing.sh)
+Config/Local.xcconfig
