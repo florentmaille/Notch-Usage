@@ -30,6 +30,8 @@ final class AppModel {
     private(set) var refreshSettings: RefreshSettings
     private(set) var alertSettings: AlertSettings
     private(set) var fetchState: FetchState = .idle(nil)
+    /// Dernier état émis par le coordinateur (`fetchState` peut garder un échec pendant une nouvelle tentative).
+    @ObservationIgnored private var lastReceivedState: FetchState = .idle(nil)
     private(set) var display: DisplayState
     private(set) var layout: NotchLayout
     /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
@@ -148,8 +150,9 @@ final class AppModel {
         stateTask = Task { [weak self] in
             for await state in states {
                 guard let self else { return }
-                Self.logReading(state, previous: self.fetchState)
-                self.fetchState = state
+                Self.logReading(state, previous: self.lastReceivedState)
+                self.lastReceivedState = state
+                self.fetchState = self.fetchState.displayed(next: state)
                 self.recompute()
                 if case .reauthRequired = state { await self.handleReauth() }
             }
@@ -296,6 +299,7 @@ final class AppModel {
         connection.signOut()
         setAccount(nil)
         fetchState = .idle(nil)
+        lastReceivedState = .idle(nil)
         showSettings = false
         pinned = false
         recompute()

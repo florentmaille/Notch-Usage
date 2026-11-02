@@ -45,4 +45,11 @@ public enum FetchState: Sendable, Equatable {
         case .unsupported: return nil
         }
     }
+
+    /// État à afficher quand `next` arrive. Une nouvelle tentative après un échec garde l'échec
+    /// (et son bandeau) jusqu'à son résultat : hors ligne, la tentative dure jusqu'au timeout.
+    public func displayed(next: FetchState) -> FetchState {
+        if case .failed = self, case .loading = next { return self }
+        return next
+    }
 }
