@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Machines Intel : les runners macOS arm64 de GitHub manquent de capacité (jobs annulés faute de runner).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    name: swift test (NotchUsageCore)
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        # Dernière version stable présente sur l'image : un chemin figé casse à chaque mise à jour.
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | grep -vi -e beta -e rc | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+      - name: Run tests
+        run: swift test
+
+  app-build:
+    name: xcodebuild (NotchUsage.app)
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        # Dernière version stable présente sur l'image : un chemin figé casse à chaque mise à jour.
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | grep -vi -e beta -e rc | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build
+        run: >
+          xcodebuild -project NotchUsage.xcodeproj -scheme NotchUsage
+          -configuration Debug -destination 'platform=macOS'
+          CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO build

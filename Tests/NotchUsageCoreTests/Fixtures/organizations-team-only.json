@@ -1,0 +1,4 @@
+[
+  {"uuid": "44444444-4444-4444-4444-444444444444", "name": "Free org", "capabilities": ["chat"], "rate_limit_tier": "default_claude_free"},
+  {"uuid": "55555555-5555-5555-5555-555555555555", "name": "OntraaK", "capabilities": ["chat", "raven"], "rate_limit_tier": "default_raven"}
+]

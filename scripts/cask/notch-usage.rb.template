@@ -1,0 +1,23 @@
+cask "notch-usage" do
+  version "__VERSION__"
+  sha256 "__SHA256__"
+
+  url "https://github.com/florentmaille/notch-usage/releases/download/v#{version}/NotchUsage-#{version}.dmg"
+  name "Notch Usage"
+  desc "Claude Pro/Max usage limits in the MacBook notch"
+  homepage "https://github.com/florentmaille/notch-usage"
+
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  depends_on macos: ">= :sonoma"
+
+  app "NotchUsage.app"
+
+  zap trash: [
+    "~/Library/Application Support/NotchUsage",
+    "~/Library/Preferences/com.notchusage.app.plist",
+  ]
+end
