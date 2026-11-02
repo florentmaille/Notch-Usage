@@ -137,7 +137,7 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 - [x] T057 [US2] Étendre `Sources/NotchUsageCore/Display/DisplayStateReducer.swift` et ses tests : `alertLevel` dérivé de `AlertEvaluator.level(for:)`
 - [x] T058 [P] [US2] Styles « warning » (ambre) et « critical » (rouge) dans `App/NotchUsage/Views/CompactView.swift` et mise en évidence de la limite concernée dans `App/NotchUsage/Views/ExpandedView.swift` ; animation brève (≤ 600 ms) à la réception d'un `AlertEvent`, aucune animation continue
 - [x] T059 [US2] Section Alerts dans `App/NotchUsage/Views/SettingsView.swift` : toggle `enabled`, deux steppers avec l'invariant appliqué à la saisie, effet au cycle suivant (US2 scénario 4)
-- [ ] T060 [US2] Valider les scénarios 6 et 7 de quickstart.md
+- [x] T060 [US2] Valider les scénarios 6 et 7 de quickstart.md
 
 **Checkpoint**: US1 et US2 fonctionnent indépendamment.
 
@@ -169,7 +169,7 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [x] T068 [P] Implémenter `App/NotchUsage/System/LaunchAtLogin.swift` (`SMAppService.mainApp.register/unregister`, relecture de `.status` à l'activation, `.requiresApproval` affiché comme information) et le toggle dans `SettingsView.swift`, désactivé par défaut (FR-020)
-- [ ] T069 [P] Passer le budget énergie de quickstart.md (`xctrace` Energy Log 10 min, Activity Monitor) et consigner CPU moyen, RSS et nombre de requêtes dans `specs/001-claude-usage-notch/quickstart.md`
+- [x] T069 [P] Passer le budget énergie de quickstart.md (`xctrace` Energy Log 10 min, Activity Monitor) et consigner CPU moyen, RSS et nombre de requêtes dans `specs/001-claude-usage-notch/quickstart.md`
 - [ ] T070 [P] Passer les vérifications vie privée de quickstart.md (grep des hôtes, absence de `sk-ant-` dans les logs) et VoiceOver (scénario 15)
 - [x] T071 [P] Créer `scripts/build-app.sh` (xcodegen + `xcodebuild archive`) et `scripts/release.sh` (codesign Developer ID `--options runtime --timestamp`, `notarytool submit --wait`, `stapler staple`, DMG via `hdiutil`, re-zip `ditto -c -k --keepParent`) + modèle `scripts/cask/notch-usage.rb` (`depends_on macos: ">= :sonoma"`, `zap trash:`)
 - [x] T072 [P] Compléter `README.md` : capture d'écran, installation (DMG, tap Homebrew), les deux voies de connexion, cadence et limitation de débit, note de risque, dépannage (dialogue Trousseau, challenge Cloudflare, « open Claude Code to renew »)

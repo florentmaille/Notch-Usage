@@ -62,8 +62,16 @@ dans le Dock et sans fenêtre.
 xcrun xctrace record --template 'Energy Log' --time-limit 10m --attach NotchUsage --output /tmp/notchusage-energy.trace
 ```
 
-Attendu sur 10 min au repos, panneau replié : CPU moyen < 1 %, RSS < 60 Mo (Activity Monitor),
-au plus 4 requêtes réseau (180 s). Aucun réveil de timer plus fréquent que l'intervalle.
+Attendu sur 10 min au repos, panneau replié : CPU moyen < 1 %, empreinte mémoire < 60 Mo
+(colonne « Mémoire » d'Activity Monitor, `vmmap --summary`), au plus 4 requêtes réseau (180 s).
+Aucun réveil de timer plus fréquent que l'intervalle. Le RSS brut n'est pas retenu : il compte les
+pages partagées des frameworks système (SwiftUI, AppKit), communes à toutes les apps.
+
+Chaque relevé écrit une ligne `reading ok|failed` (catégorie `refresh`) : compter les requêtes avec
+
+```bash
+/usr/bin/log show --predicate 'subsystem == "com.notchusage" AND category == "refresh"' --last 10m --info | grep -c reading
+```
 
 ## Vie privée (constitution I)
 
@@ -88,3 +96,33 @@ scripts/release.sh 0.1.0
 
 Signe (Developer ID, Hardened Runtime), notarise, agrafe, produit le DMG et met à jour le
 modèle de cask. Prérequis : certificat Developer ID et profil `notarytool` dans le Trousseau.
+
+## Crochets de test (build Debug uniquement)
+
+Pour vérifier le panneau sans permission Accessibilité ni Enregistrement d'écran, la build Debug
+écoute des notifications distribuées (`DistributedNotificationCenter`) :
+
+| Notification | Objet | Effet |
+|---|---|---|
+| `com.notchusage.debug.hover` | `"1"` / `"0"` | Survol entrant / sortant (sans la temporisation de 150 ms) |
+| `com.notchusage.debug.click` | `"x,y"` (pt depuis le coin haut gauche du panneau) | Clic gauche via la file d'événements de l'app |
+| `com.notchusage.debug.escape` | - | Touche Échap |
+| `com.notchusage.debug.snapshot` | - | Rendu PNG du panneau dans `$TMPDIR/notchusage-snapshot.png` |
+
+## Résultats 2026-11-02 (MacBook, encoche 220 pt, compte Team)
+
+| # | Résultat | Vérifié par |
+|---|---|---|
+| 1, 2 | OK | Utilisateur |
+| 4 | OK : ouverture ≈ 180 ms (150 ms de temporisation + 30 ms), fermeture ≈ 110 ms, clic épingle, clic sur la bande désépingle, Échap ferme. Non simulé : clic hors du panneau | Crochets Debug |
+| 5 | OK : lignes 5 h, hebdo et « Weekly · Fable » avec % et reset | Capture du panneau |
+| 6, 7 | OK : avertissement (orange) et critique (rouge) distincts, une alerte par seuil et par période, y compris après redémarrage | Seuils 10/15 %, journaux, capture |
+| Énergie | OK : CPU moyen 0,17 % (Debug, 10 min), 3 requêtes en 10 min, empreinte 19,7 Mo (Release) | `ps`, journaux, `vmmap` |
+| Vie privée | OK : aucun `sk-ant` dans les journaux du processus, hôtes limités dans le code | `log show`, grep |
+| 3, 8 à 15 | À faire | Utilisateur |
+
+Défauts trouvés et corrigés pendant la validation : panneau décalé de 39 pt sous la barre de menus,
+boutons inertes au premier clic, épinglage par clic inopérant, boucle de dialogues Trousseau,
+jeton Claude Code expiré mal signalé, double requête à la connexion, alertes répétées à chaque
+relevé, jauge compacte illisible.
+
