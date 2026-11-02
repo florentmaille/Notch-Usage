@@ -88,11 +88,11 @@ struct ExpandedView: View {
 
     private func footer(_ d: DisplayState) -> some View {
         HStack {
-            Button { model.refreshNow() } label: { Label("Refresh now", systemImage: "arrow.clockwise") }
+            Button { model.refreshNow() } label: { Label("Refresh now", systemImage: "arrow.clockwise").contentShape(Rectangle()) }
                 .disabled(d.isLoading || d.content == .reauthRequired)
             Spacer()
-            Button { model.showSettings = true; model.pinned = true } label: { Label("Settings", systemImage: "gearshape") }
-            Button(role: .destructive) { model.signOut() } label: { Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right") }
+            Button { model.showSettings = true; model.pinned = true } label: { Label("Settings", systemImage: "gearshape").contentShape(Rectangle()) }
+            Button(role: .destructive) { model.signOut() } label: { Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right").contentShape(Rectangle()) }
         }
         .buttonStyle(.borderless)
         .controlSize(.small)

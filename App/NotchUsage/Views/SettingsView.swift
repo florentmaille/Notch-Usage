@@ -10,7 +10,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Button { model.showSettings = false } label: { Label("Back", systemImage: "chevron.left") }
+                Button { model.showSettings = false } label: { Label("Back", systemImage: "chevron.left").contentShape(Rectangle()) }
                     .buttonStyle(.borderless)
                 Text("Settings").font(.headline)
                 Spacer()
@@ -31,7 +31,7 @@ struct SettingsView: View {
                         .font(.caption2).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button(role: .destructive) { model.signOut() } label: { Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right") }
+                Button(role: .destructive) { model.signOut() } label: { Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right").contentShape(Rectangle()) }
                     .buttonStyle(.borderless).controlSize(.small)
             }
         }
