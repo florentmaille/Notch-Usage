@@ -29,3 +29,14 @@ Pour revenir à l'anglais : relancer sans argument (ou `-AppleLanguages "(en)"`)
 | 6 | VoiceOver, app en français | Chaque limite annoncée en français |
 | 7 | Mode démo Debug `critical`, `reauth` | Encoche et bandeaux en français |
 | 8 | Réglages → Langue → Français → Redémarrer (Mac en anglais) | App en français ; retour à « Système » → anglais |
+
+## Résultats (2026-11-02)
+
+Les 8 scénarios sont validés. Défauts trouvés en cours de route et corrigés :
+
+| Défaut | Correctif |
+|---|---|
+| Cookie claude.ai périmé recapturé à chaque connexion par navigateur, même après déconnexion | Cookies claude.ai effacés à la déconnexion et quand Claude refuse la clé |
+| Aucun retour visible en réessayant une session Claude Code toujours expirée | Message « La session Claude Code est toujours expirée… » |
+| Panneau déplié restant au-dessus de la fenêtre de connexion | Repli du panneau après le traitement du clic |
+| Fenêtre de connexion cachée derrière une app en plein écran, puis bloquée au premier plan | Ouverture sur le bureau actif, niveau normal, bouton qui la ramène devant |

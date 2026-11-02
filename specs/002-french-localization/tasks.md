@@ -36,7 +36,7 @@
 - [x] T011 Créer `scripts/check-localizations.sh` (FR-008) et l'ajouter à `.github/workflows/ci.yml` après la build
 - [x] T012 Vérifier l'anglais : aucune valeur anglaise ne change par rapport à 0.1.0 (FR-007, SC-002)
 - [x] T013 Captures en français via le mode démo (encoche, panneau, reconnexion, réglages) et relecture
-- [ ] T014 Quickstart manuel, scénarios 1 à 7 (utilisateur)
+- [x] T014 Quickstart manuel, scénarios 1 à 8 (utilisateur)
 
 ## Dependencies
 
