@@ -148,6 +148,7 @@ final class AppModel {
         stateTask = Task { [weak self] in
             for await state in states {
                 guard let self else { return }
+                Self.logReading(state, previous: self.fetchState)
                 self.fetchState = state
                 self.recompute()
                 if case .reauthRequired = state { await self.handleReauth() }
@@ -162,6 +163,23 @@ final class AppModel {
             }
         }
         Task { await c.start() }
+    }
+
+    /// Une ligne par relevé terminé : permet de compter les requêtes (budget, veille) sans rien de sensible.
+    private static func logReading(_ state: FetchState, previous: FetchState) {
+        switch state {
+        case .idle(let snap?) where snap.fetchedAt != previous.snapshot?.fetchedAt:
+            let summary = snap.limits.map { "\($0.id)=\(Int($0.utilization))" }.joined(separator: " ")
+            Log.refresh.notice("reading ok: \(summary, privacy: .public)")
+        case .failed(let error, _):
+            Log.refresh.notice("reading failed: \(String(describing: error), privacy: .public)")
+        case .reauthRequired:
+            Log.refresh.notice("reading needs reauth")
+        case .unsupported:
+            Log.refresh.notice("reading unsupported plan")
+        default:
+            break
+        }
     }
 
     private func handleReauth() async {
