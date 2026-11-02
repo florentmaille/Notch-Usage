@@ -38,6 +38,11 @@ struct ConnectView: View {
 
             Text("Uses undocumented Claude endpoints. Nothing leaves your Mac, but Anthropic may change or block them. Use at your own risk.")
                 .font(.caption2).foregroundStyle(.secondary)
+
+            HStack {
+                Spacer()
+                QuitButton().buttonStyle(.borderless).font(.caption).foregroundStyle(.secondary)
+            }
         }
         .controlSize(.regular)
         .disabled(model.isConnecting)

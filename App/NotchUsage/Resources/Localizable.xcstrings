@@ -407,6 +407,16 @@
         }
       }
     },
+    "Quit": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter"
+          }
+        }
+      }
+    },
     "Reads the token Claude Code already stored in your Keychain. macOS will ask you to allow it.": {
       "localizations": {
         "fr": {

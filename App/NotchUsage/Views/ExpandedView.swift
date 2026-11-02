@@ -96,6 +96,7 @@ struct ExpandedView: View {
             Spacer()
             Button { model.showSettings = true; model.pinned = true } label: { Label("Settings", systemImage: "gearshape").contentShape(Rectangle()) }
             Button(role: .destructive) { model.signOut() } label: { Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right").contentShape(Rectangle()) }
+            QuitButton()
         }
         .buttonStyle(.borderless)
         .controlSize(.small)
@@ -153,5 +154,13 @@ struct LimitRow: View {
         if limit.utilization >= Double(settings.criticalThreshold) { return .red }
         if limit.utilization >= Double(settings.warningThreshold) { return .orange }
         return .white
+    }
+}
+
+/// Sans icône dans le Dock ni menu, c'est le seul moyen de quitter l'app hors du Moniteur d'activité.
+struct QuitButton: View {
+    var body: some View {
+        Button { NSApp.terminate(nil) } label: { Label("Quit", systemImage: "power").contentShape(Rectangle()) }
+            .keyboardShortcut("q")
     }
 }
