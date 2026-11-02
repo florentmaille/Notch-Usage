@@ -9,10 +9,12 @@ final class NotchPanel: NSPanel {
 
     init(contentRect: NSRect) {
         super.init(contentRect: contentRect, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         hidesOnDeactivate = false
         isFloatingPanel = true
+        // Après `isFloatingPanel`, qui remet le niveau à `.floating` (3) : sous la barre de menus (24),
+        // le panneau ne recevrait ni survol ni clic dans la bande de l'encoche.
+        level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
         isMovable = false
         isMovableByWindowBackground = false
         isOpaque = false

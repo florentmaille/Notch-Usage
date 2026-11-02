@@ -187,15 +187,34 @@ final class HoverView: NSView {
     var onExit: (() -> Void)?
     private var tracking: NSTrackingArea?
 
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let tracking { removeTrackingArea(tracking) }
-        let area = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
-        addTrackingArea(area)
-        tracking = area
+    /// AppKit n'appelle pas `updateTrackingAreas` pour la vue de contenu d'un panneau sans bordure :
+    /// la zone est posée dès l'arrivée dans la fenêtre. `.inVisibleRect` suit ensuite les redimensionnements.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        installTracking()
     }
 
-    override func mouseEntered(with event: NSEvent) { onEnter?() }
-    override func mouseExited(with event: NSEvent) { onExit?() }
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        installTracking()
+    }
+
+    private func installTracking() {
+        if let tracking { removeTrackingArea(tracking) }
+        guard window != nil else { tracking = nil; return }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
+        addTrackingArea(area)
+        tracking = area
+        Log.notch.debug("tracking area installed")
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        Log.notch.debug("hover enter")
+        onEnter?()
+    }
+    override func mouseExited(with event: NSEvent) {
+        Log.notch.debug("hover exit")
+        onExit?()
+    }
     override var acceptsFirstResponder: Bool { true }
 }

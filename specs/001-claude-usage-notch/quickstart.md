@@ -114,7 +114,7 @@ Pour vérifier le panneau sans permission Accessibilité ni Enregistrement d'éc
 | # | Résultat | Vérifié par |
 |---|---|---|
 | 1, 2 | OK | Utilisateur |
-| 4 | OK : ouverture ≈ 180 ms (150 ms de temporisation + 30 ms), fermeture ≈ 110 ms, clic épingle, clic sur la bande désépingle, Échap ferme. Non simulé : clic hors du panneau | Crochets Debug |
+| 4 | OK, survol et clic réels confirmés par l'utilisateur. Ouverture ≈ 180 ms (150 ms de temporisation + 30 ms), fermeture ≈ 110 ms, clic épingle, clic sur la bande désépingle, Échap ferme. Non simulé : clic hors du panneau | Crochets Debug |
 | 5 | OK : lignes 5 h, hebdo et « Weekly · Fable » avec % et reset | Capture du panneau |
 | 6, 7 | OK : avertissement (orange) et critique (rouge) distincts, une alerte par seuil et par période, y compris après redémarrage | Seuils 10/15 %, journaux, capture |
 | Énergie | OK : CPU moyen 0,17 % (Debug, 10 min), 3 requêtes en 10 min, empreinte 19,7 Mo (Release) | `ps`, journaux, `vmmap` |
@@ -122,6 +122,8 @@ Pour vérifier le panneau sans permission Accessibilité ni Enregistrement d'éc
 | 3, 8 à 15 | À faire | Utilisateur |
 
 Défauts trouvés et corrigés pendant la validation : panneau décalé de 39 pt sous la barre de menus,
+panneau au niveau 3 (sous la barre de menus, niveau 24) qui ne recevait ni survol ni clic, zone de
+survol jamais créée,
 boutons inertes au premier clic, épinglage par clic inopérant, boucle de dialogues Trousseau,
 jeton Claude Code expiré mal signalé, double requête à la connexion, alertes répétées à chaque
 relevé, jauge compacte illisible.
