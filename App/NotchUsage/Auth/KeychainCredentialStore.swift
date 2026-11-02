@@ -57,3 +57,27 @@ final class KeychainCredentialStore: CredentialStore {
         ]
     }
 }
+
+/// Le jeton de Claude Code reste en mémoire : sa source est l'entrée Trousseau de Claude Code.
+/// Le recopier dans l'entrée de l'app ajoutait un dialogue Trousseau à chaque nouvelle signature.
+final class AppCredentialStore: CredentialStore, @unchecked Sendable {
+    private let keychain = KeychainCredentialStore()
+    private let lock = NSLock()
+    private var oauthToken: String?
+
+    func read(_ key: CredentialKey) throws -> String? {
+        if key == .oauthAccessToken { return lock.withLock { oauthToken } }
+        return try keychain.read(key)
+    }
+
+    func write(_ value: String, for key: CredentialKey) throws {
+        if key == .oauthAccessToken { lock.withLock { oauthToken = value }; return }
+        try keychain.write(value, for: key)
+    }
+
+    /// Supprime aussi une éventuelle copie laissée par une version précédente.
+    func delete(_ key: CredentialKey) throws {
+        if key == .oauthAccessToken { lock.withLock { oauthToken = nil } }
+        try keychain.delete(key)
+    }
+}

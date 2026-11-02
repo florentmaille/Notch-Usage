@@ -23,10 +23,17 @@ final class ClaudeCodeKeychainReader: ClaudeCodeCredentialSource {
         return status == errSecSuccess || status == errSecInteractionNotAllowed
     }
 
+    /// File série : `SecKeychainSetUserInteractionAllowed` est global au processus.
+    private static let queue = DispatchQueue(label: "com.notchusage.claude-code-keychain", qos: .userInitiated)
+
     func readRawJSON(interactive: Bool) async throws -> Data? {
         // SecItemCopyMatching bloque pendant le dialogue : hors du main actor.
         try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+            Self.queue.async {
+                // L'entrée de Claude Code vit dans le trousseau de session (fichier) : LAContext n'y
+                // empêche pas le dialogue, seule cette API dépréciée le fait.
+                if !interactive { SecKeychainSetUserInteractionAllowed(false) }
+                defer { if !interactive { SecKeychainSetUserInteractionAllowed(true) } }
                 let query: [String: Any] = [
                     kSecClass as String: kSecClassGenericPassword,
                     kSecAttrService as String: Self.service,

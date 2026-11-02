@@ -9,7 +9,7 @@ import SwiftUI
 @Observable
 final class AppModel {
     // Dépendances
-    @ObservationIgnored let credentials = KeychainCredentialStore()
+    @ObservationIgnored let credentials = AppCredentialStore()
     @ObservationIgnored let snapshots = FileSnapshotStore()
     @ObservationIgnored let http = URLSessionHTTPClient()
     @ObservationIgnored let defaults = UserDefaults.standard
@@ -89,7 +89,16 @@ final class AppModel {
                 await self?.recoverIfExpired()
             }
         }
-        if let account, account.status == .connected { startCoordinator(for: account) }
+        if let account, account.status == .connected {
+            if account.connectionMethod == .claudeCode {
+                // Le jeton n'est qu'en mémoire : relecture silencieuse avant le premier relevé.
+                Task {
+                    if await connection.recoverClaudeCodeToken() { startCoordinator(for: account) } else { markExpired() }
+                }
+            } else {
+                startCoordinator(for: account)
+            }
+        }
         recompute()
     }
 

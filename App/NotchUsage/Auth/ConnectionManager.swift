@@ -42,6 +42,7 @@ final class ConnectionManager {
     private let defaults: UserDefaults
 
     private static let organizationKey = "webOrganizationID"
+    private var recoveryGate = RecoveryGate()
 
     init(credentials: any CredentialStore, claudeCode: ClaudeCodeKeychainReader, http: any HTTPClient, snapshots: any SnapshotStore, defaults: UserDefaults) {
         self.credentials = credentials
@@ -77,13 +78,14 @@ final class ConnectionManager {
 
     /// Après un 401 : relit l'entrée de Claude Code sans dialogue. Vrai si un nouveau jeton a été repris.
     func recoverClaudeCodeToken() async -> Bool {
+        guard recoveryGate.allow(at: Date()) else { return false }
         guard let json = try? await claudeCode.readRawJSON(interactive: false),
               let token = try? ClaudeCodeCredentialReader.accessToken(from: json),
               !token.isExpired(at: Date()) else { return false }
         let current = try? credentials.read(.oauthAccessToken)
         guard token.accessToken != current else { return false }
-        try? credentials.write(token.accessToken, for: .oauthAccessToken)
-        Log.auth.notice("recovered a renewed Claude Code token")
+        guard (try? credentials.write(token.accessToken, for: .oauthAccessToken)) != nil else { return false }
+        Log.auth.notice("recovered a Claude Code token")
         return true
     }
 
