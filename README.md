@@ -41,11 +41,17 @@ everything, click to pin.
 
 ## Install
 
-**Download the [latest preview](https://github.com/florentmaille/Notch-Usage/releases)**, unzip it and move
+With [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask florentmaille/tap/notch-usage
+```
+
+Or **download the [latest preview](https://github.com/florentmaille/Notch-Usage/releases)**, unzip it and move
 **NotchUsage.app** to Applications. The preview is not notarized yet: the first time, open it, then click
 **Open Anyway** in System Settings → Privacy & Security. Step-by-step instructions are in the release notes.
 
-Signed and notarized builds (DMG and Homebrew cask) will follow. To build from source:
+Signed and notarized builds will follow. To build from source:
 
 ```bash
 brew install xcodegen
@@ -126,6 +132,9 @@ swift test
 ```
 
 The app (`App/NotchUsage`) is generated with [xcodegen](https://github.com/yonaskolb/XcodeGen) from `project.yml`.
+Debug builds are signed ad hoc, so macOS asks for Keychain access again after each build. With an Apple Development
+certificate (free with an Apple ID, Xcode → Settings → Accounts), run `scripts/setup-local-signing.sh` once to sign
+Debug builds with it and keep Keychain access across builds.
 Specs, plan and validation results are in [`specs/001-claude-usage-notch`](specs/001-claude-usage-notch), written with
 [GitHub Spec Kit](https://github.com/github/spec-kit). `scripts/release.sh <version>` signs, notarizes and packages
 a DMG (Developer ID required).

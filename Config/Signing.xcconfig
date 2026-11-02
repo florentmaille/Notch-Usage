@@ -1,0 +1,3 @@
+// Debug : signature ad hoc par défaut, ce qui fait redemander l'accès au trousseau à chaque build.
+// scripts/setup-local-signing.sh écrit Local.xcconfig (non versionné) avec un certificat stable.
+#include? "Local.xcconfig"

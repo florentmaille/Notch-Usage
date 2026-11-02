@@ -45,6 +45,8 @@ targets:
         NSHumanReadableCopyright: "© 2026 Florent Maille. MIT License."
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: false
+    configFiles:
+      Debug: Config/Signing.xcconfig
     entitlements:
       path: App/NotchUsage/Resources/NotchUsage.entitlements
       properties: {}
