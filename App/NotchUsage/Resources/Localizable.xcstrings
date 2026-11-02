@@ -547,6 +547,16 @@
         }
       }
     },
+    "The Claude Code session is still expired. Run claude in Terminal, then try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La session Claude Code est toujours expirée. Lancez claude dans le Terminal, puis réessayez."
+          }
+        }
+      }
+    },
     "This Claude plan does not expose usage limits. Pro, Max or Team is required.": {
       "localizations": {
         "fr": {

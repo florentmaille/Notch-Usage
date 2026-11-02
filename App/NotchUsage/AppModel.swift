@@ -280,6 +280,10 @@ final class AppModel {
                 setAccount(account)
                 startCoordinator(for: account)
             } catch ConnectionError.claudeCodeExpired(let plan) {
+                // Sans ce message, un nouvel essai sur l'écran de reconnexion ne change rien de visible.
+                if account?.status == .expired {
+                    connectionError = String(localized: "The Claude Code session is still expired. Run claude in Terminal, then try again.")
+                }
                 fetchState = .idle(nil)
                 setAccount(Account(connectionMethod: .claudeCode, subscriptionType: plan, status: .expired,
                                    credentialRef: CredentialKey.oauthAccessToken.rawValue, connectedAt: Date()))
@@ -324,6 +328,7 @@ final class AppModel {
             } catch {
                 connectionError = error.localizedDescription
                 Log.auth.error("browser connection failed: \(error.localizedDescription, privacy: .public)")
+                if case ConnectionError.fetch(.unauthorized) = error { await BrowserLoginWindow.clearClaudeCookies() }
             }
         }
     }
@@ -335,6 +340,7 @@ final class AppModel {
         Task { await c?.stop() }
         coordinator = nil
         connection.signOut()
+        Task { await BrowserLoginWindow.clearClaudeCookies() }
         setAccount(nil)
         fetchState = .idle(nil)
         lastReceivedState = .idle(nil)
@@ -345,6 +351,7 @@ final class AppModel {
 
     private func setAccount(_ account: Account?) {
         self.account = account
+        if account?.status == .connected { connectionError = nil }
         if let account, let data = try? JSONEncoder().encode(account) {
             defaults.set(data, forKey: Self.accountKey)
         } else {

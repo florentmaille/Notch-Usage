@@ -20,6 +20,9 @@ struct ExpandedView: View {
                 statusBlock(icon: "exclamationmark.lock", title: String(localized: "Reconnect required"),
                             message: reauthMessage)
                 reconnectButtons
+                if let error = model.connectionError {
+                    Text(error).font(.caption).foregroundStyle(.orange)
+                }
             case .unsupported:
                 statusBlock(icon: "questionmark.circle", title: String(localized: "Plan not supported"),
                             message: String(localized: "This Claude plan does not expose usage limits. Pro, Max or Team is required."))

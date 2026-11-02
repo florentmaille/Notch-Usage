@@ -46,6 +46,17 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         checkCookies()
     }
 
+    /// Efface les cookies claude.ai du magasin WebKit : sans cela, un cookie périmé est recapturé
+    /// aussitôt la fenêtre ouverte et chaque tentative échoue sans afficher la page de connexion.
+    static func clearClaudeCookies() async {
+        let store = WKWebsiteDataStore.default()
+        let records = await store.dataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
+        let claude = records.filter { $0.displayName.hasSuffix("claude.ai") }
+        guard !claude.isEmpty else { return }
+        await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: claude)
+        Log.auth.notice("claude.ai browser data cleared")
+    }
+
     func close() {
         webView?.configuration.websiteDataStore.httpCookieStore.remove(self)
         window?.delegate = nil
