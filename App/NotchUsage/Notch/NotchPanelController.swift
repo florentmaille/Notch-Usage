@@ -41,7 +41,7 @@ final class NotchPanelController {
         panel.contentView = hoverView
         hoverView.onEnter = { [weak self] in self?.scheduleHover(true) }
         hoverView.onExit = { [weak self] in self?.scheduleHover(false) }
-        panel.onMouseDown = { [weak self] point in self?.handleMouseDown(at: point) }
+        panel.onClick = { [weak self] point in self?.handleClick(at: point) }
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.keyCode == 53 else { return event } // Échap
             self.onDismiss?()
@@ -98,7 +98,7 @@ final class NotchPanelController {
 
     /// FR-012 : un clic épingle ; une fois épinglé, seul un clic sur la bande de l'encoche désépingle
     /// (les clics dans le contenu servent aux boutons et aux réglages).
-    private func handleMouseDown(at point: NSPoint) {
+    private func handleClick(at point: NSPoint) {
         guard let display else { return }
         let inStrip = point.y >= panel.frame.height - display.layout.height
         if display.panel != .pinned || inStrip { onToggleClick?() }
