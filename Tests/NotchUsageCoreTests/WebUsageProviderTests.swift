@@ -19,6 +19,22 @@ struct WebUsageProviderTests {
         #expect(r.value(forHTTPHeaderField: "Cookie") == "sessionKey=sk-ant-sid01-cookie")
     }
 
+    /// Compte Team relevé le 2026-11-02 : aucune capacité claude_pro/claude_max.
+    @Test func resolveOrganizationFallsBackToTeam() async throws {
+        let (p, _) = makeProvider([.success(.ok(Fixture.data("organizations-team-only.json")))])
+        #expect(try await p.resolveOrganization() == "55555555-5555-5555-5555-555555555555")
+    }
+
+    @Test func preferredOrganizationWins() async throws {
+        let (p, _) = makeProvider([.success(.ok(Fixture.data("organizations.json")))])
+        #expect(try await p.resolveOrganization(preferred: "11111111-1111-1111-1111-111111111111") == "11111111-1111-1111-1111-111111111111")
+    }
+
+    @Test func unknownPreferredOrganizationIgnored() async throws {
+        let (p, _) = makeProvider([.success(.ok(Fixture.data("organizations.json")))])
+        #expect(try await p.resolveOrganization(preferred: "99999999-9999-9999-9999-999999999999") == "22222222-2222-2222-2222-222222222222")
+    }
+
     @Test func resolveOrganizationWithoutProOrMaxIsUnsupported() async {
         let (p, _) = makeProvider([.success(.ok(Fixture.data("organizations-free.json")))])
         await #expect(throws: FetchError.unsupported) { try await p.resolveOrganization() }

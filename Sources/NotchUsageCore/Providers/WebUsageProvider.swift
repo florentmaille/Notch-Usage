@@ -17,9 +17,10 @@ public actor WebUsageProvider: UsageProvider {
         self.now = now
     }
 
-    /// Première org dont `capabilities` contient `claude_pro` ou un préfixe `claude_max`.
+    /// Choix de l'org : `preferred` (cookie `lastActiveOrg`) si elle est dans la liste, sinon une org
+    /// Pro ou Max, sinon une org Team ou Enterprise (capacités et tier relevés sur compte réel variables).
     @discardableResult
-    public func resolveOrganization() async throws(FetchError) -> String {
+    public func resolveOrganization(preferred: String? = nil) async throws(FetchError) -> String {
         let response = try await ProviderSupport.send(try request(Self.organizationsURL), via: http)
         if response.isChallenge || (response.status == 200 && response.isHTML) { throw FetchError.challenge }
         switch response.status {
@@ -31,10 +32,18 @@ public actor WebUsageProvider: UsageProvider {
         guard let orgs = (try? JSONSerialization.jsonObject(with: response.body)) as? [[String: Any]] else {
             throw FetchError.malformed
         }
-        let match = orgs.first { org in
-            let caps = (org["capabilities"] as? [String]) ?? []
-            return caps.contains("claude_pro") || caps.contains { $0.hasPrefix("claude_max") }
+        func markers(_ org: [String: Any]) -> [String] {
+            ((org["capabilities"] as? [String]) ?? []) + [(org["rate_limit_tier"] as? String) ?? ""]
         }
+        let personal: ([String: Any]) -> Bool = { org in
+            markers(org).contains { $0 == "claude_pro" || $0.hasPrefix("claude_max") || $0.contains("claude_pro") }
+        }
+        let business: ([String: Any]) -> Bool = { org in
+            markers(org).contains { m in ["team", "enterprise", "raven"].contains { m.contains($0) } }
+        }
+        let match = orgs.first { ($0["uuid"] as? String) == preferred && preferred != nil }
+            ?? orgs.first(where: personal)
+            ?? orgs.first(where: business)
         guard let uuid = match?["uuid"] as? String, !uuid.isEmpty else { throw FetchError.unsupported }
         organizationID = uuid
         return uuid

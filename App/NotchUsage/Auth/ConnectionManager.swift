@@ -18,7 +18,7 @@ enum ConnectionError: LocalizedError {
         case .claudeCodeExpired:
             return String(localized: "Your Claude Code session has expired. Run claude in Terminal once to renew it: Notch Usage reconnects automatically.")
         case .invalidSessionKey:
-            return String(localized: "That does not look like a Claude session key (it should start with sk-ant-sid01-).")
+            return String(localized: "That does not look like a Claude session key (it should start with sk-ant-sid).")
         case .fetch(let e):
             switch e {
             case .unauthorized: return String(localized: "Claude rejected the credentials. Try signing in again.")
@@ -94,13 +94,13 @@ final class ConnectionManager {
 
     // MARK: Voie 2
 
-    func connectWithSessionKey(_ raw: String) async throws -> Account {
-        let key = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard key.hasPrefix("sk-ant-sid01-"), key.count > 20 else { throw ConnectionError.invalidSessionKey }
+    func connectWithSessionKey(_ raw: String, preferredOrganization: String? = nil) async throws -> Account {
+        let key = SessionKeyFormat.normalized(raw)
+        guard SessionKeyFormat.isValid(key) else { throw ConnectionError.invalidSessionKey }
         try credentials.write(key, for: .webSessionKey)
         let provider = WebUsageProvider(http: http, credentials: credentials)
         do {
-            let org = try await provider.resolveOrganization()
+            let org = try await provider.resolveOrganization(preferred: preferredOrganization)
             defaults.set(org, forKey: Self.organizationKey)
             let snapshot = try await provider.fetch()
             try? snapshots.saveSnapshot(snapshot)

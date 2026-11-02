@@ -19,6 +19,8 @@ final class NotchPanel: NSPanel {
         isMovableByWindowBackground = false
         isOpaque = false
         backgroundColor = .clear
+        // Fond toujours noir : en apparence claire, les contrôles natifs (stepper, champ) y seraient invisibles.
+        appearance = NSAppearance(named: .darkAqua)
         hasShadow = false
         isReleasedWhenClosed = false
         animationBehavior = .none

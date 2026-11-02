@@ -262,9 +262,9 @@ final class AppModel {
         guard loginWindow == nil else { return }
         connectionError = nil
         let window = BrowserLoginWindow(
-            onCaptured: { [weak self] key in
+            onCaptured: { [weak self] key, org in
                 self?.loginWindow = nil
-                self?.applySessionKey(key)
+                self?.applySessionKey(key, preferredOrganization: org)
             },
             onCancelled: { [weak self] in
                 self?.loginWindow = nil
@@ -273,14 +273,14 @@ final class AppModel {
         window.show()
     }
 
-    func applySessionKey(_ key: String) {
+    func applySessionKey(_ key: String, preferredOrganization: String? = nil) {
         guard !isConnecting else { return }
         isConnecting = true
         connectionError = nil
         Task {
             defer { isConnecting = false }
             do {
-                let account = try await connection.connectWithSessionKey(key)
+                let account = try await connection.connectWithSessionKey(key, preferredOrganization: preferredOrganization)
                 setAccount(account)
                 startCoordinator(for: account)
             } catch {

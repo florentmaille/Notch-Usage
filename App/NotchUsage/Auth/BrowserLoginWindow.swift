@@ -1,4 +1,5 @@
 import AppKit
+import NotchUsageCore
 import WebKit
 
 /// Fenêtre de connexion claude.ai : capture le cookie `sessionKey` puis se ferme (R2, T044).
@@ -11,11 +12,12 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
 
     private var window: NSWindow?
     private var webView: WKWebView?
-    private let onCaptured: (String) -> Void
+    /// Clé de session et organisation active (cookie `lastActiveOrg`, un UUID, non secret).
+    private let onCaptured: (String, String?) -> Void
     private let onCancelled: () -> Void
     private var captured = false
 
-    init(onCaptured: @escaping (String) -> Void, onCancelled: @escaping () -> Void) {
+    init(onCaptured: @escaping (String, String?) -> Void, onCancelled: @escaping () -> Void) {
         self.onCaptured = onCaptured
         self.onCancelled = onCancelled
     }
@@ -62,12 +64,13 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         guard !captured, let store = webView?.configuration.websiteDataStore.httpCookieStore else { return }
         store.getAllCookies { [weak self] cookies in
             guard let self, !self.captured else { return }
-            if let session = cookies.first(where: { $0.name == "sessionKey" && $0.domain.hasSuffix("claude.ai") && $0.value.hasPrefix("sk-ant-sid01-") }) {
+            if let session = cookies.first(where: { $0.name == "sessionKey" && $0.domain.hasSuffix("claude.ai") && SessionKeyFormat.isValid($0.value) }) {
                 self.captured = true
                 Log.auth.notice("sessionKey captured from browser sign-in")
                 let value = session.value
+                let org = cookies.first { $0.name == "lastActiveOrg" && $0.domain.hasSuffix("claude.ai") }?.value
                 self.close()
-                self.onCaptured(value)
+                self.onCaptured(value, org)
             }
         }
     }

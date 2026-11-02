@@ -81,7 +81,7 @@ grep -rn "api.anthropic.com\|claude.ai" Sources App | grep -v "^.*//"
 
 Attendu : appels réseau uniquement dans `OAuthUsageProvider`, `WebUsageProvider`,
 `BrowserLoginWindow`. Les autres occurrences (`ConnectionManager`, vues) sont des textes
-d'interface ou la vérification du préfixe `sk-ant-sid01-`. Les logs (`Logger`, sous-système
+d'interface ou la vérification du préfixe `sk-ant-sid`. Les logs (`Logger`, sous-système
 `com.notchusage`) ne contiennent jamais `sk-ant-`.
 
 Vérifié le 2026-11-02 (automatisable) : `Sources/NotchUsageCore` n'importe que Foundation,
@@ -122,12 +122,19 @@ Pour vérifier le panneau sans permission Accessibilité ni Enregistrement d'éc
 | 10 | OK : pilule centrée sur l'écran externe devenu principal, survol, retour dans l'encoche | Utilisateur |
 | 11 | OK : vue masquée en plein écran (Chrome), réapparition au survol, retour sans clic à la sortie | Utilisateur, journaux |
 | 14 | OK : « Notch Usage » listé dans Ouverture et extensions, sans approbation requise | Utilisateur |
-| 3, 8, 9, 12, 13, 15 | À faire | Utilisateur |
+| 3 | OK : fenêtre fermée seule, organisation active reprise du cookie `lastActiveOrg`, valeurs identiques à la voie 1 | Utilisateur, journaux |
+| 8 | OK : bandeau « Data unavailable » maintenu pendant les nouvelles tentatives, relevé au retour du réseau. Bandeau « stale » (30 min) couvert par les tests | Utilisateur, journaux |
+| 12 | OK : aucune requête entre la veille (11:13:59) et le réveil (11:16:56), relevé 1 s après | `pmset -g log`, journaux |
+| 13 | OK : entrées Trousseau `com.notchusage.credentials` et dossier de cache supprimés | `security`, `ls` |
+| 15 | OK : chaque limite annoncée en une phrase, boutons annoncés | Utilisateur |
+| 9 | À faire (révoque la session claude.ai partout) | Utilisateur |
 
 Défauts trouvés et corrigés pendant la validation : panneau décalé de 39 pt sous la barre de menus,
 panneau au niveau 3 (sous la barre de menus, niveau 24) qui ne recevait ni survol ni clic, zone de
 survol jamais créée, plein écran mal détecté sur écran à encoche (fenêtres sous l'encoche,
-fenêtres multiples de Chrome, sortie détectée seulement au clic suivant),
+fenêtres multiples de Chrome, sortie détectée seulement au clic suivant), bandeau hors ligne masqué à chaque nouvelle
+tentative, texte des boutons sans bordure non cliquable, clés `sk-ant-sid02-` refusées, plan Team
+non reconnu par la voie navigateur, contrôles natifs invisibles (apparence claire sur fond noir),
 boutons inertes au premier clic, épinglage par clic inopérant, boucle de dialogues Trousseau,
 jeton Claude Code expiré mal signalé, double requête à la connexion, alertes répétées à chaque
 relevé, jauge compacte illisible.

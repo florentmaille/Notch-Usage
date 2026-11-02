@@ -81,7 +81,7 @@ struct SettingsView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    SecureField("sk-ant-sid01-…", text: $pastedKey)
+                    SecureField("sk-ant-sid…", text: $pastedKey)
                         .textFieldStyle(.roundedBorder)
                     Button("Use") {
                         model.applySessionKey(pastedKey)

@@ -53,7 +53,7 @@ User-Agent: claude-cli/2.1.0 (external, cli)
 
 `WKWebView` sur `https://claude.ai/login`, `WKWebsiteDataStore.default()`. À chaque
 `cookiesDidChange` et `didFinish`, chercher un cookie `name == "sessionKey"`, domaine
-`claude.ai`, valeur préfixée `sk-ant-sid01-`. Dès capture : stocker, fermer la fenêtre.
+`claude.ai`, valeur préfixée `sk-ant-sid` + version (`sid01`, `sid02` relevé le 2026-11-02). Dès capture : stocker, fermer la fenêtre.
 
 ### Requêtes
 
