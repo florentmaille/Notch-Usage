@@ -33,6 +33,7 @@ everything, click to pin.
 - **Frugal**: refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. 0.2 % CPU on average.
 - **Private**: talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
 - **Accessible**: every limit is announced by VoiceOver in one sentence.
+- **English and French**: follows your Mac's language, or pick one in Settings.
 
 <p align="center">
   <img src="docs/images/states.png" alt="Notch states: normal, warning, critical, reconnect" width="720">
@@ -40,7 +41,7 @@ everything, click to pin.
 
 ## Install
 
-**Download the [latest preview](https://github.com/florentmaille/Notch-Usage/releases/latest)**, unzip it and move
+**Download the [latest preview](https://github.com/florentmaille/Notch-Usage/releases)**, unzip it and move
 **NotchUsage.app** to Applications. The preview is not notarized yet: the first time, open it, then click
 **Open Anyway** in System Settings → Privacy & Security. Step-by-step instructions are in the release notes.
 
