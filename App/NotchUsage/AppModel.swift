@@ -301,7 +301,6 @@ final class AppModel {
 
     func connectWithBrowser() {
         Log.auth.notice("connect requested: browser (window open \(self.loginWindow != nil))")
-        guard loginWindow == nil else { return }
         connectionError = nil
         // Le panneau déplié passe au-dessus de la fenêtre de connexion : on le replie, au tour suivant
         // car le clic sur ce bouton épingle ensuite le panneau (NotchPanel.sendEvent).
@@ -309,6 +308,8 @@ final class AppModel {
             self?.dismiss()
             self?.hover = false
         }
+        // Sans icône dans le Dock, ce bouton est le seul moyen de retrouver la fenêtre déjà ouverte.
+        if let loginWindow { loginWindow.bringToFront(); return }
         let window = BrowserLoginWindow(
             onCaptured: { [weak self] key, org in
                 self?.loginWindow = nil

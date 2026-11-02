@@ -36,16 +36,13 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.center()
-        window.level = .floating
+        // Niveau normal : l'utilisateur doit pouvoir passer à sa messagerie pour récupérer un code.
         // Sans cela, la fenêtre s'ouvre sur le bureau quand l'app au premier plan est en plein écran.
         window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         self.window = window
         self.webView = webView
 
-        // App sans Dock (LSUIElement) : l'activation peut être refusée, d'où orderFrontRegardless.
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
+        bringToFront()
         webView.load(URLRequest(url: Self.loginURL))
         checkCookies()
     }
@@ -59,6 +56,13 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         guard !claude.isEmpty else { return }
         await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: claude)
         Log.auth.notice("claude.ai browser data cleared")
+    }
+
+    /// App sans Dock (LSUIElement) : l'activation peut être refusée, d'où `orderFrontRegardless`.
+    func bringToFront() {
+        NSApp.activate()
+        window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
     }
 
     func close() {
