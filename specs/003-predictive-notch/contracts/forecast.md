@@ -37,13 +37,14 @@ L'appelant écarte avant l'appel les relevés d'une autre période de réinitial
 
 | Cas | Relevés (min avant `now` → %) | `resetsAt` | Résultat |
 |---|---|---|---|
-| Rythme constant | 40→40, 30→44, 20→48, 10→52, 0→55 | +4 h | `blockAt(+1 h 10 environ)` |
+| Rythme constant | 40→29, 30→36, 20→42, 10→49, 0→55 | +4 h | `blockAt(+1 h 09 environ)` |
 | Rythme lent | 40→40, 20→42, 0→44 | +2 h 14 | `holdsUntilReset` (100 % en ~9 h) |
 | Plat | 30→42, 15→42, 0→42 | +2 h | `holdsUntilReset` |
 | Décroissant (bruit) | 30→43, 15→42, 0→42 | +2 h | `holdsUntilReset` |
 | Un seul relevé | 0→55 | +4 h | `unavailable` |
 | Trop rapprochés | 5→50, 0→55 | +4 h | `unavailable` |
-| Trou de veille | 70→30, 0→55 | +4 h | `unavailable` (écart > 30 min, et hors fenêtre) |
+| Trou de veille | 70→30, 0→55 | +4 h | `unavailable` (hors fenêtre, un seul relevé restant) |
+| Trou dans la fenêtre | 40→30, 5→52, 0→55 | +4 h | `unavailable` (écart de 35 min) |
 | Blocage après reset | 30→80, 0→82 | +30 min | `holdsUntilReset` |
 | Sans heure de reset | 30→40, 0→55 | absente | `holdsUntilReset` |
 | Déjà bloquée | 30→90, 0→100 | +1 h | `unavailable` |

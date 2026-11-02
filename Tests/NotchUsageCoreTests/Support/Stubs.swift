@@ -43,13 +43,16 @@ final class MemorySnapshotStore: SnapshotStore, @unchecked Sendable {
     private let lock = NSLock()
     var snapshot: UsageSnapshot?
     var ledger: AlertLedger?
+    var history: UsageHistory?
     private(set) var wiped = false
     init(snapshot: UsageSnapshot? = nil) { self.snapshot = snapshot }
     func loadSnapshot() throws -> UsageSnapshot? { lock.withLock { snapshot } }
     func saveSnapshot(_ s: UsageSnapshot) throws { lock.withLock { snapshot = s } }
     func loadLedger() throws -> AlertLedger? { lock.withLock { ledger } }
     func saveLedger(_ l: AlertLedger) throws { lock.withLock { ledger = l } }
-    func wipe() throws { lock.withLock { snapshot = nil; ledger = nil; wiped = true } }
+    func loadHistory() throws -> UsageHistory? { lock.withLock { history } }
+    func saveHistory(_ h: UsageHistory) throws { lock.withLock { history = h } }
+    func wipe() throws { lock.withLock { snapshot = nil; ledger = nil; history = nil; wiped = true } }
 }
 
 /// Fournisseur factice : séquence de résultats, compte les appels.

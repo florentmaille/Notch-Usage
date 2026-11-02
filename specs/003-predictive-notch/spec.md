@@ -118,7 +118,7 @@ active puis sans.
 - **FR-013**: Les relevés servant à la prévision MUST être conservés localement avec le cache existant, limités à deux heures, effacés à la déconnexion, et ne jamais quitter le Mac.
 - **FR-014**: La feature MUST NOT ajouter de requête réseau ni modifier la cadence de rafraîchissement.
 - **FR-015**: La prévision MUST NOT déclencher d'alerte (rebond, notification) : les alertes de seuil restent inchangées.
-- **FR-016**: Le panneau déplié MUST afficher, sous chaque limite disposant d'une prévision, « À ce rythme : bloqué à 16:40 » ou « À ce rythme : tient jusqu'au reset » (et leurs équivalents anglais) ; aucune ligne sinon.
+- **FR-016**: Le panneau déplié MUST afficher, sous chaque limite disposant d'une prévision, « À ce rythme : bloqué à 16:40 » ou « À ce rythme : tient jusqu'à la réinitialisation » (et leurs équivalents anglais) ; aucune ligne sinon.
 - **FR-017**: Les annonces d'accessibilité de l'encoche et des lignes du panneau MUST inclure la prévision après le pourcentage et la réinitialisation.
 - **FR-018**: Tous les nouveaux textes MUST exister en anglais et en français, vérifiés par le contrôle automatique existant.
 - **FR-019**: Le mode démo MUST permettre de reproduire chaque état de la maquette pour les captures et la validation.

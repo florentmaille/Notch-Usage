@@ -25,8 +25,9 @@ everything, click to pin.
 
 ## Features
 
-- **Always in sight**: a tiny gauge and percentage next to the notch, showing your most constrained limit.
-- **Every limit, one hover away**: 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
+- **Always in sight**: next to the notch, how much of your most constrained limit is used and when it resets.
+- **Warned before the wall**: from your pace over the last hour, the notch predicts when the 5-hour window will run out ("blocked in 1h 10m", then "blocked at 16:40") long before any threshold. Over 80 % and 95 %, the percentage turns into an amber or red pill, so the alert is a shape, not just a colour.
+- **Every limit, one hover away**: 5-hour window, weekly, per model, with "resets in 2h 14m", the exact time and "at this pace: blocked at 16:40".
 - **Alerts before you hit the wall**: the notch turns amber at 80 % and red at 95 %. Thresholds are adjustable, one alert per limit and per reset period.
 - **Works everywhere**: a pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
 - **Two ways to connect**: reuse your Claude Code session, or sign in to claude.ai in a small window.
@@ -36,7 +37,7 @@ everything, click to pin.
 - **English and French**: follows your Mac's language, or pick one in Settings.
 
 <p align="center">
-  <img src="docs/images/states.png" alt="Notch states: normal, warning, critical, reconnect" width="720">
+  <img src="docs/images/states.png" alt="Notch states: normal, predicted block, warning, critical, limit reached, reconnect" width="720">
 </p>
 
 ## Install

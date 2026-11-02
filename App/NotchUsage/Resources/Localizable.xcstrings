@@ -37,6 +37,26 @@
         }
       }
     },
+    ", at this pace blocked at %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", à ce rythme bloqué à %@"
+          }
+        }
+      }
+    },
+    ", at this pace holds until reset": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", à ce rythme tient jusqu’à la réinitialisation"
+          }
+        }
+      }
+    },
     "1 min": {
       "localizations": {
         "fr": {
@@ -73,6 +93,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "S’applique après un redémarrage."
+          }
+        }
+      }
+    },
+    "At this pace: blocked at %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À ce rythme : bloqué à %@"
+          }
+        }
+      }
+    },
+    "At this pace: holds until reset": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À ce rythme : tient jusqu’à la réinitialisation"
           }
         }
       }
@@ -237,22 +277,22 @@
         }
       }
     },
-    "FULL": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PLEIN"
-          }
-        }
-      }
-    },
     "Fallback if the browser sign-in is blocked: paste the sessionKey cookie from claude.ai.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Solution de secours si la connexion par navigateur est bloquée : collez le cookie sessionKey de claude.ai."
+          }
+        }
+      }
+    },
+    "Full": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqué"
           }
         }
       }

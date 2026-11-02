@@ -30,6 +30,27 @@ struct DisplayStateReducerTests {
         #expect(d.banner == .unavailable)
     }
 
+    @Test func headlinePrefersTheEarliestPredictedBlock() {
+        let snap = makeSnapshot([("session", 55), ("weekly_all", 60)], fetchedAt: now)
+        #expect(reduce(.idle(snap)).headline?.limit.id == "weekly_all")
+        let block: [String: Forecast] = ["session": .blockAt(now.addingTimeInterval(3600))]
+        let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
+                                           fullscreen: false, hover: false, pinned: false, now: now, forecasts: block)
+        #expect(d.headline?.limit.id == "session")
+        #expect(d.forecasts == block)
+        let holds: [String: Forecast] = ["session": .holdsUntilReset]
+        let h = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
+                                           fullscreen: false, hover: false, pinned: false, now: now, forecasts: holds)
+        #expect(h.headline?.limit.id == "weekly_all")
+    }
+
+    @Test func failedReadingIsFlagged() {
+        let snap = makeSnapshot([("session", 40)], fetchedAt: now)
+        #expect(reduce(.failed(.server(503), previous: snap)).fetchFailed)
+        #expect(!reduce(.idle(snap)).fetchFailed)
+        #expect(reduce(.idle(snap)).forecasts.isEmpty)
+    }
+
     @Test func failedWithoutPreviousShowsUnavailableOnly() {
         let d = reduce(.failed(.network(.notConnectedToInternet), previous: nil))
         #expect(d.content == .unavailable)

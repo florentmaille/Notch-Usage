@@ -44,3 +44,25 @@ Filtres de couleur → Niveaux de gris).
 | 12 | VoiceOver, démo `pace` | Annonce de la limite terminée par « à ce rythme bloqué à … » |
 | 13 | Budget : 10 min de journal `com.notchusage` | 3 relevés, aucune requête supplémentaire ; CPU < 1 % dans le Moniteur d'activité |
 | 14 | Tous les états en niveaux de gris | Chaque état reste distinct par sa forme |
+
+## Résultats (2026-11-02, build Debug, Mac en français)
+
+| # | Résultat |
+|---|---|
+| 1 | ✅ « ✓ 2 h 14 » à gauche, « 42 % » à droite, plus de barre |
+| 2 | ✅ Pastilles orange « 83 % » et rouge « 97 % », gauche inchangée (« ✓ 3 j 5 h » sur la limite hebdomadaire) |
+| 3 | ✅ Pastille rouge « Bloqué », « ↻ 1 h 02 » rouge |
+| 4 | ✅ « ⌛ 1 h 10 » orange, « 55 % » blanc ; la démo passe l'historique synthétique par le vrai calcul (régression) |
+| 5 | ✅ Tout en gris, wifi barré, « 1 h 49 » |
+| 6 | ✅ « Connexion » orange sans soulignement ; l'état réel a été vérifié avec le vrai compte plus tôt dans la session |
+| 7 | ✅ Pilule (hook `layout=pill`) : « ✓ 2 h 14 · 42 % », « ⌛ 23:21 · [97 %] », « ↻ 1 h 02 · [Bloqué] », « 🔒 Connexion » ; idem en anglais, aucune troncature |
+| 8 | ⏳ Compte réel : historique alimenté (9 relevés en 10 min), prévision « unavailable » tant que l'écart n'atteint pas 10 min ; à confirmer sur une session de travail |
+| 9 | ✅ `history.json` (968 octets) relu au lancement |
+| 10 | ✅ `wipe()` supprime le dossier entier, `history.json` compris (test `MemorySnapshotStore` et code de `FileSnapshotStore`) |
+| 11 | ✅ « À ce rythme : bloqué à 23:40 » sous Fenêtre de 5 h, rien sous les limites hebdomadaires ; « At this pace: blocked at 23:41 » en anglais |
+| 12 | ✅ Annonces vérifiées par les tests `CompactStripTests` (fr et en) ; VoiceOver non rejoué à la main |
+| 13 | ✅ 3 relevés en 10 min (22:22, 22:25, 22:28), CPU 0,0 % sur 30 s au repos, empreinte 24,5 Mo en Debug |
+| 14 | ✅ Montage converti en niveaux de gris : pastille, sablier, flèche, wifi barré et cadenas distinguent chaque état |
+
+Non-régression (FR-020) : survol → panneau 440 × 264, clic sur la bande → épinglé, Échap → replié 364 × 38 ; langue
+anglaise et française vérifiées sur tous les états.
