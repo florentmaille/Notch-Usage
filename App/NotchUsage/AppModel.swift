@@ -280,6 +280,10 @@ final class AppModel {
                 setAccount(account)
                 startCoordinator(for: account)
             } catch ConnectionError.claudeCodeExpired(let plan) {
+                // Sans ce message, un nouvel essai sur l'écran de reconnexion ne change rien de visible.
+                if account?.status == .expired {
+                    connectionError = String(localized: "The Claude Code session is still expired. Run claude in Terminal, then try again.")
+                }
                 fetchState = .idle(nil)
                 setAccount(Account(connectionMethod: .claudeCode, subscriptionType: plan, status: .expired,
                                    credentialRef: CredentialKey.oauthAccessToken.rawValue, connectedAt: Date()))
@@ -297,8 +301,15 @@ final class AppModel {
 
     func connectWithBrowser() {
         Log.auth.notice("connect requested: browser (window open \(self.loginWindow != nil))")
-        guard loginWindow == nil else { return }
         connectionError = nil
+        // Le panneau déplié passe au-dessus de la fenêtre de connexion : on le replie, au tour suivant
+        // car le clic sur ce bouton épingle ensuite le panneau (NotchPanel.sendEvent).
+        DispatchQueue.main.async { [weak self] in
+            self?.dismiss()
+            self?.hover = false
+        }
+        // Sans icône dans le Dock, ce bouton est le seul moyen de retrouver la fenêtre déjà ouverte.
+        if let loginWindow { loginWindow.bringToFront(); return }
         let window = BrowserLoginWindow(
             onCaptured: { [weak self] key, org in
                 self?.loginWindow = nil
@@ -324,6 +335,7 @@ final class AppModel {
             } catch {
                 connectionError = error.localizedDescription
                 Log.auth.error("browser connection failed: \(error.localizedDescription, privacy: .public)")
+                if case ConnectionError.fetch(.unauthorized) = error { await BrowserLoginWindow.clearClaudeCookies() }
             }
         }
     }
@@ -335,6 +347,7 @@ final class AppModel {
         Task { await c?.stop() }
         coordinator = nil
         connection.signOut()
+        Task { await BrowserLoginWindow.clearClaudeCookies() }
         setAccount(nil)
         fetchState = .idle(nil)
         lastReceivedState = .idle(nil)
@@ -345,6 +358,7 @@ final class AppModel {
 
     private func setAccount(_ account: Account?) {
         self.account = account
+        if account?.status == .connected { connectionError = nil }
         if let account, let data = try? JSONEncoder().encode(account) {
             defaults.set(data, forKey: Self.accountKey)
         } else {

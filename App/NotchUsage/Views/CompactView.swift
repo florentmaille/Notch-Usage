@@ -56,7 +56,8 @@ struct CompactView: View {
                 HStack(spacing: 4) {
                     UsageBar(value: h.limit.utilization, color: tint)
                         .frame(width: 18, height: 4)
-                    Text(h.isBlocked ? "FULL" : "\(Int(h.limit.utilization.rounded()))%")
+                    // Deux `Text` distincts : un ternaire de chaînes s'affiche tel quel, sans traduction.
+                    (h.isBlocked ? Text("FULL") : Text("\(Int(h.limit.utilization.rounded()))%"))
                         .monospacedDigit()
                         .foregroundStyle(tint)
                         .fixedSize()
@@ -98,8 +99,8 @@ struct CompactView: View {
         case .unavailable: return String(localized: "Notch Usage, data unavailable")
         case .limits:
             guard let h = display.headline else { return "Notch Usage" }
-            let reset = RelativeTimeFormatter.untilReset(h.limit.resetsAt, now: Date())
-            return "\(LimitLabel.text(for: h.limit)), \(Int(h.limit.utilization.rounded())) percent, resets \(reset)"
+            let reset = RelativeTimeFormatter.untilReset(h.limit.resetsAt, now: Date(), language: AppLanguage.current)
+            return String(localized: "\(LimitLabel.text(for: h.limit)), \(Int(h.limit.utilization.rounded())) percent, resets \(reset)")
         }
     }
 }
