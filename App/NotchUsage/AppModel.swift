@@ -303,9 +303,12 @@ final class AppModel {
         Log.auth.notice("connect requested: browser (window open \(self.loginWindow != nil))")
         guard loginWindow == nil else { return }
         connectionError = nil
-        // Le panneau déplié passe au-dessus de la fenêtre de connexion : on le replie.
-        pinned = false
-        hover = false
+        // Le panneau déplié passe au-dessus de la fenêtre de connexion : on le replie, au tour suivant
+        // car le clic sur ce bouton épingle ensuite le panneau (NotchPanel.sendEvent).
+        DispatchQueue.main.async { [weak self] in
+            self?.dismiss()
+            self?.hover = false
+        }
         let window = BrowserLoginWindow(
             onCaptured: { [weak self] key, org in
                 self?.loginWindow = nil
