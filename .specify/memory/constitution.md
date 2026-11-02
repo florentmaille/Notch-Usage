@@ -1,3 +1,13 @@
+<!--
+Sync Impact Report
+- Version : 1.0.0 → 1.1.0 (MINOR : règle mémoire élargie)
+- Principe modifié : II. Sobriété des ressources. La mémoire se mesure en empreinte physique
+  (Moniteur d'activité, `vmmap --summary`) et non plus en mémoire résidente (RSS).
+- Raison : le RSS compte les pages partagées des frameworks système (SwiftUI, AppKit), communes
+  à toutes les apps. Mesure du 2026-11-02 en Release : RSS 84 Mo, empreinte 19,7 Mo.
+- Artefacts mis à jour : specs/001-claude-usage-notch/plan.md, tasks.md, quickstart.md
+- Templates : aucun changement requis
+-->
 # Notch-Usage Constitution
 
 ## Core Principles
@@ -20,8 +30,9 @@ vérifier dans le code.
 
 ### II. Sobriété des ressources
 
-- Au repos, la consommation CPU moyenne MUST rester sous 1 %, et la mémoire résidente
-  sous 60 Mo.
+- Au repos, la consommation CPU moyenne MUST rester sous 1 %, et l'empreinte mémoire
+  (colonne « Mémoire » du Moniteur d'activité, `vmmap --summary`) sous 60 Mo. Le RSS brut
+  n'est pas retenu : il inclut les frameworks système partagés.
 - Pas de polling plus fréquent que toutes les 60 s par défaut. L'intervalle est configurable,
   avec un plancher de 30 s, et un backoff s'applique en cas d'erreur ou de rate limit.
 - Le rafraîchissement est suspendu pendant la veille, l'écran verrouillé ou le mode
@@ -92,4 +103,4 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 - Chaque revue de PR vérifie la conformité aux principes. Toute dérogation est justifiée
   dans la PR et tracée dans le plan.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-01
+**Version**: 1.1.0 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-02

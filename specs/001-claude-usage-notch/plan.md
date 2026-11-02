@@ -36,7 +36,7 @@ aucun appel réseau en CI. Instruments (Energy, Allocations) avant release.
 **Performance Goals**: panneau ouvert < 200 ms après survol (SC-003) ; relevé affiché
 < 5 s après réveil ; repositionnement < 2 s après changement d'écrans
 
-**Constraints**: CPU au repos < 1 %, RSS < 60 Mo (constitution II) ; polling 180 s par défaut,
+**Constraints**: CPU au repos < 1 %, empreinte mémoire < 60 Mo (constitution II) ; polling 180 s par défaut,
 plancher 60 s, backoff plafonné 15 min (R4) ; aucune API privée ; aucune permission TCC
 (ni Accessibilité ni Accès complet au disque) ; secrets uniquement dans le Trousseau
 
