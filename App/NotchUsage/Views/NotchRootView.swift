@@ -47,17 +47,33 @@ private struct ExpandedContainer: View {
 
     var body: some View {
         Group {
-            if model.display.content == .connect {
-                ConnectView()
-            } else if model.showSettings {
-                SettingsView()
+            if model.showSettings && model.display.content != .connect {
+                SettingsView().padded()
             } else {
-                ExpandedView()
+                // Hauteur idéale mesurée sur ces vues seulement : les réglages défilent dans une hauteur
+                // fixe et ne doivent pas fausser la mesure pendant la transition.
+                Group {
+                    if model.display.content == .connect { ConnectView() } else { ExpandedView() }
+                }
+                .padded()
+                .fixedSize(horizontal: false, vertical: true)
+                .background(GeometryReader { geo in Color.clear.preference(key: ExpandedHeightKey.self, value: geo.size.height) })
+                .onPreferenceChange(ExpandedHeightKey.self) { height in
+                    MainActor.assumeIsolated { model.setExpandedContentHeight(height) }
+                }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 14)
-        .padding(.top, 6)
         .foregroundStyle(.white)
     }
+}
+
+private extension View {
+    func padded() -> some View {
+        padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 6)
+    }
+}
+
+private struct ExpandedHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }

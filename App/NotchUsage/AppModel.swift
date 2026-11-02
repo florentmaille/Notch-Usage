@@ -39,7 +39,9 @@ final class AppModel {
     var hover = false { didSet { recompute() } }
     var pinned = false { didSet { recompute() } }
     var fullscreen = false { didSet { recompute() } }
-    var showSettings = false
+    var showSettings = false { didSet { recompute() } }
+    /// Hauteur idéale du contenu déplié, mesurée par la vue (hors réglages).
+    @ObservationIgnored private var expandedContentHeight: CGFloat = NotchPanelController.expandedHeight
     var isConnecting = false
     var connectionError: String?
     var claudeCodeAvailable = false
@@ -73,7 +75,43 @@ final class AppModel {
 
     // MARK: Cycle de vie
 
+    #if DEBUG
+    /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
+    /// `com.notchusage.debug.demo` objet "normal" | "warning" | "critical" | "reauth" | "off".
+    @ObservationIgnored private var demoState: FetchState?
+
+    private func installDemoHook() {
+        DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.demo"), object: nil, queue: .main) { [weak self] note in
+            let mode = (note.object as? String) ?? "off"
+            MainActor.assumeIsolated { self?.applyDemo(mode) }
+        }
+    }
+
+    private func applyDemo(_ mode: String) {
+        let now = Date()
+        func snapshot(_ session: Double, _ weekly: Double, _ model: Double) -> UsageSnapshot {
+            UsageSnapshot(limits: [
+                UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: session, resetsAt: now.addingTimeInterval(2 * 3600 + 14 * 60)),
+                UsageLimit(id: "weekly_all", kind: .weeklyAll, modelName: nil, utilization: weekly, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
+                UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: model, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
+            ], fetchedAt: now)
+        }
+        switch mode {
+        case "normal": demoState = .idle(snapshot(42, 27, 35))
+        case "warning": demoState = .idle(snapshot(64, 38, 83))
+        case "critical": demoState = .idle(snapshot(97, 52, 71))
+        case "reauth": demoState = .reauthRequired(previous: nil)
+        default: demoState = nil
+        }
+        self.now = now
+        recompute()
+    }
+    #endif
+
     func start() {
+        #if DEBUG
+        installDemoHook()
+        #endif
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
         screens.onChange = { [weak self] target in self?.applyScreen(target) }
@@ -368,11 +406,24 @@ final class AppModel {
     // MARK: Dérivation
 
     private func recompute() {
-        let connected = account != nil && account?.status != .disconnected
-        let state: FetchState = (account?.status == .expired) ? .reauthRequired(previous: nil) : fetchState
+        var connected = account != nil && account?.status != .disconnected
+        var state: FetchState = (account?.status == .expired) ? .reauthRequired(previous: nil) : fetchState
+        #if DEBUG
+        if let demo = demoState { state = demo; connected = true }
+        #endif
         let level = state.snapshot.map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
         display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
                                              layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now)
+        panel?.contentHeight = expandedContentHeight
+        panel?.showsSettings = showSettings
         panel?.apply(display)
+    }
+
+    func setExpandedContentHeight(_ height: CGFloat) {
+        guard !showSettings, height > 40 else { return }
+        let clamped = min(height.rounded(.up), 480)
+        guard abs(clamped - expandedContentHeight) > 0.5 else { return }
+        expandedContentHeight = clamped
+        recompute()
     }
 }
