@@ -37,11 +37,15 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         window.isReleasedWhenClosed = false
         window.center()
         window.level = .floating
+        // Sans cela, la fenêtre s'ouvre sur le bureau quand l'app au premier plan est en plein écran.
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         self.window = window
         self.webView = webView
 
-        NSApp.activate(ignoringOtherApps: true)
+        // App sans Dock (LSUIElement) : l'activation peut être refusée, d'où orderFrontRegardless.
+        NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         webView.load(URLRequest(url: Self.loginURL))
         checkCookies()
     }
