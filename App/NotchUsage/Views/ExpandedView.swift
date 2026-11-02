@@ -41,7 +41,7 @@ struct ExpandedView: View {
             if d.isLoading {
                 ProgressView().controlSize(.mini).tint(.white)
             } else if let fetchedAt = d.fetchedAt, d.freshness != .fresh {
-                Text(RelativeTimeFormatter.age(fetchedAt, now: model.now))
+                Text(RelativeTimeFormatter.age(fetchedAt, now: model.now, language: AppLanguage.current))
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -113,7 +113,7 @@ struct LimitRow: View {
             HStack {
                 Text(LimitLabel.text(for: limit)).font(.subheadline)
                 Spacer()
-                Text(limit.isBlocked ? "100%" : "\(Int(limit.utilization.rounded()))%")
+                Text("\(Int(limit.isBlocked ? 100 : limit.utilization.rounded()))%")
                     .font(.subheadline.weight(.semibold)).monospacedDigit()
                     .foregroundStyle(color)
             }
@@ -131,13 +131,17 @@ struct LimitRow: View {
         .padding(.horizontal, highlighted ? 6 : 0)
         .background(highlighted ? color.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(LimitLabel.text(for: limit)), \(Int(limit.utilization.rounded())) percent, resets \(RelativeTimeFormatter.untilReset(limit.resetsAt, now: now))")
+        .accessibilityLabel(Text("\(LimitLabel.text(for: limit)), \(Int(limit.utilization.rounded())) percent, resets \(untilReset)"))
     }
 
     private var resetText: String {
-        limit.isBlocked
-            ? String(localized: "Blocked, resets \(RelativeTimeFormatter.untilReset(limit.resetsAt, now: now))")
-            : String(localized: "Resets \(RelativeTimeFormatter.untilReset(limit.resetsAt, now: now))")
+        // Phrase autonome une fois l'heure passée : sinon « Resets reset pending ».
+        if let resetsAt = limit.resetsAt, resetsAt <= now { return String(localized: "Reset pending") }
+        return limit.isBlocked ? String(localized: "Blocked, resets \(untilReset)") : String(localized: "Resets \(untilReset)")
+    }
+
+    private var untilReset: String {
+        RelativeTimeFormatter.untilReset(limit.resetsAt, now: now, language: AppLanguage.current)
     }
 
     private var color: Color {

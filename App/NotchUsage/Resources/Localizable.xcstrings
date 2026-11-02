@@ -1,6 +1,722 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
+  "sourceLanguage": "en",
+  "strings": {
+    "%@, %lld percent, resets %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@, %2$lld percent, resets %3$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$lld pour cent, réinitialisation %3$@"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        }
+      }
+    },
+    "1 min": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 min"
+          }
+        }
+      }
+    },
+    "5-hour window": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenêtre de 5 h"
+          }
+        }
+      }
+    },
+    "Alerts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alertes"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour"
+          }
+        }
+      }
+    },
+    "Blocked, resets %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqué, réinitialisation %@"
+          }
+        }
+      }
+    },
+    "Checking your usage…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification de votre consommation…"
+          }
+        }
+      }
+    },
+    "Claude is rate-limiting usage requests. Try again in a few minutes.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude limite les demandes de consommation. Réessayez dans quelques minutes."
+          }
+        }
+      }
+    },
+    "Claude rate-limits this endpoint. 3 minutes is a safe default.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude limite la fréquence de ces demandes. 3 minutes est une valeur sûre."
+          }
+        }
+      }
+    },
+    "Claude rejected the credentials. Try signing in again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude a refusé les identifiants. Reconnectez-vous."
+          }
+        }
+      }
+    },
+    "Claude usage": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consommation Claude"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion"
+          }
+        }
+      }
+    },
+    "Connect your Claude account": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connectez votre compte Claude"
+          }
+        }
+      }
+    },
+    "Connected via Claude Code": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté via Claude Code"
+          }
+        }
+      }
+    },
+    "Connected via browser": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté via le navigateur"
+          }
+        }
+      }
+    },
+    "Could not read usage data. Try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lire la consommation. Réessayez."
+          }
+        }
+      }
+    },
+    "Critical at %lld%%": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Critique à %lld %%"
+          }
+        }
+      }
+    },
+    "Critical usage alert": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerte critique de consommation"
+          }
+        }
+      }
+    },
+    "Data unavailable": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données indisponibles"
+          }
+        }
+      }
+    },
+    "Data unavailable, showing the last reading.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données indisponibles, affichage du dernier relevé."
+          }
+        }
+      }
+    },
+    "FULL": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLEIN"
+          }
+        }
+      }
+    },
+    "Fallback if the browser sign-in is blocked: paste the sessionKey cookie from claude.ai.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solution de secours si la connexion par navigateur est bloquée : collez le cookie sessionKey de claude.ai."
+          }
+        }
+      }
+    },
+    "Highlight the notch when a limit gets close": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaler dans l’encoche une limite proche"
+          }
+        }
+      }
+    },
+    "Last reading is older than 30 minutes.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernier relevé il y a plus de 30 minutes."
+          }
+        }
+      }
+    },
+    "No Claude Code session found. Sign in to Claude Code first, or use the browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune session Claude Code trouvée. Connectez-vous d’abord à Claude Code, ou utilisez le navigateur."
+          }
+        }
+      }
+    },
+    "No network connection.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion réseau."
+          }
+        }
+      }
+    },
+    "Notch Usage shows your Pro or Max limits. Pick how to connect:": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notch Usage affiche vos limites Pro ou Max. Choisissez comment vous connecter :"
+          }
+        }
+      }
+    },
+    "Notch Usage, data unavailable": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notch Usage, données indisponibles"
+          }
+        }
+      }
+    },
+    "Notch Usage, not connected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notch Usage, non connecté"
+          }
+        }
+      }
+    },
+    "Notch Usage, plan not supported": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notch Usage, offre non prise en charge"
+          }
+        }
+      }
+    },
+    "Notch Usage, reconnect required": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notch Usage, reconnexion nécessaire"
+          }
+        }
+      }
+    },
+    "One alert per threshold, per limit and per reset period. Changes apply on the next refresh.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une alerte par seuil, par limite et par période. Les changements s’appliquent au prochain relevé."
+          }
+        }
+      }
+    },
+    "Open at login": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lancer à l’ouverture de session"
+          }
+        }
+      }
+    },
+    "Open sign-in": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir la connexion"
+          }
+        }
+      }
+    },
+    "Opens claude.ai in a small window. The session cookie stays in your Keychain.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre claude.ai dans une petite fenêtre. Le cookie de session reste dans votre trousseau."
+          }
+        }
+      }
+    },
+    "Plan not supported": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre non prise en charge"
+          }
+        }
+      }
+    },
+    "Reads the token Claude Code already stored in your Keychain. macOS will ask you to allow it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lit le jeton que Claude Code a déjà enregistré dans votre trousseau. macOS vous demandera l’autorisation."
+          }
+        }
+      }
+    },
+    "Reconnect required": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnexion nécessaire"
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualisation"
+          }
+        }
+      }
+    },
+    "Refresh every": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualiser toutes les"
+          }
+        }
+      }
+    },
+    "Refresh now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualiser"
+          }
+        }
+      }
+    },
+    "Reset pending": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réinitialisation imminente"
+          }
+        }
+      }
+    },
+    "Resets %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réinitialisation %@"
+          }
+        }
+      }
+    },
+    "Session key": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé de session"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages"
+          }
+        }
+      }
+    },
+    "Sign in": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion"
+          }
+        }
+      }
+    },
+    "Sign in to Claude": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion à Claude"
+          }
+        }
+      }
+    },
+    "Sign in with browser": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter avec le navigateur"
+          }
+        }
+      }
+    },
+    "Sign out": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déconnexion"
+          }
+        }
+      }
+    },
+    "Startup": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrage"
+          }
+        }
+      }
+    },
+    "That does not look like a Claude session key (it should start with sk-ant-sid).": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n’est pas une clé de session Claude (elle doit commencer par sk-ant-sid)."
+          }
+        }
+      }
+    },
+    "The Claude Code credentials could not be read. Open Claude Code once, then retry.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lire les identifiants de Claude Code. Ouvrez Claude Code une fois, puis réessayez."
+          }
+        }
+      }
+    },
+    "This Claude plan does not expose usage limits. Pro, Max or Team is required.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette offre Claude ne fournit pas de limites de consommation. Pro, Max ou Team est nécessaire."
+          }
+        }
+      }
+    },
+    "Usage warning": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avertissement de consommation"
+          }
+        }
+      }
+    },
+    "Use": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser"
+          }
+        }
+      }
+    },
+    "Use Claude Code session": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser la session Claude Code"
+          }
+        }
+      }
+    },
+    "Uses undocumented Claude endpoints. Nothing leaves your Mac, but Anthropic may change or block them. Use at your own risk.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilise des points d’accès Claude non documentés. Rien ne quitte votre Mac, mais Anthropic peut les modifier ou les bloquer. À utiliser à vos risques."
+          }
+        }
+      }
+    },
+    "Waiting for approval in System Settings → General → Login Items.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente d’approbation dans Réglages Système → Général → Ouverture."
+          }
+        }
+      }
+    },
+    "Waiting for the first reading…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente du premier relevé…"
+          }
+        }
+      }
+    },
+    "Warning at %lld%%": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attention à %lld %%"
+          }
+        }
+      }
+    },
+    "Weekly · %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hebdomadaire · %@"
+          }
+        }
+      }
+    },
+    "Weekly, all models": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hebdomadaire, tous modèles"
+          }
+        }
+      }
+    },
+    "Your Claude Code session has expired. Run claude in Terminal once to renew it: Notch Usage reconnects automatically within 30 seconds. Or sign in with your browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre session Claude Code a expiré. Lancez claude une fois dans le Terminal pour la renouveler : Notch Usage se reconnecte seul en moins de 30 secondes. Ou connectez-vous avec le navigateur."
+          }
+        }
+      }
+    },
+    "Your Claude Code session has expired. Run claude in Terminal once to renew it: Notch Usage reconnects automatically.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre session Claude Code a expiré. Lancez claude une fois dans le Terminal pour la renouveler : Notch Usage se reconnecte seul."
+          }
+        }
+      }
+    },
+    "Your claude.ai session has expired. Sign in again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre session claude.ai a expiré. Reconnectez-vous."
+          }
+        }
+      }
+    },
+    "claude.ai asked for a browser check.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "claude.ai demande une vérification du navigateur."
+          }
+        }
+      }
+    },
+    "claude.ai asked for a browser check. Open the sign-in window and complete it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "claude.ai demande une vérification du navigateur. Ouvrez la fenêtre de connexion et terminez-la."
+          }
+        }
+      }
+    },
+    "sk-ant-sid…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sk-ant-sid…"
+          }
+        }
+      }
+    },
+    "—": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        }
+      }
+    }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

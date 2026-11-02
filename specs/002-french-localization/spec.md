@@ -107,3 +107,5 @@ suivre la langue.
 - Les abréviations françaises suivent l'usage courant : « h » pour heure, « min » pour minute, « j » pour jour.
 - La note de risque est traduite fidèlement, sans en atténuer la portée.
 - Aucun changement de comportement, de réseau ni de stockage : la feature ne touche que les textes.
+- Seule exception à FR-007, corrigée volontairement : une limite dont l'heure de réinitialisation est passée affichait « Resets reset pending » ; elle affiche désormais « Reset pending » (« Réinitialisation imminente »).
+- Typographie française : espace insécable avant « % » et « : », apostrophe typographique.
