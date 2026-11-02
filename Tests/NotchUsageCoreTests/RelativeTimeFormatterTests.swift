@@ -74,3 +74,38 @@ struct RelativeTimeFormatterFrenchTests {
         #expect(InterfaceLanguage(code: nil) == .english)
     }
 }
+
+@Suite("RelativeTimeFormatter - encoche (003)")
+struct RelativeTimeFormatterCompactTests {
+    let now = Date.iso("2026-11-01T10:00:00Z")
+    let utc = TimeZone(identifier: "UTC")!
+    func en(_ s: TimeInterval) -> String { RelativeTimeFormatter.duration(until: now.addingTimeInterval(s), now: now) }
+    func fr(_ s: TimeInterval) -> String { RelativeTimeFormatter.duration(until: now.addingTimeInterval(s), now: now, language: .french) }
+
+    @Test func englishDurations() {
+        #expect(en(2 * 3600 + 14 * 60) == "2h 14m")
+        #expect(en(3600 + 2 * 60) == "1h 02m")
+        #expect(en(25 * 60) == "25m")
+        #expect(en(30) == "1m")
+        #expect(en(3 * 86400 + 5 * 3600 + 20 * 60) == "3d 5h")
+        #expect(en(-10) == "pending")
+    }
+
+    @Test func frenchDurations() {
+        #expect(fr(2 * 3600 + 14 * 60) == "2 h 14")
+        #expect(fr(3600 + 2 * 60) == "1 h 02")
+        #expect(fr(25 * 60) == "25 min")
+        #expect(fr(30) == "1 min")
+        #expect(fr(3 * 86400 + 5 * 3600 + 20 * 60) == "3 j 5 h")
+        #expect(fr(-10) == "imminent")
+    }
+
+    @Test func blockLabelUsesClockTimeUnderAnHour() {
+        let soon = now.addingTimeInterval(40 * 60)
+        #expect(RelativeTimeFormatter.blockLabel(soon, now: now, language: .french, locale: Locale(identifier: "fr_FR"), timeZone: utc) == "10:40")
+        #expect(RelativeTimeFormatter.blockLabel(soon, now: now, locale: Locale(identifier: "en_US"), timeZone: utc).hasPrefix("10:40"))
+        let later = now.addingTimeInterval(2 * 3600 + 14 * 60)
+        #expect(RelativeTimeFormatter.blockLabel(later, now: now, language: .french, locale: Locale(identifier: "fr_FR"), timeZone: utc) == "2 h 14")
+        #expect(RelativeTimeFormatter.blockLabel(later, now: now, locale: Locale(identifier: "en_US"), timeZone: utc) == "2h 14m")
+    }
+}

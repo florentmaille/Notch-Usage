@@ -44,6 +44,11 @@ final class AppModel {
     @ObservationIgnored private var expandedContentHeight: CGFloat = NotchPanelController.expandedHeight
     var isConnecting = false
     var connectionError: String?
+    /// Prévisions affichées (003), stabilisées par l'hystérésis ; recalculées à chaque relevé réussi.
+    private(set) var forecasts: [String: Forecast] = [:]
+    @ObservationIgnored private var history = UsageHistory()
+    @ObservationIgnored private var debouncer = ForecastDebouncer()
+    @ObservationIgnored private var lastRecordedAt: Date?
     var claudeCodeAvailable = false
     var launchAtLoginStatus: LaunchAtLogin.Status = .disabled
     var now = Date()
@@ -79,27 +84,55 @@ final class AppModel {
     /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
     /// `com.notchusage.debug.demo` objet "normal" | "warning" | "critical" | "reauth" | "off".
     @ObservationIgnored private var demoState: FetchState?
+    @ObservationIgnored private var demoForecasts: [String: Forecast] = [:]
 
     private func installDemoHook() {
         DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.demo"), object: nil, queue: .main) { [weak self] note in
             let mode = (note.object as? String) ?? "off"
             MainActor.assumeIsolated { self?.applyDemo(mode) }
         }
+        // `com.notchusage.debug.layout` objet "pill" | "notch" : simule un écran sans encoche pour les captures.
+        DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.layout"), object: nil, queue: .main) { [weak self] note in
+            let mode = (note.object as? String) ?? "notch"
+            MainActor.assumeIsolated {
+                guard let self, let current = self.screens.current else { return }
+                let layout = mode == "pill"
+                    ? NotchGeometry.layout(screenWidth: current.screen.frame.width, safeAreaTop: 0, auxLeftWidth: nil, auxRightWidth: nil)
+                    : current.layout
+                self.applyScreen(ScreenObserver.Target(screen: current.screen, layout: layout))
+            }
+        }
     }
 
     private func applyDemo(_ mode: String) {
         let now = Date()
-        func snapshot(_ session: Double, _ weekly: Double, _ model: Double) -> UsageSnapshot {
+        func snapshot(_ session: Double, _ weekly: Double, _ model: Double,
+                      sessionReset: TimeInterval = 2 * 3600 + 14 * 60, age: TimeInterval = 0) -> UsageSnapshot {
             UsageSnapshot(limits: [
-                UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: session, resetsAt: now.addingTimeInterval(2 * 3600 + 14 * 60)),
+                UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: session, resetsAt: now.addingTimeInterval(sessionReset)),
                 UsageLimit(id: "weekly_all", kind: .weeklyAll, modelName: nil, utilization: weekly, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
                 UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: model, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
-            ], fetchedAt: now)
+            ], fetchedAt: now.addingTimeInterval(-age))
         }
+        demoForecasts = [:]
         switch mode {
         case "normal": demoState = .idle(snapshot(42, 27, 35))
+        case "pace":
+            // Historique synthétique passé par le vrai calcul : 29 → 55 % en 40 min, reset dans 4 h.
+            let current = snapshot(55, 30, 28, sessionReset: 4 * 3600)
+            var synthetic = UsageHistory()
+            for (minutesAgo, pct) in [(40.0, 29.0), (30, 36), (20, 42), (10, 49)] {
+                synthetic = synthetic.appending(snapshot(pct, 30, 28, sessionReset: 4 * 3600, age: minutesAgo * 60))
+            }
+            synthetic = synthetic.appending(current)
+            demoState = .idle(current)
+            demoForecasts = PaceForecaster.forecasts(history: synthetic, snapshot: current, now: now)
         case "warning": demoState = .idle(snapshot(64, 38, 83))
-        case "critical": demoState = .idle(snapshot(97, 52, 71))
+        case "critical":
+            demoState = .idle(snapshot(97, 52, 71))
+            demoForecasts = ["session": .blockAt(now.addingTimeInterval(50 * 60))]
+        case "blocked": demoState = .idle(snapshot(100, 52, 71, sessionReset: 3600 + 2 * 60))
+        case "offline": demoState = .failed(.network(.notConnectedToInternet), previous: snapshot(42, 27, 35, sessionReset: 3600 + 49 * 60, age: 25 * 60))
         case "reauth": demoState = .reauthRequired(previous: nil)
         default: demoState = nil
         }
@@ -114,6 +147,7 @@ final class AppModel {
         #endif
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
+        history = (try? snapshots.loadHistory()) ?? UsageHistory()
         screens.onChange = { [weak self] target in self?.applyScreen(target) }
         screens.start()
         fullscreenObserver.onChange = { [weak self] isFullscreen in self?.fullscreen = isFullscreen }
@@ -190,6 +224,7 @@ final class AppModel {
                 guard let self else { return }
                 Self.logReading(state, previous: self.lastReceivedState)
                 self.lastReceivedState = state
+                if case .idle(let snapshot?) = state { self.record(snapshot) }
                 self.fetchState = self.fetchState.displayed(next: state)
                 self.recompute()
                 if case .reauthRequired = state { await self.handleReauth() }
@@ -204,6 +239,19 @@ final class AppModel {
             }
         }
         Task { await c.start() }
+    }
+
+    /// Historique et prévision (003) : un relevé par instantané distinct, prévision stabilisée par l'hystérésis.
+    private func record(_ snapshot: UsageSnapshot) {
+        guard snapshot.fetchedAt != lastRecordedAt else { return }
+        lastRecordedAt = snapshot.fetchedAt
+        history = history.appending(snapshot)
+        try? snapshots.saveHistory(history)
+        let previous = forecasts
+        forecasts = debouncer.push(PaceForecaster.forecasts(history: history, snapshot: snapshot, now: Date()))
+        for (id, forecast) in forecasts where previous[id] != forecast {
+            Log.refresh.notice("forecast \(id, privacy: .public): \(String(describing: forecast), privacy: .public)")
+        }
     }
 
     /// Une ligne par relevé terminé : permet de compter les requêtes (budget, veille) sans rien de sensible.
@@ -347,6 +395,10 @@ final class AppModel {
         Task { await c?.stop() }
         coordinator = nil
         connection.signOut()
+        history = UsageHistory()
+        debouncer = ForecastDebouncer()
+        forecasts = [:]
+        lastRecordedAt = nil
         Task { await BrowserLoginWindow.clearClaudeCookies() }
         setAccount(nil)
         fetchState = .idle(nil)
@@ -427,7 +479,11 @@ final class AppModel {
         #endif
         let level = state.snapshot.map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
         display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
-                                             layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now)
+                                             layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now,
+                                             forecasts: forecasts)
+        #if DEBUG
+        if demoState != nil { display.forecasts = demoForecasts }
+        #endif
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
         panel?.apply(display)

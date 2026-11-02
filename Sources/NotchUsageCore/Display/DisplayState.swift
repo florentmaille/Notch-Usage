@@ -40,6 +40,10 @@ public struct DisplayState: Sendable, Equatable {
     public var alertLevel: AlertLevel
     public var fullscreenHidden: Bool
     public var showAlertDot: Bool
+    /// Prévision par identifiant de limite (003) ; vide sans historique exploitable.
+    public var forecasts: [String: Forecast]
+    /// Dernier relevé en échec : glyphe wifi barré dans l'encoche (003).
+    public var fetchFailed: Bool
 
     public var mode: DisplayMode { layout.mode }
     public var isExpanded: Bool { panel != .collapsed }

@@ -24,11 +24,14 @@ final class FileSnapshotStore: SnapshotStore {
 
     private var snapshotURL: URL { directory.appending(path: "snapshot.json") }
     private var ledgerURL: URL { directory.appending(path: "alerts.json") }
+    private var historyURL: URL { directory.appending(path: "history.json") }
 
     func loadSnapshot() throws -> UsageSnapshot? { try load(snapshotURL) }
     func saveSnapshot(_ snapshot: UsageSnapshot) throws { try save(snapshot, to: snapshotURL) }
     func loadLedger() throws -> AlertLedger? { try load(ledgerURL) }
     func saveLedger(_ ledger: AlertLedger) throws { try save(ledger, to: ledgerURL) }
+    func loadHistory() throws -> UsageHistory? { try load(historyURL) }
+    func saveHistory(_ history: UsageHistory) throws { try save(history, to: historyURL) }
 
     func wipe() throws {
         if FileManager.default.fileExists(atPath: directory.path) {

@@ -14,7 +14,7 @@ struct ExpandedView: View {
             case .limits:
                 ForEach(d.limits) { limit in
                     LimitRow(limit: limit, now: model.now, highlighted: d.alertLevel != .none && limit.id == d.headline?.limit.id,
-                             settings: model.alertSettings)
+                             settings: model.alertSettings, forecast: d.forecasts[limit.id])
                 }
             case .reauthRequired:
                 statusBlock(icon: "exclamationmark.lock", title: String(localized: "Reconnect required"),
@@ -111,6 +111,7 @@ struct LimitRow: View {
     let now: Date
     let highlighted: Bool
     let settings: AlertSettings
+    var forecast: Forecast? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -130,13 +131,37 @@ struct LimitRow: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if let paceText {
+                Text(paceText).font(.caption).foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 2)
         .padding(.horizontal, highlighted ? 6 : 0)
         .background(highlighted ? color.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("\(LimitLabel.text(for: limit)), \(Int(limit.utilization.rounded())) percent, resets \(untilReset)"))
+        .accessibilityLabel(accessibilityText)
     }
+
+    /// Ligne « À ce rythme » (003, FR-016) ; aucune sans prévision exploitable.
+    private var paceText: String? {
+        switch forecast {
+        case .blockAt(let date)?: return String(localized: "At this pace: blocked at \(clock(date))")
+        case .holdsUntilReset?: return String(localized: "At this pace: holds until reset")
+        default: return nil
+        }
+    }
+
+    private var accessibilityText: String {
+        var text = String(localized: "\(LimitLabel.text(for: limit)), \(Int(limit.utilization.rounded())) percent, resets \(untilReset)")
+        switch forecast {
+        case .blockAt(let date)?: text += String(localized: ", at this pace blocked at \(clock(date))")
+        case .holdsUntilReset?: text += String(localized: ", at this pace holds until reset")
+        default: break
+        }
+        return text
+    }
+
+    private func clock(_ date: Date) -> String { date.formatted(date: .omitted, time: .shortened) }
 
     private var resetText: String {
         // Phrase autonome une fois l'heure passée : sinon « Resets reset pending ».

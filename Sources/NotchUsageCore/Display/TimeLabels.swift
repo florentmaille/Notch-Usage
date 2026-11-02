@@ -25,17 +25,22 @@ struct TimeLabels: Sendable {
     let ageMinutes: @Sendable (Int) -> String
     let ageHours: @Sendable (Int) -> String
     let ageDays: @Sendable (Int) -> String
+    // Encoche (003) : durée nue, minutes sur deux chiffres (« 1h 02m », « 1 h 02 ») ; reset passé en un mot.
+    let compactHoursMinutes: @Sendable (Int, Int) -> String
+    let compactPending: String
 
     static func `for`(_ language: InterfaceLanguage) -> TimeLabels {
         switch language {
         case .english:
             return TimeLabels(minutes: { "\($0)m" }, hoursMinutes: { "\($0)h \($1)m" }, daysHours: { "\($0)d \($1)h" },
                               until: { "in \($0)" }, pending: "reset pending", ago: { "\($0) ago" }, justNow: "just now",
-                              ageMinutes: { "\($0) min" }, ageHours: { "\($0) h" }, ageDays: { "\($0) d" })
+                              ageMinutes: { "\($0) min" }, ageHours: { "\($0) h" }, ageDays: { "\($0) d" },
+                              compactHoursMinutes: { String(format: "%dh %02dm", $0, $1) }, compactPending: "pending")
         case .french:
             return TimeLabels(minutes: { "\($0) min" }, hoursMinutes: { "\($0) h \($1) min" }, daysHours: { "\($0) j \($1) h" },
                               until: { "dans \($0)" }, pending: "réinitialisation imminente", ago: { "il y a \($0)" }, justNow: "à l'instant",
-                              ageMinutes: { "\($0) min" }, ageHours: { "\($0) h" }, ageDays: { "\($0) j" })
+                              ageMinutes: { "\($0) min" }, ageHours: { "\($0) h" }, ageDays: { "\($0) j" },
+                              compactHoursMinutes: { String(format: "%d h %02d", $0, $1) }, compactPending: "imminent")
         }
     }
 }
