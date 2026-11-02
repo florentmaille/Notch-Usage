@@ -7,7 +7,11 @@ import SwiftUI
 final class NotchPanelController {
     static let wingWidth: CGFloat = 72
     static let expandedWidth: CGFloat = 440
+    /// Hauteur des réglages, et plafond du contenu mesuré.
     static let expandedHeight: CGFloat = 320
+    /// Hauteur du contenu déplié mesurée par SwiftUI (hors réglages).
+    var contentHeight: CGFloat = expandedHeight
+    var showsSettings = false
     static let hiddenStripHeight: CGFloat = 2
     static let hoverOpenDelay: TimeInterval = 0.15
     static let hoverCloseDelay: TimeInterval = 0.10
@@ -30,6 +34,9 @@ final class NotchPanelController {
         panel = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: 10))
         hoverView = HoverView(frame: panel.contentLayoutRect)
         hosting = FirstMouseHostingView(rootView: rootView)
+        // Le contrôleur seul fixe la taille du panneau : sinon la hauteur idéale du contenu,
+        // remontée par SwiftUI, redimensionne la fenêtre en boucle.
+        hosting.sizingOptions = []
         hosting.translatesAutoresizingMaskIntoConstraints = false
         hoverView.addSubview(hosting)
         NSLayoutConstraint.activate([
@@ -68,7 +75,7 @@ final class NotchPanelController {
         if display.fullscreenHidden {
             size = CGSize(width: collapsedWidth, height: Self.hiddenStripHeight)
         } else if display.isExpanded {
-            size = CGSize(width: max(collapsedWidth, Self.expandedWidth), height: layout.height + Self.expandedHeight)
+            size = CGSize(width: max(collapsedWidth, Self.expandedWidth), height: layout.height + (showsSettings ? Self.expandedHeight : contentHeight))
         } else {
             size = CGSize(width: collapsedWidth, height: layout.height)
         }
