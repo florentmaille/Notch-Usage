@@ -119,11 +119,15 @@ Pour vérifier le panneau sans permission Accessibilité ni Enregistrement d'éc
 | 6, 7 | OK : avertissement (orange) et critique (rouge) distincts, une alerte par seuil et par période, y compris après redémarrage | Seuils 10/15 %, journaux, capture |
 | Énergie | OK : CPU moyen 0,17 % (Debug, 10 min), 3 requêtes en 10 min, empreinte 19,7 Mo (Release) | `ps`, journaux, `vmmap` |
 | Vie privée | OK : aucun `sk-ant` dans les journaux du processus, hôtes limités dans le code | `log show`, grep |
-| 3, 8 à 15 | À faire | Utilisateur |
+| 10 | OK : pilule centrée sur l'écran externe devenu principal, survol, retour dans l'encoche | Utilisateur |
+| 11 | OK : vue masquée en plein écran (Chrome), réapparition au survol, retour sans clic à la sortie | Utilisateur, journaux |
+| 14 | OK : « Notch Usage » listé dans Ouverture et extensions, sans approbation requise | Utilisateur |
+| 3, 8, 9, 12, 13, 15 | À faire | Utilisateur |
 
 Défauts trouvés et corrigés pendant la validation : panneau décalé de 39 pt sous la barre de menus,
 panneau au niveau 3 (sous la barre de menus, niveau 24) qui ne recevait ni survol ni clic, zone de
-survol jamais créée,
+survol jamais créée, plein écran mal détecté sur écran à encoche (fenêtres sous l'encoche,
+fenêtres multiples de Chrome, sortie détectée seulement au clic suivant),
 boutons inertes au premier clic, épinglage par clic inopérant, boucle de dialogues Trousseau,
 jeton Claude Code expiré mal signalé, double requête à la connexion, alertes répétées à chaque
 relevé, jauge compacte illisible.

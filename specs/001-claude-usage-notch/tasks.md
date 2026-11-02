@@ -160,7 +160,7 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 - [x] T064 [P] [US3] Implémenter `App/NotchUsage/Notch/FullscreenObserver.swift` : sur `NSWorkspace.activeSpaceDidChangeNotification` et `didChangeScreenParametersNotification`, `CGWindowListCopyWindowInfo(.optionOnScreenOnly)` filtré sur le PID de `NSWorkspace.shared.frontmostApplication`, couche 0, bounds ≈ `screen.frame` (tolérance 2 pt) → `isFullscreen` ; aucune API privée, aucune permission
 - [x] T065 [US3] Comportement plein écran dans `App/NotchUsage/Notch/NotchPanelController.swift` : si `fullscreenHidden`, réduire le panneau à une bande de 2 pt en haut qui conserve la `NSTrackingArea` ; survol → affichage complet ; sortie → masquage
 - [x] T066 [P] [US3] Implémenter `App/NotchUsage/Views/AlertDotView.swift` : point de 6 pt (ambre / rouge) affiché dans la bande quand `showAlertDot`
-- [ ] T067 [US3] Valider les scénarios 10 et 11 de quickstart.md (écran externe, couvercle fermé, Safari plein écran)
+- [x] T067 [US3] Valider les scénarios 10 et 11 de quickstart.md (écran externe, couvercle fermé, Safari plein écran)
 
 **Checkpoint**: les trois stories sont fonctionnelles indépendamment.
 
