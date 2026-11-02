@@ -173,7 +173,7 @@ code AppKit/WebKit ne sont pas testés unitairement : ils passent par les scéna
 - [x] T070 [P] Passer les vérifications vie privée de quickstart.md (grep des hôtes, absence de `sk-ant-` dans les logs) et VoiceOver (scénario 15)
 - [x] T071 [P] Créer `scripts/build-app.sh` (xcodegen + `xcodebuild archive`) et `scripts/release.sh` (codesign Developer ID `--options runtime --timestamp`, `notarytool submit --wait`, `stapler staple`, DMG via `hdiutil`, re-zip `ditto -c -k --keepParent`) + modèle `scripts/cask/notch-usage.rb` (`depends_on macos: ">= :sonoma"`, `zap trash:`)
 - [x] T072 [P] Compléter `README.md` : capture d'écran, installation (DMG, tap Homebrew), les deux voies de connexion, cadence et limitation de débit, note de risque, dépannage (dialogue Trousseau, challenge Cloudflare, « open Claude Code to renew »)
-- [ ] T073 Revue finale constitution : `grep -rn "^import" Sources/NotchUsageCore` = Foundation seul ; aucune dépendance dans `Package.swift` ; aucun entitlement supplémentaire ; `swift test` et CI verts ; scénario 12 (veille) et 14 (login item) de quickstart.md validés
+- [x] T073 Revue finale constitution : `grep -rn "^import" Sources/NotchUsageCore` = Foundation seul ; aucune dépendance dans `Package.swift` ; aucun entitlement supplémentaire ; `swift test` et CI verts ; scénario 12 (veille) et 14 (login item) de quickstart.md validés
 
 ---
 

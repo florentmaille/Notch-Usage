@@ -139,3 +139,6 @@ boutons inertes au premier clic, épinglage par clic inopérant, boucle de dialo
 jeton Claude Code expiré mal signalé, double requête à la connexion, alertes répétées à chaque
 relevé, jauge compacte illisible.
 
+CI GitHub verte le 2026-11-02 sur `macos-15-intel` (exécution 41435937650) : `swift test` 1 min 56 s,
+`xcodebuild` 3 min 10 s. Les runners macOS arm64 étaient saturés (jobs annulés faute de machine).
+
