@@ -6,6 +6,7 @@ on:
   pull_request:
 
 # Machines Intel : les runners macOS arm64 de GitHub manquent de capacité (jobs annulés faute de runner).
+# Machines Intel : les runners macOS arm64 de GitHub manquent de capacité (jobs annulés faute de runner).
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
