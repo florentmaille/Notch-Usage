@@ -66,11 +66,14 @@ final class ConnectionManager {
         }
         try credentials.write(token.accessToken, for: .oauthAccessToken)
         let provider = OAuthUsageProvider(http: http, credentials: credentials)
-        do { _ = try await provider.fetch() } catch {
+        // Le relevé de validation sert de cache : le coordinateur n'en refait pas un aussitôt (FR-009).
+        let snapshot: UsageSnapshot
+        do { snapshot = try await provider.fetch() } catch {
             try? credentials.delete(.oauthAccessToken)
             if error == .unauthorized { throw ConnectionError.claudeCodeExpired(token.subscriptionType) }
             throw ConnectionError.fetch(error)
         }
+        try? snapshots.saveSnapshot(snapshot)
         Log.auth.notice("connected via Claude Code session")
         return Account(connectionMethod: .claudeCode, subscriptionType: token.subscriptionType, status: .connected,
                        credentialRef: CredentialKey.oauthAccessToken.rawValue, connectedAt: Date())
@@ -99,7 +102,8 @@ final class ConnectionManager {
         do {
             let org = try await provider.resolveOrganization()
             defaults.set(org, forKey: Self.organizationKey)
-            _ = try await provider.fetch()
+            let snapshot = try await provider.fetch()
+            try? snapshots.saveSnapshot(snapshot)
         } catch {
             try? credentials.delete(.webSessionKey)
             throw ConnectionError.fetch(error)

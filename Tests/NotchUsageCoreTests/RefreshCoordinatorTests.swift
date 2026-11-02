@@ -52,13 +52,41 @@ struct RefreshCoordinatorTests {
     }
 
     @Test func cachedSnapshotShownBeforeFirstFetch() async throws {
-        let h = makeHarness([.success(snapB)], cached: snapA)
+        let old = makeSnapshot([("session", 10)], fetchedAt: .iso("2026-11-01T09:00:00Z"))
+        let h = makeHarness([.success(snapB)], cached: old)
         await h.coordinator.start()
         await h.clock.settle()
         let states = await h.collector.waitUntil { $0.last == .idle(self.snapB) }
-        #expect(states.first == .idle(snapA))
-        #expect(states.contains(.loading(previous: snapA)))
+        #expect(states.first == .idle(old))
+        #expect(states.contains(.loading(previous: old)))
         #expect(states.last == .idle(snapB))
+    }
+
+    /// FR-009 : un cache plus récent que l'intervalle (ex. relevé de validation à la connexion)
+    /// ne déclenche pas de requête immédiate ; le premier relevé tombe à l'échéance normale.
+    @Test func freshCacheDefersFirstFetch() async throws {
+        let recent = makeSnapshot([("session", 10)], fetchedAt: .iso("2026-11-01T09:59:30Z"))
+        let h = makeHarness([.success(snapB)], cached: recent)
+        await h.coordinator.start()
+        await h.clock.settle()
+        #expect(await h.provider.calls == 0)
+        #expect(await h.coordinator.state == .idle(recent))
+        await h.clock.advance(by: 149)
+        #expect(await h.provider.calls == 0)
+        await h.clock.advance(by: 1)
+        #expect(await h.provider.calls == 1)
+    }
+
+    @Test func refreshNowRespectsGapSinceFreshCache() async throws {
+        let recent = makeSnapshot([("session", 10)], fetchedAt: .iso("2026-11-01T09:59:30Z"))
+        let h = makeHarness([.success(snapB)], cached: recent)
+        await h.coordinator.start()
+        await h.clock.settle()
+        await h.coordinator.refreshNow()
+        await h.clock.settle()
+        #expect(await h.provider.calls == 0)
+        await h.clock.advance(by: 30)
+        #expect(await h.provider.calls == 1)
     }
 
     @Test func failureKeepsPreviousSnapshotAndBacksOff() async throws {

@@ -18,7 +18,7 @@ final class NotchPanelController {
 
     private let panel: NotchPanel
     private let hoverView: HoverView
-    private let hosting: NSHostingView<AnyView>
+    private let hosting: FirstMouseHostingView
     private var target: ScreenObserver.Target
     private var display: DisplayState?
     private var globalClickMonitor: Any?
@@ -29,7 +29,7 @@ final class NotchPanelController {
         self.target = target
         panel = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: 10))
         hoverView = HoverView(frame: panel.contentLayoutRect)
-        hosting = NSHostingView(rootView: rootView)
+        hosting = FirstMouseHostingView(rootView: rootView)
         hosting.translatesAutoresizingMaskIntoConstraints = false
         hoverView.addSubview(hosting)
         NSLayoutConstraint.activate([
@@ -48,6 +48,9 @@ final class NotchPanelController {
             return nil
         }
         panel.orderFrontRegardless()
+        #if DEBUG
+        installDebugHooks()
+        #endif
     }
 
     func update(target: ScreenObserver.Target) {
@@ -113,6 +116,54 @@ final class NotchPanelController {
         globalClickMonitor = nil
     }
 }
+
+/// Le panneau n'a pas le focus clavier quand il est ouvert au survol : sans ceci, SwiftUI
+/// consomme le premier clic et les boutons semblent ne pas répondre.
+final class FirstMouseHostingView: NSHostingView<AnyView> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
+#if DEBUG
+/// Crochets de test (build Debug uniquement) : simuler survol et clic dans le panneau, capturer son rendu,
+/// sans permission Accessibilité ni Enregistrement d'écran.
+/// `com.notchusage.debug.hover` objet "1"/"0", `.click` objet "x,y" (pt depuis le coin haut gauche), `.snapshot`.
+extension NotchPanelController {
+    fileprivate func installDebugHooks() {
+        let center = DistributedNotificationCenter.default()
+        center.addObserver(forName: .init("com.notchusage.debug.hover"), object: nil, queue: .main) { [weak self] note in
+            let inside = (note.object as? String) == "1"
+            MainActor.assumeIsolated { self?.onHoverChange?(inside) }
+        }
+        center.addObserver(forName: .init("com.notchusage.debug.click"), object: nil, queue: .main) { [weak self] note in
+            let parts = ((note.object as? String) ?? "").split(separator: ",").compactMap { Double($0) }
+            guard parts.count == 2 else { return }
+            MainActor.assumeIsolated { self?.debugClick(x: parts[0], y: parts[1]) }
+        }
+        center.addObserver(forName: .init("com.notchusage.debug.snapshot"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.debugSnapshot() }
+        }
+    }
+
+    private func debugClick(x: Double, y: Double) {
+        let point = NSPoint(x: x, y: panel.frame.height - y)
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                                 windowNumber: panel.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) else { continue }
+            panel.sendEvent(event)
+        }
+        Log.app.notice("debug click at \(x),\(y) key=\(self.panel.isKeyWindow)")
+    }
+
+    private func debugSnapshot() {
+        let view = hoverView
+        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("notchusage-snapshot.png")
+        try? rep.representation(using: .png, properties: [:])?.write(to: url)
+        Log.app.notice("debug snapshot \(url.path, privacy: .public) \(Int(view.bounds.width))x\(Int(view.bounds.height))")
+    }
+}
+#endif
 
 /// Zone de survol et de clic couvrant tout le panneau.
 final class HoverView: NSView {

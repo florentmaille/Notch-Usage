@@ -52,6 +52,14 @@ public actor RefreshCoordinator {
         ledger = try? store.loadLedger()
         if let cached = try? store.loadSnapshot() {
             publish(.idle(cached))
+            // Cache récent (relevé de validation, redémarrage après réglage) : il compte comme
+            // dernière requête, le premier relevé attend l'échéance normale (FR-009).
+            let age = clock.now.timeIntervalSince(cached.fetchedAt)
+            let interval = policy.delayAfterSuccess().timeInterval
+            if age >= 0, age < interval {
+                lastRequestAt = cached.fetchedAt
+                overrideDelay = .seconds(interval - age)
+            }
         }
         loopTask = Task { [weak self] in await self?.runLoop() }
     }

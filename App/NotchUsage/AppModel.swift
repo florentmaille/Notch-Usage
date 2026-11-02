@@ -167,8 +167,10 @@ final class AppModel {
 
     /// Une ligne par relevé terminé : permet de compter les requêtes (budget, veille) sans rien de sensible.
     private static func logReading(_ state: FetchState, previous: FetchState) {
+        var wasLoading = false
+        if case .loading = previous { wasLoading = true }
         switch state {
-        case .idle(let snap?) where snap.fetchedAt != previous.snapshot?.fetchedAt:
+        case .idle(let snap?) where wasLoading:
             let summary = snap.limits.map { "\($0.id)=\(Int($0.utilization))" }.joined(separator: " ")
             Log.refresh.notice("reading ok: \(summary, privacy: .public)")
         case .failed(let error, _):
@@ -226,6 +228,7 @@ final class AppModel {
     // MARK: Connexion
 
     func connectWithClaudeCode() {
+        Log.auth.notice("connect requested: Claude Code (busy \(self.isConnecting))")
         guard !isConnecting else { return }
         isConnecting = true
         connectionError = nil
@@ -246,7 +249,13 @@ final class AppModel {
         }
     }
 
+    /// Reconnexion par la voie déjà choisie (étiquette « Sign in » de l'encoche).
+    func reconnect() {
+        if account?.connectionMethod == .browser || !claudeCodeAvailable { connectWithBrowser() } else { connectWithClaudeCode() }
+    }
+
     func connectWithBrowser() {
+        Log.auth.notice("connect requested: browser (window open \(self.loginWindow != nil))")
         guard loginWindow == nil else { return }
         connectionError = nil
         let window = BrowserLoginWindow(

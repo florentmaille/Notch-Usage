@@ -5,6 +5,7 @@ import SwiftUI
 struct CompactView: View {
     let display: DisplayState
     var pulse: Int = 0
+    var onReconnect: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -65,7 +66,9 @@ struct CompactView: View {
         case .connect:
             Text("Connect").foregroundStyle(.secondary)
         case .reauthRequired:
-            Text("Sign in").foregroundStyle(.orange)
+            Button { onReconnect?() } label: { Text("Sign in").foregroundStyle(.orange).underline() }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isButton)
         case .unsupported, .unavailable:
             Text("—").foregroundStyle(.secondary)
         }
