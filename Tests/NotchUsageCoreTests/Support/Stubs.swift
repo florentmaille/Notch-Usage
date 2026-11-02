@@ -103,6 +103,11 @@ actor TestClock: Clock {
     /// Avance le temps et réveille les dormeurs échus, un par un, dans l'ordre des échéances.
     func advance(by seconds: TimeInterval) async {
         let target = current.addingTimeInterval(seconds)
+        // La boucle peut ne pas encore dormir : sans cette attente, l'horloge avance à vide.
+        for _ in 0..<500 {
+            if !sleepers.isEmpty { break }
+            await Task.yield()
+        }
         while let next = sleepers.filter({ $0.deadline <= target }).min(by: { $0.deadline < $1.deadline }) {
             current = max(current, next.deadline)
             nowBox.value = current
