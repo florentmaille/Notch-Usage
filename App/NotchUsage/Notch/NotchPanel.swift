@@ -22,4 +22,7 @@ final class NotchPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+
+    /// AppKit repousse par défaut les fenêtres sous la barre de menus : le panneau doit couvrir l'encoche.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
