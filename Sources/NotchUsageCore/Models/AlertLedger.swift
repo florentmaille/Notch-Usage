@@ -29,6 +29,16 @@ public struct AlertLedger: Codable, Sendable, Equatable {
             self.periodKey = periodKey
             self.firedLevels = firedLevels
         }
+
+        /// Même période si les heures de reset diffèrent de moins de 10 min : l'API fait varier les
+        /// fractions de seconde, alors qu'une nouvelle période décale le reset de 5 h ou 7 j.
+        public func isSamePeriod(as resetsAt: Date?) -> Bool {
+            switch (periodKey, resetsAt) {
+            case (nil, nil): return true
+            case let (a?, b?): return abs(a.timeIntervalSince(b)) < 600
+            default: return false
+            }
+        }
     }
 
     public var entries: [String: Entry]

@@ -9,7 +9,7 @@ public struct AlertEvaluator: Sendable {
         var events: [AlertEvent] = []
         for limit in snapshot.limits {
             var entry = ledger.entries[limit.id] ?? .init(periodKey: limit.resetsAt)
-            if entry.periodKey != limit.resetsAt {
+            if !entry.isSamePeriod(as: limit.resetsAt) {
                 entry = .init(periodKey: limit.resetsAt)
             }
             if settings.enabled {

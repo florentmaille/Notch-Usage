@@ -13,7 +13,8 @@ struct ExpandedView: View {
             switch d.content {
             case .limits:
                 ForEach(d.limits) { limit in
-                    LimitRow(limit: limit, now: model.now, highlighted: d.alertLevel != .none && limit.id == d.headline?.limit.id)
+                    LimitRow(limit: limit, now: model.now, highlighted: d.alertLevel != .none && limit.id == d.headline?.limit.id,
+                             settings: model.alertSettings)
                 }
             case .reauthRequired:
                 statusBlock(icon: "exclamationmark.lock", title: String(localized: "Reconnect required"),
@@ -105,6 +106,7 @@ struct LimitRow: View {
     let limit: UsageLimit
     let now: Date
     let highlighted: Bool
+    let settings: AlertSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -115,7 +117,7 @@ struct LimitRow: View {
                     .font(.subheadline.weight(.semibold)).monospacedDigit()
                     .foregroundStyle(color)
             }
-            ProgressView(value: limit.utilization, total: 100).tint(color)
+            UsageBar(value: limit.utilization, color: color).frame(height: 5)
             HStack {
                 Text(resetText).font(.caption).foregroundStyle(.secondary)
                 Spacer()
@@ -127,7 +129,7 @@ struct LimitRow: View {
         }
         .padding(.vertical, 2)
         .padding(.horizontal, highlighted ? 6 : 0)
-        .background(highlighted ? Color.orange.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
+        .background(highlighted ? color.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(LimitLabel.text(for: limit)), \(Int(limit.utilization.rounded())) percent, resets \(RelativeTimeFormatter.untilReset(limit.resetsAt, now: now))")
     }
@@ -139,8 +141,10 @@ struct LimitRow: View {
     }
 
     private var color: Color {
-        if limit.isBlocked || limit.utilization >= 95 { return .red }
-        if limit.utilization >= 80 { return .orange }
+        if limit.isBlocked { return .red }
+        guard settings.enabled else { return .white }
+        if limit.utilization >= Double(settings.criticalThreshold) { return .red }
+        if limit.utilization >= Double(settings.warningThreshold) { return .orange }
         return .white
     }
 }

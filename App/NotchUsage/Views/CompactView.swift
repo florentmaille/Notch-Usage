@@ -53,14 +53,13 @@ struct CompactView: View {
         switch display.content {
         case .limits:
             if let h = display.headline {
-                HStack(spacing: 5) {
-                    Gauge(value: h.limit.utilization, in: 0...100) { EmptyView() }
-                        .gaugeStyle(.accessoryLinearCapacity)
-                        .tint(tint)
-                        .frame(width: 30)
+                HStack(spacing: 4) {
+                    UsageBar(value: h.limit.utilization, color: tint)
+                        .frame(width: 18, height: 4)
                     Text(h.isBlocked ? "FULL" : "\(Int(h.limit.utilization.rounded()))%")
                         .monospacedDigit()
                         .foregroundStyle(tint)
+                        .fixedSize()
                 }
             }
         case .connect:
@@ -101,6 +100,22 @@ struct CompactView: View {
             guard let h = display.headline else { return "Notch Usage" }
             let reset = RelativeTimeFormatter.untilReset(h.limit.resetsAt, now: Date())
             return "\(LimitLabel.text(for: h.limit)), \(Int(h.limit.utilization.rounded())) percent, resets \(reset)"
+        }
+    }
+}
+
+/// Barre piste + remplissage : `ProgressView` et `Gauge` rendent mal sur fond noir (piste invisible, jauge réduite à un point).
+struct UsageBar: View {
+    let value: Double
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.18))
+                Capsule().fill(color)
+                    .frame(width: max(geo.size.height, geo.size.width * min(max(value, 0), 100) / 100))
+            }
         }
     }
 }

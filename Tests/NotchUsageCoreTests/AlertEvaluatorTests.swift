@@ -21,6 +21,26 @@ struct AlertEvaluatorTests {
         #expect(e3.isEmpty)
     }
 
+    /// L'API renvoie resets_at avec des fractions de seconde qui varient d'un appel à l'autre,
+    /// et l'encodage du registre sur disque les tronque : même période malgré l'écart.
+    @Test func jitteredResetTimeIsSamePeriod() throws {
+        let (l1, e1) = evaluator.evaluate(snap(85, resetsAt: reset.addingTimeInterval(-0.488)), settings: settings, ledger: AlertLedger())
+        #expect(e1.count == 1)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let reloaded = try decoder.decode(AlertLedger.self, from: encoder.encode(l1))
+        let (l2, e2) = evaluator.evaluate(snap(86, resetsAt: reset.addingTimeInterval(-0.912)), settings: settings, ledger: reloaded)
+        #expect(e2.isEmpty)
+        let (_, e3) = evaluator.evaluate(snap(87, resetsAt: reset.addingTimeInterval(1)), settings: settings, ledger: l2)
+        #expect(e3.isEmpty)
+    }
+
+    @Test func nextWindowIsNewPeriod() {
+        let (l1, _) = evaluator.evaluate(snap(85), settings: settings, ledger: AlertLedger())
+        let (_, e2) = evaluator.evaluate(snap(85, resetsAt: reset.addingTimeInterval(5 * 3600)), settings: settings, ledger: l1)
+        #expect(e2 == [AlertEvent(limitID: "session", level: .warning)])
+    }
+
     @Test func criticalFiresWhenCrossing95() {
         let (l1, _) = evaluator.evaluate(snap(93), settings: settings, ledger: AlertLedger())
         let (_, e2) = evaluator.evaluate(snap(96), settings: settings, ledger: l1)

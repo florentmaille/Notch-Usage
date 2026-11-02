@@ -41,7 +41,7 @@ final class NotchPanelController {
         panel.contentView = hoverView
         hoverView.onEnter = { [weak self] in self?.scheduleHover(true) }
         hoverView.onExit = { [weak self] in self?.scheduleHover(false) }
-        hoverView.onClick = { [weak self] in self?.onToggleClick?() }
+        panel.onMouseDown = { [weak self] point in self?.handleMouseDown(at: point) }
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.keyCode == 53 else { return event } // Échap
             self.onDismiss?()
@@ -96,6 +96,14 @@ final class NotchPanelController {
         panel.close()
     }
 
+    /// FR-012 : un clic épingle ; une fois épinglé, seul un clic sur la bande de l'encoche désépingle
+    /// (les clics dans le contenu servent aux boutons et aux réglages).
+    private func handleMouseDown(at point: NSPoint) {
+        guard let display else { return }
+        let inStrip = point.y >= panel.frame.height - display.layout.height
+        if display.panel != .pinned || inStrip { onToggleClick?() }
+    }
+
     private func scheduleHover(_ inside: Bool) {
         hoverWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.onHoverChange?(inside) }
@@ -139,6 +147,14 @@ extension NotchPanelController {
             guard parts.count == 2 else { return }
             MainActor.assumeIsolated { self?.debugClick(x: parts[0], y: parts[1]) }
         }
+        center.addObserver(forName: .init("com.notchusage.debug.escape"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                                             windowNumber: self.panel.windowNumber, context: nil, characters: "\u{1b}",
+                                                             charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53) else { return }
+                NSApp.postEvent(event, atStart: false)
+            }
+        }
         center.addObserver(forName: .init("com.notchusage.debug.snapshot"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.debugSnapshot() }
         }
@@ -149,7 +165,7 @@ extension NotchPanelController {
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
                                                  windowNumber: panel.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) else { continue }
-            panel.sendEvent(event)
+            NSApp.postEvent(event, atStart: false)
         }
         Log.app.notice("debug click at \(x),\(y) key=\(self.panel.isKeyWindow)")
     }
@@ -169,7 +185,6 @@ extension NotchPanelController {
 final class HoverView: NSView {
     var onEnter: (() -> Void)?
     var onExit: (() -> Void)?
-    var onClick: (() -> Void)?
     private var tracking: NSTrackingArea?
 
     override func updateTrackingAreas() {
@@ -182,9 +197,5 @@ final class HoverView: NSView {
 
     override func mouseEntered(with event: NSEvent) { onEnter?() }
     override func mouseExited(with event: NSEvent) { onExit?() }
-    override func mouseDown(with event: NSEvent) {
-        super.mouseDown(with: event)
-        onClick?()
-    }
     override var acceptsFirstResponder: Bool { true }
 }
