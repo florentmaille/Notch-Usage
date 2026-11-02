@@ -21,7 +21,7 @@ struct ExpandedView: View {
                 reconnectButtons
             case .unsupported:
                 statusBlock(icon: "questionmark.circle", title: String(localized: "Plan not supported"),
-                            message: String(localized: "This Claude plan does not expose usage limits. Pro or Max is required."))
+                            message: String(localized: "This Claude plan does not expose usage limits. Pro, Max or Team is required."))
             case .unavailable:
                 statusBlock(icon: "wifi.exclamationmark", title: String(localized: "Data unavailable"),
                             message: String(localized: "Waiting for the first reading…"))
@@ -70,7 +70,7 @@ struct ExpandedView: View {
 
     private var reauthMessage: String {
         model.account?.connectionMethod == .claudeCode
-            ? String(localized: "Open Claude Code once to renew its session, or sign in with your browser.")
+            ? String(localized: "Your Claude Code session has expired. Run claude in Terminal once to renew it: Notch Usage reconnects automatically within 30 seconds. Or sign in with your browser.")
             : String(localized: "Your claude.ai session has expired. Sign in again.")
     }
 

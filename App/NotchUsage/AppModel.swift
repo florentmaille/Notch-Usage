@@ -86,6 +86,7 @@ final class AppModel {
                 try? await Task.sleep(for: .seconds(30), tolerance: .seconds(5))
                 self?.now = Date()
                 self?.recompute()
+                await self?.recoverIfExpired()
             }
         }
         if let account, account.status == .connected { startCoordinator(for: account) }
@@ -165,6 +166,12 @@ final class AppModel {
         }
     }
 
+    /// Tant que le jeton de Claude Code est expiré, relit le Trousseau sans dialogue à chaque tick (30 s).
+    private func recoverIfExpired() async {
+        guard let account, account.connectionMethod == .claudeCode, account.status == .expired, !isConnecting else { return }
+        await handleReauth()
+    }
+
     private func markExpired() {
         guard var account else { return }
         account.status = .expired
@@ -201,6 +208,10 @@ final class AppModel {
                 let account = try await connection.connectWithClaudeCode()
                 setAccount(account)
                 startCoordinator(for: account)
+            } catch ConnectionError.claudeCodeExpired(let plan) {
+                fetchState = .idle(nil)
+                setAccount(Account(connectionMethod: .claudeCode, subscriptionType: plan, status: .expired,
+                                   credentialRef: CredentialKey.oauthAccessToken.rawValue, connectedAt: Date()))
             } catch {
                 connectionError = error.localizedDescription
                 Log.auth.error("Claude Code connection failed: \(error.localizedDescription, privacy: .public)")

@@ -8,6 +8,7 @@ public enum ConnectionMethod: String, Codable, Sendable, Equatable {
 public enum SubscriptionType: String, Codable, Sendable, Equatable {
     case pro
     case max
+    case team
     case unsupported
 
     /// Valeur brute du service (`"pro"`, `"max"`, `"team"`…) → type connu ou `unsupported`.
@@ -15,6 +16,7 @@ public enum SubscriptionType: String, Codable, Sendable, Equatable {
         switch serviceValue?.lowercased() {
         case "pro": self = .pro
         case "max": self = .max
+        case "team": self = .team
         default: self = .unsupported
         }
     }

@@ -5,6 +5,12 @@ public struct ClaudeCodeToken: Sendable, Equatable {
     public let accessToken: String
     public let subscriptionType: SubscriptionType
     public let expiresAt: Date?
+
+    /// Marge de 60 s : un jeton qui expire dans la minute échouerait au relevé.
+    public func isExpired(at now: Date) -> Bool {
+        guard let expiresAt else { return false }
+        return expiresAt.timeIntervalSince(now) < 60
+    }
 }
 
 public enum ClaudeCodeCredentialReader {

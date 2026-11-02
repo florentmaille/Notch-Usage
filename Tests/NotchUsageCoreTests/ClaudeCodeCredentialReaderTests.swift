@@ -30,10 +30,31 @@ struct ClaudeCodeCredentialReaderTests {
         }
     }
 
-    @Test func unknownSubscriptionIsUnsupported() throws {
+    @Test func teamSubscription() throws {
         let json = #"{"claudeAiOauth":{"accessToken":"sk-ant-oat01-x","subscriptionType":"team"}}"#
         let token = try ClaudeCodeCredentialReader.accessToken(from: Data(json.utf8))
-        #expect(token.subscriptionType == .unsupported)
+        #expect(token.subscriptionType == .team)
         #expect(token.expiresAt == nil)
+    }
+
+    @Test func unknownSubscriptionIsUnsupported() throws {
+        let json = #"{"claudeAiOauth":{"accessToken":"sk-ant-oat01-x","subscriptionType":"free"}}"#
+        let token = try ClaudeCodeCredentialReader.accessToken(from: Data(json.utf8))
+        #expect(token.subscriptionType == .unsupported)
+    }
+
+    @Test func expiry() throws {
+        let token = try ClaudeCodeCredentialReader.accessToken(from: Fixture.data("claude-code-credentials.json"))
+        let exp = Date(timeIntervalSince1970: 1_762_005_600)
+        #expect(!token.isExpired(at: exp.addingTimeInterval(-120)))
+        // Marge de 60 s : un jeton qui expire dans la minute est déjà inutilisable pour un relevé.
+        #expect(token.isExpired(at: exp.addingTimeInterval(-30)))
+        #expect(token.isExpired(at: exp.addingTimeInterval(3600)))
+    }
+
+    @Test func noExpiryIsNeverExpired() throws {
+        let json = #"{"claudeAiOauth":{"accessToken":"sk-ant-oat01-x"}}"#
+        let token = try ClaudeCodeCredentialReader.accessToken(from: Data(json.utf8))
+        #expect(!token.isExpired(at: .distantFuture))
     }
 }
