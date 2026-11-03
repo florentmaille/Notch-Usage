@@ -12,7 +12,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Titre d'abord, retour dessous (retour utilisateur, 013) : « Back » ne colle plus à l'île.
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("Settings").font(.headline)
                 Button { model.showSettings = false } label: { Label("Back", systemImage: "chevron.left").contentShape(Rectangle()) }
                     .buttonStyle(.borderless)
