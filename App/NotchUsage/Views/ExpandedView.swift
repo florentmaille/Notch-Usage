@@ -175,10 +175,11 @@ struct LimitRow: View {
 
     private var color: Color {
         if limit.isBlocked { return .red }
-        guard settings.enabled else { return .white }
-        if limit.utilization >= Double(settings.criticalThreshold) { return .red }
-        if limit.utilization >= Double(settings.warningThreshold) { return .orange }
-        return .white
+        switch AlertEvaluator().level(for: limit, settings: settings) {
+        case .critical: return .red
+        case .warning: return .orange
+        case .none: return .white
+        }
     }
 }
 

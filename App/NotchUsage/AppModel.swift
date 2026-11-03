@@ -3,6 +3,7 @@ import Foundation
 import NotchUsageCore
 import Observation
 import SwiftUI
+import os
 
 /// Relie NotchUsageCore à l'UI : réglages, compte, états de relevé, alertes, interaction, écran, énergie.
 @MainActor
@@ -16,7 +17,7 @@ final class AppModel {
     @ObservationIgnored let alertEvaluator = AlertEvaluator()
     @ObservationIgnored private(set) lazy var connection = ConnectionManager(credentials: credentials, claudeCode: ClaudeCodeKeychainReader(), http: http, snapshots: snapshots, defaults: defaults)
     @ObservationIgnored private let power = PowerObserver()
-    @ObservationIgnored private let screens = ScreenObserver()
+    @ObservationIgnored let screens = ScreenObserver()
     @ObservationIgnored private let fullscreenObserver = FullscreenObserver()
     @ObservationIgnored private var panel: NotchPanelController?
     @ObservationIgnored private var coordinator: RefreshCoordinator?
@@ -40,8 +41,13 @@ final class AppModel {
     /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
     private(set) var alertPulse = 0
     /// Battements du halo (006) : incrémenté sur le tick de 30 s selon `signal.pulse`, jamais remis à zéro.
-    private(set) var beat = 0
-    @ObservationIgnored private var tickCount = 0
+    /// Battements du halo (006) : `BeatCounter` sur le tick de 30 s, jamais remis à zéro.
+    private var beatCounter = BeatCounter()
+    var beat: Int { beatCounter.beats }
+    /// Raisons de pause en cours (veille, verrou, économie d'énergie) : le tick n'y recalcule rien.
+    @ObservationIgnored private var pausedReasons: Set<PauseReason> = []
+    /// Réglages d'alerte lus par le hook du coordinateur à chaque relevé : un changement de seuil ne redémarre rien.
+    @ObservationIgnored private let alertSettingsBox: OSAllocatedUnfairLock<AlertSettings>
     var hover = false { didSet { recompute() } }
     var pinned = false { didSet { recompute() } }
     var fullscreen = false { didSet { recompute() } }
@@ -70,11 +76,9 @@ final class AppModel {
             settings.interval = .seconds(defaults.double(forKey: Self.intervalKey))
         }
         refreshSettings = settings
-        if let data = defaults.data(forKey: Self.alertsKey), let a = try? JSONDecoder().decode(AlertSettings.self, from: data) {
-            alertSettings = a
-        } else {
-            alertSettings = AlertSettings()
-        }
+        let storedAlerts = defaults.data(forKey: Self.alertsKey).flatMap { try? JSONDecoder().decode(AlertSettings.self, from: $0) } ?? AlertSettings()
+        alertSettings = storedAlerts
+        alertSettingsBox = OSAllocatedUnfairLock(initialState: storedAlerts)
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
@@ -89,80 +93,10 @@ final class AppModel {
     // MARK: Cycle de vie
 
     #if DEBUG
-    /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
-    /// `com.notchusage.debug.demo` objet "normal" | "far" | "near" | "imminent25" | "imminent" | "warning" | "critical" | "reauth" | "off" ;
-    /// `com.notchusage.debug.tick` force un tick de 30 s (006).
-    @ObservationIgnored private var demoState: FetchState?
-    @ObservationIgnored private var demoForecasts: [String: Forecast] = [:]
-
-    private func installDemoHook() {
-        DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.demo"), object: nil, queue: .main) { [weak self] note in
-            let mode = (note.object as? String) ?? "off"
-            MainActor.assumeIsolated { self?.applyDemo(mode) }
-        }
-        DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.tick"), object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tick() }
-        }
-        // `com.notchusage.debug.layout` objet "pill" | "notch" : simule un écran sans encoche pour les captures.
-        DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.layout"), object: nil, queue: .main) { [weak self] note in
-            let mode = (note.object as? String) ?? "notch"
-            MainActor.assumeIsolated {
-                guard let self, let current = self.screens.current else { return }
-                let layout = mode == "pill"
-                    ? NotchGeometry.layout(screenWidth: current.screen.frame.width, safeAreaTop: 0, auxLeftWidth: nil, auxRightWidth: nil)
-                    : current.layout
-                self.applyScreen(ScreenObserver.Target(screen: current.screen, layout: layout))
-            }
-        }
-    }
-
-    private func applyDemo(_ mode: String) {
-        let now = Date()
-        func snapshot(_ session: Double, _ weekly: Double, _ model: Double,
-                      sessionReset: TimeInterval = 2 * 3600 + 14 * 60, age: TimeInterval = 0) -> UsageSnapshot {
-            UsageSnapshot(limits: [
-                UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: session, resetsAt: now.addingTimeInterval(sessionReset)),
-                UsageLimit(id: "weekly_all", kind: .weeklyAll, modelName: nil, utilization: weekly, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
-                UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: model, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
-            ], fetchedAt: now.addingTimeInterval(-age))
-        }
-        demoForecasts = [:]
-        switch mode {
-        case "normal": demoState = .idle(snapshot(42, 27, 35))
-        case "far":
-            demoState = .idle(snapshot(55, 30, 28, sessionReset: 4 * 3600))
-            demoForecasts = ["session": .blockAt(now.addingTimeInterval(125 * 60))]
-        case "near":
-            demoState = .idle(snapshot(78, 30, 28))
-            demoForecasts = ["session": .blockAt(now.addingTimeInterval(40 * 60))]
-        case "imminent25":
-            demoState = .idle(snapshot(85, 30, 28, sessionReset: 3600))
-            demoForecasts = ["session": .blockAt(now.addingTimeInterval(25 * 60))]
-        case "imminent":
-            demoState = .idle(snapshot(92, 30, 28, sessionReset: 3600))
-            demoForecasts = ["session": .blockAt(now.addingTimeInterval(8 * 60))]
-        case "pace":
-            // Historique synthétique passé par le vrai calcul : 29 → 55 % en 40 min, reset dans 4 h.
-            let current = snapshot(55, 30, 28, sessionReset: 4 * 3600)
-            var synthetic = UsageHistory()
-            for (minutesAgo, pct) in [(40.0, 29.0), (30, 36), (20, 42), (10, 49)] {
-                synthetic = synthetic.appending(snapshot(pct, 30, 28, sessionReset: 4 * 3600, age: minutesAgo * 60))
-            }
-            synthetic = synthetic.appending(current)
-            demoState = .idle(current)
-            demoForecasts = PaceForecaster.forecasts(history: synthetic, snapshot: current, now: now)
-        case "warning": demoState = .idle(snapshot(83, 38, 64))
-        case "critical":
-            demoState = .idle(snapshot(97, 52, 71))
-            demoForecasts = ["session": .blockAt(now.addingTimeInterval(50 * 60))]
-        case "blocked": demoState = .idle(snapshot(100, 52, 71, sessionReset: 3600 + 2 * 60))
-        case "offline": demoState = .failed(.network(.notConnectedToInternet), previous: snapshot(42, 27, 35, sessionReset: 3600 + 49 * 60, age: 25 * 60))
-        case "reauth": demoState = .reauthRequired(previous: nil)
-        default: demoState = nil
-        }
-        self.now = now
-        recompute()
-    }
+    /// Mode démo (build Debug) : voir `AppModel+Demo.swift`.
+    @ObservationIgnored var demoState: FetchState?
+    @ObservationIgnored var demoForecasts: [String: Forecast] = [:]
+    @ObservationIgnored var demoObservers: [any NSObjectProtocol] = []
     #endif
 
     func start() {
@@ -205,9 +139,12 @@ final class AppModel {
         tickTask?.cancel()
         stateTask?.cancel()
         alertTask?.cancel()
-        let c = coordinator
-        Task { await c?.stop() }
+        // Appelé à la terminaison : le processus s'arrête, inutile d'attendre l'arrêt du coordinateur.
         coordinator = nil
+        #if DEBUG
+        demoObservers.forEach { DistributedNotificationCenter.default().removeObserver($0) }
+        demoObservers = []
+        #endif
         power.stop()
         screens.stop()
         fullscreenObserver.stop()
@@ -215,7 +152,7 @@ final class AppModel {
         panel = nil
     }
 
-    private func applyScreen(_ target: ScreenObserver.Target) {
+    func applyScreen(_ target: ScreenObserver.Target) {
         layout = target.layout
         fullscreenObserver.screen = target.screen
         if let panel {
@@ -238,10 +175,10 @@ final class AppModel {
         let old = coordinator
         Task { await old?.stop() }
         let evaluator = alertEvaluator
-        let settings = alertSettings
+        let box = alertSettingsBox
         let c = RefreshCoordinator(provider: connection.makeProvider(for: account), policy: RefreshPolicy(settings: refreshSettings),
                                    store: snapshots, clock: SystemClock(),
-                                   alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: settings, ledger: ledger ?? AlertLedger()) })
+                                   alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: box.withLock { $0 }, ledger: ledger ?? AlertLedger()) })
         coordinator = c
         let states = c.states
         stateTask = Task { [weak self] in
@@ -329,23 +266,23 @@ final class AppModel {
 
     /// Tick de 30 s : avance l'heure, recalcule, puis compte un battement d'après le rythme lu *avant* le recalcul,
     /// pour que le tick qui fait entrer l'état imminent ne batte pas (006, R3). Une minute = un tick sur deux.
-    private func tick() {
+    /// Tick de 30 s : rien pendant une pause (veille, verrou) ; sinon recalcul puis cadence du battement d'après le
+    /// rythme lu avant le recalcul (006, R3).
+    func tick() {
+        guard pausedReasons.isEmpty else { return }
         let rhythm = signal.pulse
-        now = Date()
         recompute()
-        tickCount += 1
-        if rhythm == .everyHalfMinute || (rhythm == .everyMinute && tickCount.isMultiple(of: 2)) {
-            beat += 1
-        }
+        beatCounter.tick(rhythm: rhythm)
     }
 
     private func pause(_ reason: PauseReason) {
+        pausedReasons.insert(reason)
         let c = coordinator
         Task { await c?.pause(reason: reason) }
     }
 
     private func resume(_ reason: PauseReason) {
-        now = Date()
+        pausedReasons.remove(reason)
         let c = coordinator
         Task { await c?.resume(reason: reason) }
         recompute()
@@ -484,10 +421,11 @@ final class AppModel {
         saveAlertSettings()
     }
 
-    /// Les nouveaux seuils s'appliquent au cycle suivant (US2 sc. 4) : le hook capture la valeur.
+    /// Les nouveaux seuils s'appliquent au relevé suivant (US2 sc. 4) : le hook lit la boîte, sans redémarrage.
     private func saveAlertSettings() {
         if let data = try? JSONEncoder().encode(alertSettings) { defaults.set(data, forKey: Self.alertsKey) }
-        restartIfConnected()
+        let current = alertSettings
+        alertSettingsBox.withLock { $0 = current }
         recompute()
     }
 
@@ -513,7 +451,8 @@ final class AppModel {
 
     // MARK: Dérivation
 
-    private func recompute() {
+    func recompute() {
+        now = Date()
         var connected = account != nil && account?.status != .disconnected
         var state: FetchState = (account?.status == .expired) ? .reauthRequired(previous: nil) : fetchState
         #if DEBUG
@@ -533,8 +472,7 @@ final class AppModel {
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
-        let narrow = signal.isSilent || (display.mode == .notch && !signal.isBand)
-        panel?.apply(display, narrow: narrow, edgePad: display.mode == .notch ? (signal.edge?.outerPad ?? 0) : 0)
+        panel?.apply(display, narrow: signal.collapsesToNotch(in: display), edgePad: display.mode == .notch ? (signal.edge?.outerPad ?? 0) : 0)
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
