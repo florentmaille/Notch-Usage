@@ -26,7 +26,8 @@ struct NotchRootView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(alignment: .top) { NotchShape(display: d) }
+        // Forme et arrondi suivent la fenêtre sans délai : animés, ils arrivaient après le cadre (coins carrés).
+        .background(alignment: .top) { NotchShape(display: d).transaction(value: d.isExpanded) { $0.animation = nil } }
         // Oreille droite et largeur en fondu (012, FR-011) ; le battement a sa propre animation.
         .animation(reduceMotion ? nil : .easeOut(duration: NotchPanelController.islandFade), value: s.island)
         .animation(.easeOut(duration: d.isExpanded ? 0.18 : 0.12), value: d.isExpanded)
