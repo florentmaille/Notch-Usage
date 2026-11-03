@@ -44,12 +44,14 @@
 
 ## R4. Dessin du liseré
 
-- **Decision**: la forme noire existante (`UnevenRoundedRectangle`, coins bas 12 pt) reçoit un
-  `overlay` qui trace son contour avec l'épaisseur du palier, masqué à la moitié inférieure : le
-  trait suit le bord bas et les deux arrondis, jamais le bord haut (sous la bordure de l'écran).
-  Le halo est un `shadow` sur ce même trait, uniquement pour imminent et épuisé.
-- **Rationale**: une seule forme, pas de chemin dessiné à la main ; le contour arrondi donne les
-  coins « qui glissent » de la planche. Un `shadow` statique est rendu une fois.
+- **Decision** (corrigée après essai sur machine) : dans l'encoche, le trait est tracé **à l'extérieur**
+  de la forme noire : un contour arrondi dont le bord intérieur coïncide avec l'encoche physique,
+  masqué à la hauteur des arrondis, et le panneau déborde de l'épaisseur du trait (plus 8 pt de halo
+  pour imminent et épuisé). Rien de ce qui est dessiné sous le cutout physique n'est visible : un trait
+  intérieur n'apparaît que dans les captures, jamais à l'œil. En pilule, entièrement visible, le trait
+  reste à l'intérieur sur la moitié basse des arrondis. Le halo est un `shadow` statique.
+- **Rationale**: le liseré doit être visible sans oreilles, donc hors de l'encoche ; un contour
+  arrondi offset donne les coins « qui glissent » de la planche sans chemin dessiné à la main.
 - **Alternatives considered**: `border-bottom` à la main avec deux arcs (fragile aux changements
   de rayon) ; `Rectangle` de 2 pt sous la forme (coins carrés, contraire à la planche).
 

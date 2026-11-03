@@ -513,7 +513,7 @@ final class AppModel {
         panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
         let narrow = signal.isSilent || (display.mode == .notch && !signal.isBand)
-        panel?.apply(display, narrow: narrow, halo: signal.edge?.hasHalo ?? false)
+        panel?.apply(display, narrow: narrow, edgePad: display.mode == .notch ? (signal.edge?.outerPad ?? 0) : 0)
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {

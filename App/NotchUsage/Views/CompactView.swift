@@ -174,6 +174,12 @@ extension NotchSignal.Edge {
     }
 
     var hasHalo: Bool { self == .imminent || self == .exhausted }
+
+    /// Débord du halo au-delà du trait, transparent.
+    static let haloPad: CGFloat = 8
+
+    /// Débord hors de l'encoche physique : le trait, plus le halo s'il y en a un.
+    var outerPad: CGFloat { lineWidth + (hasHalo ? Self.haloPad : 0) }
 }
 
 /// Barre piste + remplissage du panneau déplié : `ProgressView` et `Gauge` rendent mal sur fond noir.

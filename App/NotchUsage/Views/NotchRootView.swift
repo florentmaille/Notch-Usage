@@ -25,9 +25,9 @@ struct NotchRootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(alignment: .top) {
-            if !s.isSilent {
-                NotchShape(display: d, edge: s.edge).transition(.opacity)
-            }
+            // Toujours présente, seule son opacité s'anime : un retrait conditionnel saccade à la sortie.
+            NotchShape(display: d, edge: s.edge, narrow: s.isSilent || (d.mode == .notch && !s.isBand))
+                .opacity(s.isSilent ? 0 : 1)
         }
         .animation(reduceMotion ? nil : .easeOut(duration: NotchPanelController.silenceFade), value: s.isSilent)
         .animation(.easeOut(duration: d.isExpanded ? 0.18 : 0.12), value: d.isExpanded)
@@ -35,28 +35,44 @@ struct NotchRootView: View {
 }
 
 /// Fond noir qui prolonge l'encoche (ou dessine la pilule), arrondi en bas, avec le liseré du palier (005).
+/// Dans l'encoche, le liseré est tracé à l'extérieur de la forme : sous le cutout physique rien ne s'affiche.
 private struct NotchShape: View {
     let display: DisplayState
     let edge: NotchSignal.Edge?
+    /// Forme réduite à l'encoche physique (silence ou liseré seul) plutôt qu'au panneau entier.
+    let narrow: Bool
 
     var body: some View {
         let expanded = display.isExpanded
-        let radius: CGFloat = display.mode == .notch ? (expanded ? 18 : 12) : 14
-        let shape = UnevenRoundedRectangle(topLeadingRadius: display.mode == .pill ? radius : 0,
-                                           bottomLeadingRadius: radius, bottomTrailingRadius: radius,
-                                           topTrailingRadius: display.mode == .pill ? radius : 0, style: .continuous)
-        shape.fill(.black)
-            .overlay {
-                if let edge {
-                    // Contour tracé à l'intérieur, masqué à la hauteur des arrondis : le trait suit le bord bas
-                    // et ses coins, jamais les flancs.
-                    shape.strokeBorder(edge.color, lineWidth: edge.lineWidth)
-                        .mask(alignment: .bottom) { Rectangle().frame(height: radius) }
-                        .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
-                }
+        let notch = display.mode == .notch
+        let radius: CGFloat = notch ? (expanded ? 18 : 12) : 14
+        ZStack(alignment: .top) {
+            if let edge, notch {
+                // Contour extérieur : son bord intérieur coïncide avec l'encoche, masqué à la hauteur des arrondis.
+                let w = edge.lineWidth
+                UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w, bottomTrailingRadius: radius + w,
+                                       topTrailingRadius: 0, style: .continuous)
+                    .strokeBorder(edge.color, lineWidth: w)
+                    .frame(width: narrow ? display.layout.width + 2 * w : nil, height: display.layout.height + w)
+                    .mask(alignment: .bottom) { Rectangle().frame(height: radius + w) }
+                    .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
             }
-            .frame(height: display.fullscreenHidden ? 0 : nil)
-            .opacity(display.fullscreenHidden ? 0 : 1)
+            let shape = UnevenRoundedRectangle(topLeadingRadius: notch ? 0 : radius,
+                                               bottomLeadingRadius: radius, bottomTrailingRadius: radius,
+                                               topTrailingRadius: notch ? 0 : radius, style: .continuous)
+            shape.fill(.black)
+                .overlay {
+                    if let edge, !notch {
+                        // Pilule : entièrement visible, le trait reste à l'intérieur, sur la moitié basse des arrondis.
+                        shape.strokeBorder(edge.color, lineWidth: edge.lineWidth)
+                            .mask(alignment: .bottom) { Rectangle().frame(height: radius) }
+                            .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
+                    }
+                }
+                .frame(width: narrow && notch ? display.layout.width : nil, height: narrow ? display.layout.height : nil)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .opacity(display.fullscreenHidden ? 0 : 1)
     }
 }
 

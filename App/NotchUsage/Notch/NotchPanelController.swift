@@ -13,8 +13,6 @@ final class NotchPanelController {
     var contentHeight: CGFloat = expandedHeight
     var showsSettings = false
     static let hiddenStripHeight: CGFloat = 2
-    /// Place sous la bande pour le halo du liseré (005), transparente.
-    static let haloHeight: CGFloat = 8
     /// Durée du fondu de sortie avant que le panneau ne rétrécisse à l'encoche (005, R2).
     static let silenceFade: TimeInterval = 0.6
     static let hoverOpenDelay: TimeInterval = 0.15
@@ -73,7 +71,8 @@ final class NotchPanelController {
 
     /// Redimensionne et repositionne selon l'état d'affichage. Sans texte à montrer (005 : silence ou liseré
     /// seul), le panneau replié se limite à l'encoche physique : la zone de survol et les clics suivent le cadre.
-    func apply(_ display: DisplayState, narrow: Bool = false, halo: Bool = false) {
+    /// `edgePad` : débord du liseré tracé hors de l'encoche physique (trait + halo), ajouté au cadre réduit.
+    func apply(_ display: DisplayState, narrow: Bool = false, edgePad: CGFloat = 0) {
         let previous = self.display
         let wasNarrow = self.narrow
         self.display = display
@@ -87,7 +86,8 @@ final class NotchPanelController {
         } else if display.isExpanded {
             size = CGSize(width: max(wideWidth, Self.expandedWidth), height: layout.height + (showsSettings ? Self.expandedHeight : contentHeight))
         } else {
-            size = CGSize(width: collapsedWidth, height: layout.height + (halo ? Self.haloHeight : 0))
+            let pad = narrow ? edgePad : 0
+            size = CGSize(width: collapsedWidth + 2 * pad, height: layout.height + pad)
         }
         let frame = target.screen.frame
         let origin = CGPoint(x: (frame.midX - size.width / 2).rounded(), y: frame.maxY - size.height)
