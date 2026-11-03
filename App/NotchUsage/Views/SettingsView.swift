@@ -11,11 +11,11 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            // Titre d'abord, retour dessous (retour utilisateur, 013) : « Back » ne colle plus à l'île.
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Settings").font(.headline)
                 Button { model.showSettings = false } label: { Label("Back", systemImage: "chevron.left").contentShape(Rectangle()) }
                     .buttonStyle(.borderless)
-                Text("Settings").font(.headline)
-                Spacer()
             }
 
             // Sans défilement : le panneau prend la hauteur mesurée des réglages, « Avancé » déplié compris (013).
