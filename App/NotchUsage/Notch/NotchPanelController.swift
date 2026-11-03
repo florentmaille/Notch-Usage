@@ -10,11 +10,10 @@ final class NotchPanelController {
     /// Oreille de l'île repliée (012).
     static let earWidth: CGFloat = 52
     static let expandedWidth: CGFloat = 440
-    /// Hauteur des réglages, et plafond du contenu mesuré.
+    /// Hauteur de départ du contenu déplié, avant la première mesure.
     static let expandedHeight: CGFloat = 320
     /// Hauteur du contenu déplié mesurée par SwiftUI (hors réglages).
     var contentHeight: CGFloat = expandedHeight
-    var showsSettings = false
     static let hiddenStripHeight: CGFloat = 2
     /// Fondu de l'île (012) : le cadre attend sa fin avant de rétrécir.
     static let islandFade: TimeInterval = 0.3
@@ -87,7 +86,7 @@ final class NotchPanelController {
         if display.fullscreenHidden {
             rect = Self.centered(CGSize(width: wideWidth, height: Self.hiddenStripHeight), in: screen)
         } else if display.isExpanded {
-            let height = layout.height + (showsSettings ? Self.expandedHeight : contentHeight)
+            let height = layout.height + contentHeight
             rect = Self.centered(CGSize(width: max(wideWidth, Self.expandedWidth), height: height), in: screen)
         } else if layout.mode == .notch {
             let width = layout.width + ears.left + ears.right
@@ -101,11 +100,11 @@ final class NotchPanelController {
         let shrinking = rect.width < panel.frame.width && !display.isExpanded && !display.fullscreenHidden && previous?.isExpanded == false
         if shrinking {
             // L'oreille qui disparaît joue son fondu dans l'ancien cadre ; le cadre rétrécit ensuite.
-            let work = DispatchWorkItem { [weak self] in self?.panel.setFrame(rect, display: true) }
+            let work = DispatchWorkItem { [weak self] in self?.setFrame(rect) }
             shrinkWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.islandFade, execute: work)
         } else {
-            panel.setFrame(rect, display: true)
+            setFrame(rect)
         }
         if !panel.isVisible { panel.orderFrontRegardless() }
 
@@ -117,6 +116,11 @@ final class NotchPanelController {
             removeGlobalClickMonitor()
             if panel.isKeyWindow { panel.resignKey() }
         }
+    }
+
+    private func setFrame(_ rect: NSRect) {
+        guard rect != panel.frame else { return }
+        panel.setFrame(rect, display: true)
     }
 
     private static func centered(_ size: CGSize, in screen: NSRect) -> NSRect {

@@ -497,7 +497,6 @@ final class AppModel {
         signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app)
         notifier.notifyIfNeeded(signal: signal, display: display, enabled: alertSettings.notifications, now: now)
         panel?.contentHeight = expandedContentHeight
-        panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée.
         let ear = NotchPanelController.earWidth
@@ -505,10 +504,12 @@ final class AppModel {
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
-        guard !showSettings, height > 40 else { return }
+        guard height > 40 else { return }
         let clamped = min(height.rounded(.up), 480)
         guard abs(clamped - expandedContentHeight) > 0.5 else { return }
         expandedContentHeight = clamped
-        recompute()
+        // Hors de la passe de mise en page qui a produit la mesure : redimensionner la fenêtre pendant cette passe
+        // laissait la vue racine à l'ancienne hauteur (réglages coupés, 013).
+        Task { @MainActor [weak self] in self?.recompute() }
     }
 }

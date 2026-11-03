@@ -18,14 +18,13 @@ struct SettingsView: View {
                 Spacer()
             }
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    essentials
-                    DisclosureGroup(isExpanded: $showsAdvanced) {
-                        advanced.padding(.top, 6)
-                    } label: {
-                        Text("Advanced").font(.caption).foregroundStyle(.secondary)
-                    }
+            // Sans défilement : le panneau prend la hauteur mesurée des réglages, « Avancé » déplié compris (013).
+            VStack(alignment: .leading, spacing: 8) {
+                essentials
+                DisclosureGroup(isExpanded: $showsAdvanced) {
+                    advanced.padding(.top, 6)
+                } label: {
+                    Text("Advanced").font(.caption).foregroundStyle(.secondary)
                 }
             }
 
@@ -49,14 +48,14 @@ struct SettingsView: View {
     private var essentials: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
-                Toggle("Open at login", isOn: Binding(
+                row("Open at login", isOn: Binding(
                     get: { model.launchAtLoginStatus == .enabled || model.launchAtLoginStatus == .requiresApproval },
                     set: { model.setLaunchAtLogin($0) }))
                 if model.launchAtLoginStatus == .requiresApproval {
                     Text("Waiting for approval in System Settings → General → Login Items.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-                Toggle("Notify me before a block", isOn: Binding(
+                row("Notify me before a block", isOn: Binding(
                     get: { model.alertSettings.notifications },
                     set: { model.setNotificationsEnabled($0) }))
                 HStack {
@@ -80,6 +79,15 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+
+    /// Libellé à gauche, interrupteur à droite, aligné sur le menu de langue.
+    private func row(_ title: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Toggle(title, isOn: isOn).labelsHidden()
         }
     }
 

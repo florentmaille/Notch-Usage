@@ -53,23 +53,23 @@ private struct ExpandedContainer: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        // Hauteur idéale mesurée sur chaque vue, réglages compris : le panneau colle à son contenu (013).
         Group {
             if model.showSettings && model.display.content != .connect {
-                SettingsView().padded()
+                SettingsView()
+            } else if model.display.content == .connect {
+                ConnectView()
             } else {
-                // Hauteur idéale mesurée sur ces vues seulement : les réglages défilent dans une hauteur
-                // fixe et ne doivent pas fausser la mesure pendant la transition.
-                Group {
-                    if model.display.content == .connect { ConnectView() } else { ExpandedView() }
-                }
-                .padded()
-                .fixedSize(horizontal: false, vertical: true)
-                // Fermeture isolée au main actor : ni clé de préférence ni `assumeIsolated` (010).
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                    model.setExpandedContentHeight(height)
-                }
+                ExpandedView()
             }
         }
+        .padded()
+        .fixedSize(horizontal: false, vertical: true)
+        // Fermeture isolée au main actor : ni clé de préférence ni `assumeIsolated` (010).
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            model.setExpandedContentHeight(height)
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
         .foregroundStyle(.white)
     }
 }
