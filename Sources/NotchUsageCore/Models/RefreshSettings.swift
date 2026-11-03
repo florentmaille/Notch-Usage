@@ -9,11 +9,9 @@ public struct RefreshSettings: Codable, Sendable, Equatable {
     public var interval: Duration {
         didSet { interval = Self.clamp(interval) }
     }
-    public var launchAtLogin: Bool
 
-    public init(interval: Duration = RefreshSettings.defaultInterval, launchAtLogin: Bool = false) {
+    public init(interval: Duration = RefreshSettings.defaultInterval) {
         self.interval = Self.clamp(interval)
-        self.launchAtLogin = launchAtLogin
     }
 
     static func clamp(_ d: Duration) -> Duration {

@@ -76,15 +76,13 @@ struct AlertEvaluatorTests {
         s.enabled = false
         let (_, e) = evaluator.evaluate(snap(99), settings: s, ledger: AlertLedger())
         #expect(e.isEmpty)
-        #expect(evaluator.level(for: snap(99), settings: s) == .none)
+        #expect(evaluator.level(for: snap(99).limits[0], settings: s) == .none)
     }
 
-    @Test func levelIsMaxOfCrossedThresholds() {
-        #expect(evaluator.level(for: snap(10), settings: settings) == .none)
-        #expect(evaluator.level(for: snap(80), settings: settings) == .warning)
-        #expect(evaluator.level(for: snap(95), settings: settings) == .critical)
-        let multi = makeSnapshot([("session", 50), ("weekly_all", 90)], resetsAt: reset)
-        #expect(evaluator.level(for: multi, settings: settings) == .warning)
+    @Test func levelIsTheHighestCrossedThreshold() {
+        #expect(evaluator.level(for: snap(10).limits[0], settings: settings) == .none)
+        #expect(evaluator.level(for: snap(80).limits[0], settings: settings) == .warning)
+        #expect(evaluator.level(for: snap(95).limits[0], settings: settings) == .critical)
     }
 
     @Test func customThresholds() {

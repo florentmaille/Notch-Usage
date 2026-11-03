@@ -1,5 +1,11 @@
 <!--
 Sync Impact Report
+- Version : 1.1.0 → 1.1.1 (PATCH : plancher de l'intervalle aligné sur le code)
+- Principe modifié : II. Sobriété des ressources. Le plancher de l'intervalle de rafraîchissement
+  est 60 s (`RefreshSettings.minimumInterval`), pas 30 s : l'endpoint est partagé avec Claude Code.
+- Artefacts : aucun autre changement (specs/009-appmodel-debt)
+
+Précédent :
 - Version : 1.0.0 → 1.1.0 (MINOR : règle mémoire élargie)
 - Principe modifié : II. Sobriété des ressources. La mémoire se mesure en empreinte physique
   (Moniteur d'activité, `vmmap --summary`) et non plus en mémoire résidente (RSS).
@@ -34,7 +40,7 @@ vérifier dans le code.
   (colonne « Mémoire » du Moniteur d'activité, `vmmap --summary`) sous 60 Mo. Le RSS brut
   n'est pas retenu : il inclut les frameworks système partagés.
 - Pas de polling plus fréquent que toutes les 60 s par défaut. L'intervalle est configurable,
-  avec un plancher de 30 s, et un backoff s'applique en cas d'erreur ou de rate limit.
+  avec un plancher de 60 s, et un backoff s'applique en cas d'erreur ou de rate limit.
 - Le rafraîchissement est suspendu pendant la veille, l'écran verrouillé ou le mode
   économie d'énergie.
 - Les animations de l'encoche MUST s'arrêter dès que la vue est repliée.
@@ -103,4 +109,4 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 - Chaque revue de PR vérifie la conformité aux principes. Toute dérogation est justifiée
   dans la PR et tracée dans le plan.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-02
+**Version**: 1.1.1 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-03

@@ -13,13 +13,14 @@ struct CompactView: View {
 
     var body: some View {
         Group {
-            if signal.isSilent || (display.mode == .notch && !signal.isBand) {
+            if signal.collapsesToNotch(in: display) {
                 Color.clear
-            } else if display.mode == .notch {
+            } else if display.mode == .notch, case .band(let strip) = signal.content {
+                // Dans l'encoche, seule la bande porte du texte (005) : une aile de chaque côté de l'encoche physique.
                 HStack(spacing: 0) {
-                    leftWing.frame(width: wing, alignment: .trailing)
+                    leading(strip, glyph: true).frame(width: wing, alignment: .trailing)
                     Color.clear.frame(width: display.layout.width)
-                    rightWing.frame(width: wing, alignment: .leading)
+                    trailing(strip).frame(width: wing, alignment: .leading)
                 }
                 .transition(.opacity)
             } else {
@@ -31,7 +32,7 @@ struct CompactView: View {
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, Self.horizontalPadding)
         .font(.system(size: 11, weight: .semibold, design: .rounded))
         .foregroundStyle(.white)
         .accessibilityElement(children: .ignore)
@@ -39,29 +40,12 @@ struct CompactView: View {
         .accessibilityLabel(signal.accessibility)
     }
 
-    private var wing: CGFloat { NotchPanelController.wingWidth - 10 }
+    private static let horizontalPadding: CGFloat = 10
+    /// Largeur utile d'une aile : la largeur du panneau moins la marge horizontale.
+    private var wing: CGFloat { NotchPanelController.wingWidth - Self.horizontalPadding }
     private var edgeColor: Color { signal.edge?.color ?? .orange }
 
-    // MARK: Ailes
-
-    @ViewBuilder private var leftWing: some View {
-        switch signal.content {
-        case .silent, .deadline: EmptyView()
-        case .band(let strip): leading(strip, glyph: true)
-        case .exhausted(let full, _): pill(full, tint: .red)
-        case .threshold(let label, _): Text(label).fontWeight(.medium).foregroundStyle(.secondary).fixedSize()
-        }
-    }
-
-    @ViewBuilder private var rightWing: some View {
-        switch signal.content {
-        case .silent: EmptyView()
-        case .band(let strip): trailing(strip)
-        case .deadline(let label): glyphText("hourglass", label, edgeColor)
-        case .exhausted(_, let back): glyphText("arrow.clockwise", back, .red)
-        case .threshold(_, let percent): pill(percent, tint: edgeColor)
-        }
-    }
+    // MARK: Pilule
 
     @ViewBuilder private func pillLine(glyph: Bool) -> some View {
         switch signal.content {

@@ -65,6 +65,11 @@ public struct NotchSignal: Sendable, Equatable {
         return false
     }
 
+    /// Le panneau et la forme se réduisent à l'encoche physique : silence, ou liseré seul dans l'encoche (005, R2).
+    public func collapsesToNotch(in display: DisplayState) -> Bool {
+        isSilent || (display.mode == .notch && !isBand)
+    }
+
     public static func make(display: DisplayState, now: Date, language: InterfaceLanguage, strings: CompactStrip.Strings,
                             locale: Locale = .current, timeZone: TimeZone = .current) -> NotchSignal {
         let strip = CompactStrip.make(display: display, now: now, language: language, strings: strings, locale: locale, timeZone: timeZone)

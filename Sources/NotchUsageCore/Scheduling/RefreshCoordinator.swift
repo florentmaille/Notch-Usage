@@ -1,6 +1,6 @@
 import Foundation
 
-public enum PauseReason: Sendable, Equatable {
+public enum PauseReason: Sendable, Hashable {
     case sleep
     case screenLocked
     case lowPower

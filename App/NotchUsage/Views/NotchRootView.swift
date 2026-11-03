@@ -26,7 +26,7 @@ struct NotchRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(alignment: .top) {
             // Toujours présente, seule son opacité s'anime : un retrait conditionnel saccade à la sortie.
-            NotchShape(display: d, edge: s.edge, narrow: s.isSilent || (d.mode == .notch && !s.isBand), beat: model.beat)
+            NotchShape(display: d, edge: s.edge, narrow: s.collapsesToNotch(in: d), beat: model.beat)
                 .opacity(s.isSilent ? 0 : 1)
         }
         .animation(reduceMotion ? nil : .easeOut(duration: NotchPanelController.silenceFade), value: s.isSilent)
