@@ -13,9 +13,9 @@ struct HeadlineChoiceTests {
         #expect(HeadlineChoice.automatic.pick(in: snap, forecasts: holds)?.id == "session")
     }
 
-    @Test func automaticShowsAReachedModelLimit() {
+    @Test func automaticIgnoresAReachedModelLimit() {
         let fable = makeSnapshot([("session", 30), ("weekly_all", 60), ("weekly_scoped:Fable", 100)])
-        #expect(HeadlineChoice.automatic.pick(in: fable, forecasts: [:])?.id == "weekly_scoped:Fable")
+        #expect(HeadlineChoice.automatic.pick(in: fable, forecasts: [:])?.id == "session")
     }
 
     @Test func automaticFallsBackToTheMostUsedWithoutAFiveHourWindow() {

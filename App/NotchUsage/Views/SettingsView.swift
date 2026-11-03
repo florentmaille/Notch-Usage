@@ -111,7 +111,7 @@ struct SettingsView: View {
                         Text(LimitLabel.text(forID: id)).tag(HeadlineChoice.limit(id))
                     }
                 } label: { Text("Limit shown") }
-                Text("Automatic shows the limit most likely to block you: a reached limit, then one predicted to run out before its reset, otherwise the 5-hour window. A reached 5-hour or all-models weekly limit always shows.")
+                Text("Automatic shows the limit predicted to run out before its reset, otherwise the 5-hour window. A reached 5-hour or all-models weekly limit always shows.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         } label: { Text("Notch").font(.caption) }

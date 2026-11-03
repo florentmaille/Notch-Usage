@@ -16,12 +16,11 @@ public enum HeadlineChoice: Sendable, Hashable {
     }
 
     /// Une limite 5 h ou hebdomadaire tous modèles épuisée passe devant le choix : plus aucun modèle n'est
-    /// utilisable. Sinon la limite choisie ; à défaut, ou si elle a disparu, la plus susceptible de bloquer :
-    /// une limite atteinte, puis le blocage prévu le plus proche, sinon la fenêtre de 5 h.
+    /// utilisable. Sinon la limite choisie ; à défaut, ou si elle a disparu, le blocage prévu le plus proche,
+    /// sinon la fenêtre de 5 h. Une limite de modèle atteinte ne s'affiche que choisie : les autres modèles restent utilisables.
     public func pick(in snapshot: UsageSnapshot, forecasts: [String: Forecast]) -> UsageLimit? {
         if let blocking = snapshot.limits.first(where: { $0.isBlocked && $0.kind != .weeklyModel }) { return blocking }
         if case .limit(let id) = self, let chosen = snapshot.limits.first(where: { $0.id == id }) { return chosen }
-        if let reached = snapshot.limits.first(where: \.isBlocked) { return reached }
         let predicted = snapshot.limits.compactMap { limit -> (UsageLimit, Date)? in
             if case .blockAt(let date)? = forecasts[limit.id] { return (limit, date) }
             return nil
