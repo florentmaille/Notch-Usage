@@ -13,6 +13,8 @@ final class NotchPanelController {
     var contentHeight: CGFloat = expandedHeight
     var showsSettings = false
     static let hiddenStripHeight: CGFloat = 2
+    /// Durée du fondu de sortie avant que le panneau ne rétrécisse à l'encoche (005, R2).
+    static let silenceFade: TimeInterval = 0.6
     static let hoverOpenDelay: TimeInterval = 0.15
     static let hoverCloseDelay: TimeInterval = 0.10
 
@@ -28,6 +30,8 @@ final class NotchPanelController {
     private var globalClickMonitor: Any?
     private var localKeyMonitor: Any?
     private var hoverWork: DispatchWorkItem?
+    private var shrinkWork: DispatchWorkItem?
+    private var narrow = false
 
     init(target: ScreenObserver.Target, rootView: AnyView) {
         self.target = target
@@ -65,23 +69,39 @@ final class NotchPanelController {
         if let display { apply(display) }
     }
 
-    /// Redimensionne et repositionne selon l'état d'affichage.
-    func apply(_ display: DisplayState) {
+    /// Redimensionne et repositionne selon l'état d'affichage. Sans texte à montrer (005 : silence ou liseré
+    /// seul), le panneau replié se limite à l'encoche physique : la zone de survol et les clics suivent le cadre.
+    /// `edgePad` : débord du liseré tracé hors de l'encoche physique (trait + halo), ajouté au cadre réduit.
+    func apply(_ display: DisplayState, narrow: Bool = false, edgePad: CGFloat = 0) {
         let previous = self.display
+        let wasNarrow = self.narrow
         self.display = display
+        self.narrow = narrow
         let layout = display.layout
-        let collapsedWidth = layout.mode == .notch ? layout.width + 2 * Self.wingWidth : layout.width
+        let wideWidth = layout.mode == .notch ? layout.width + 2 * Self.wingWidth : layout.width
+        let collapsedWidth = narrow ? layout.width : wideWidth
         let size: CGSize
         if display.fullscreenHidden {
-            size = CGSize(width: collapsedWidth, height: Self.hiddenStripHeight)
+            size = CGSize(width: wideWidth, height: Self.hiddenStripHeight)
         } else if display.isExpanded {
-            size = CGSize(width: max(collapsedWidth, Self.expandedWidth), height: layout.height + (showsSettings ? Self.expandedHeight : contentHeight))
+            size = CGSize(width: max(wideWidth, Self.expandedWidth), height: layout.height + (showsSettings ? Self.expandedHeight : contentHeight))
         } else {
-            size = CGSize(width: collapsedWidth, height: layout.height)
+            let pad = narrow ? edgePad : 0
+            size = CGSize(width: collapsedWidth + 2 * pad, height: layout.height + pad)
         }
         let frame = target.screen.frame
         let origin = CGPoint(x: (frame.midX - size.width / 2).rounded(), y: frame.maxY - size.height)
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
+        let rect = NSRect(origin: origin, size: size)
+        shrinkWork?.cancel()
+        shrinkWork = nil
+        if narrow, !wasNarrow, !display.isExpanded, !display.fullscreenHidden {
+            // Le fondu de sortie a besoin des oreilles encore présentes ; le cadre rétrécit après.
+            let work = DispatchWorkItem { [weak self] in self?.panel.setFrame(rect, display: true) }
+            shrinkWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.silenceFade, execute: work)
+        } else {
+            panel.setFrame(rect, display: true)
+        }
         if !panel.isVisible { panel.orderFrontRegardless() }
 
         let pinned = display.panel == .pinned
@@ -99,6 +119,7 @@ final class NotchPanelController {
         if let localKeyMonitor { NSEvent.removeMonitor(localKeyMonitor) }
         localKeyMonitor = nil
         hoverWork?.cancel()
+        shrinkWork?.cancel()
         panel.orderOut(nil)
         panel.close()
     }

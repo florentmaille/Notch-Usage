@@ -33,6 +33,8 @@ public struct CompactStrip: Sendable, Equatable {
         public var dash: String
         public var percent: @Sendable (Int) -> String
         public var limitLabel: @Sendable (UsageLimit) -> String
+        /// Libellé court d'une limite pour l'aile gauche du signal de seuil (005) : « 5h », « 7d », nom du modèle.
+        public var shortLabel: @Sendable (UsageLimit) -> String
         /// (libellé, pourcentage, « in 2h 14m ») → annonce VoiceOver d'une limite.
         public var limitAnnouncement: @Sendable (String, Int, String) -> String
         /// (heure ou durée du blocage) → suffixe d'annonce, virgule comprise.
@@ -43,6 +45,7 @@ public struct CompactStrip: Sendable, Equatable {
         public init(full: String, signIn: String, connect: String, dash: String,
                     percent: @escaping @Sendable (Int) -> String,
                     limitLabel: @escaping @Sendable (UsageLimit) -> String,
+                    shortLabel: @escaping @Sendable (UsageLimit) -> String,
                     limitAnnouncement: @escaping @Sendable (String, Int, String) -> String,
                     paceAnnouncement: @escaping @Sendable (String) -> String,
                     stateAnnouncement: @escaping @Sendable (String) -> String) {
@@ -52,6 +55,7 @@ public struct CompactStrip: Sendable, Equatable {
             self.dash = dash
             self.percent = percent
             self.limitLabel = limitLabel
+            self.shortLabel = shortLabel
             self.limitAnnouncement = limitAnnouncement
             self.paceAnnouncement = paceAnnouncement
             self.stateAnnouncement = stateAnnouncement

@@ -77,6 +77,26 @@
         }
       }
     },
+    "5h": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 h"
+          }
+        }
+      }
+    },
+    "7d": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 j"
+          }
+        }
+      }
+    },
     "Alerts": {
       "localizations": {
         "fr": {

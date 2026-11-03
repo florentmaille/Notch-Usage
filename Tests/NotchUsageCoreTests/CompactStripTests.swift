@@ -12,6 +12,7 @@ struct CompactStripTests {
         full: "Full", signIn: "Sign in", connect: "Connect", dash: "—",
         percent: { "\($0)%" },
         limitLabel: { $0.id == "session" ? "5-hour window" : "Weekly, all models" },
+        shortLabel: { $0.kind == .rollingFiveHour ? "5h" : ($0.kind == .weeklyAll ? "7d" : ($0.modelName ?? "7d")) },
         limitAnnouncement: { "\($0), \($1) percent, resets \($2)" },
         paceAnnouncement: { ", at this pace blocked at \($0)" },
         stateAnnouncement: { "Notch Usage, \($0)" })
@@ -20,6 +21,7 @@ struct CompactStripTests {
         full: "Bloqué", signIn: "Connexion", connect: "Connexion", dash: "—",
         percent: { "\($0)\u{00A0}%" },
         limitLabel: { _ in "Fenêtre de 5 h" },
+        shortLabel: { $0.kind == .rollingFiveHour ? "5 h" : "7 j" },
         limitAnnouncement: { "\($0), \($1) pour cent, réinitialisation \($2)" },
         paceAnnouncement: { ", à ce rythme bloqué à \($0)" },
         stateAnnouncement: { "Notch Usage, \($0)" })
@@ -39,6 +41,12 @@ struct CompactStripTests {
 
     func snap(_ pct: Double, reset: TimeInterval = 2 * 3600 + 14 * 60, at: TimeInterval = 0) -> UsageSnapshot {
         makeSnapshot([("session", pct), ("weekly_all", 20)], fetchedAt: now.addingTimeInterval(at), resetsAt: now.addingTimeInterval(reset))
+    }
+
+    @Test func shortLabelsPerLimitKind() {
+        let limits = makeSnapshot([("session", 10), ("weekly_all", 10), ("weekly_scoped:Fable", 10)]).limits
+        #expect(limits.map(Self.english.shortLabel) == ["5h", "7d", "Fable"])
+        #expect(limits.map(Self.french.shortLabel) == ["5 h", "7 j", "7 j"])
     }
 
     @Test func normal() {
