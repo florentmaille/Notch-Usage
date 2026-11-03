@@ -44,6 +44,13 @@ struct DisplayStateReducerTests {
         #expect(h.headline?.limit.id == "weekly_all")
     }
 
+    @Test func headlineFollowsTheChosenLimit() {
+        let snap = makeSnapshot([("session", 70), ("weekly_all", 40)], fetchedAt: now)
+        let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
+                                           fullscreen: false, hover: false, pinned: false, now: now, choice: .limit("weekly_all"))
+        #expect(d.headline?.limit.id == "weekly_all")
+    }
+
     @Test func failedReadingIsFlagged() {
         let snap = makeSnapshot([("session", 40)], fetchedAt: now)
         #expect(reduce(.failed(.server(503), previous: snap)).fetchFailed)

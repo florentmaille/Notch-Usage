@@ -31,7 +31,9 @@ public struct AlertEvaluator: Sendable {
         return snapshot.limits.map { level(for: $0, settings: settings) }.max() ?? .none
     }
 
-    private func level(for limit: UsageLimit, settings: AlertSettings) -> AlertLevel {
+    /// Niveau d'une seule limite : celui de la limite affichée dans l'encoche (004).
+    public func level(for limit: UsageLimit, settings: AlertSettings) -> AlertLevel {
+        guard settings.enabled else { return .none }
         if limit.utilization >= Double(settings.criticalThreshold) { return .critical }
         if limit.utilization >= Double(settings.warningThreshold) { return .warning }
         return .none

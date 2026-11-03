@@ -3,7 +3,7 @@ import Foundation
 public enum DisplayStateReducer {
     public static func reduce(state: FetchState, connected: Bool, settings: RefreshSettings, alertLevel: AlertLevel,
                               layout: NotchLayout, fullscreen: Bool, hover: Bool, pinned: Bool, now: Date,
-                              forecasts: [String: Forecast] = [:]) -> DisplayState {
+                              forecasts: [String: Forecast] = [:], choice: HeadlineChoice = .automatic) -> DisplayState {
         let panel: DisplayState.Panel = pinned ? .pinned : (hover ? .hoverOpen : .collapsed)
         let fullscreenHidden = fullscreen && !hover && !pinned
 
@@ -19,12 +19,7 @@ public enum DisplayStateReducer {
             d.content = .limits
             d.limits = s.limits
             d.forecasts = forecasts
-            // Le blocage prévu le plus proche prime sur le pourcentage le plus élevé (003, research R6).
-            let predicted = s.limits.compactMap { limit -> (UsageLimit, Date)? in
-                if case .blockAt(let date)? = forecasts[limit.id] { return (limit, date) }
-                return nil
-            }.min { $0.1 < $1.1 }?.0
-            d.headline = (predicted ?? s.mostConstraining).map(DisplayState.Headline.init)
+            d.headline = choice.pick(in: s, forecasts: forecasts).map(DisplayState.Headline.init)
             d.fetchedAt = s.fetchedAt
             let f = Freshness.of(s, now: now, interval: settings.interval)
             d.freshness = f
