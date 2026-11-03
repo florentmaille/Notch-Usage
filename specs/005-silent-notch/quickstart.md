@@ -50,6 +50,7 @@
 | 15 | ✅ | `offline` : bande grise, aucun liseré, en et fr |
 | 16 | ⚠️ non rejoué | Mode réduit d'animations : `reduceMotion` → animation nil |
 | 17 | ✅ | Paliers distincts sans la couleur : épaisseur 2 / 2,5 / 3 pt et format durée → heure |
+| 21 | ✅ | Fond d'écran orange (retour utilisateur) : sans cerne, le rouge se fondait dans le fond ; cerne noir 60 % de 1,5 pt vérifié sur composite orange et sombre |
 | 18 | ✅ | 87 textes, 0 sans traduction française |
 | 19 | ✅ | 60 s en `imminent` : 0,36 s CPU (0,6 %) ; 60 s en `normal` : 0,41 s (0,7 %) ; empreinte 23,6 Mo (0.3.0 Debug : 24,5 Mo) |
 | 20 | ✅ (par construction) | Aucune requête, aucun timer ajoutés ; le signal se dérive dans `recompute()` |

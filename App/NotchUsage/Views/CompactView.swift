@@ -178,8 +178,13 @@ extension NotchSignal.Edge {
     /// Débord du halo au-delà du trait, transparent.
     static let haloPad: CGFloat = 8
 
-    /// Débord hors de l'encoche physique : le trait, plus le halo s'il y en a un.
-    var outerPad: CGFloat { lineWidth + (hasHalo ? Self.haloPad : 0) }
+    /// Cerne sombre autour du trait : le sépare d'un fond clair ou de la même teinte (le trait n'a aucune
+    /// teinte lisible sur un fond orange sans lui).
+    static let keyline: CGFloat = 1.5
+    static let keylineColor = Color.black.opacity(0.6)
+
+    /// Débord hors de l'encoche physique : le trait, son cerne, plus le halo s'il y en a un.
+    var outerPad: CGFloat { lineWidth + Self.keyline + (hasHalo ? Self.haloPad : 0) }
 }
 
 /// Barre piste + remplissage du panneau déplié : `ProgressView` et `Gauge` rendent mal sur fond noir.

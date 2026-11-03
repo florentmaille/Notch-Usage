@@ -39,6 +39,9 @@ Règles :
 | `imminent` | rouge `#FF453A` | 3 pt | ombre 6 pt | heure |
 | `exhausted` | rouge `#FF453A` | 3 pt | ombre 6 pt | durée avant retour |
 
+Chaque palier est cerné d'un filet noir à 60 % de 1,5 pt, côté fond d'écran, pour rester lisible sur un
+fond clair ou de la même teinte.
+
 ## Panneau
 
 | Signal | Largeur du panneau (encoche) | Largeur (pilule) | Zone de survol |

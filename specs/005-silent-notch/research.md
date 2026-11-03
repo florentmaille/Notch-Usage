@@ -49,7 +49,9 @@
   tout autour (flancs, arrondis, bas ; le haut est le bord de l'écran), et le panneau déborde de l'épaisseur du trait (plus 8 pt de halo
   pour imminent et épuisé). Rien de ce qui est dessiné sous le cutout physique n'est visible : un trait
   intérieur n'apparaît que dans les captures, jamais à l'œil. En pilule, entièrement visible, le trait
-  reste à l'intérieur, tout autour. Le halo est un `shadow` statique.
+  reste à l'intérieur, tout autour. Le halo est un `shadow` statique. Un cerne noir à 60 % de 1,5 pt
+  entoure le trait (hors du trait dans l'encoche, sous lui en pilule) : sur un fond d'écran orange ou
+  clair, le trait seul se fondait dans le fond ; sur fond sombre le cerne est invisible et sans effet.
 - **Rationale**: le liseré doit être visible sans oreilles, donc hors de l'encoche ; un contour
   arrondi offset donne les coins « qui glissent » de la planche sans chemin dessiné à la main.
 - **Alternatives considered**: `border-bottom` à la main avec deux arcs (fragile aux changements

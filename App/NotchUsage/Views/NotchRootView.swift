@@ -51,6 +51,12 @@ private struct NotchShape: View {
                 // Contour extérieur tout autour de l'encoche (flancs, arrondis, bas) : son bord intérieur coïncide
                 // avec l'encoche physique ; le haut est le bord de l'écran.
                 let w = edge.lineWidth
+                let k = NotchSignal.Edge.keyline
+                // Cerne sombre hors du trait : le détache d'un fond d'écran clair ou de la même teinte.
+                UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w + k, bottomTrailingRadius: radius + w + k,
+                                       topTrailingRadius: 0, style: .continuous)
+                    .strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: k)
+                    .frame(width: narrow ? display.layout.width + 2 * (w + k) : nil, height: display.layout.height + w + k)
                 UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w, bottomTrailingRadius: radius + w,
                                        topTrailingRadius: 0, style: .continuous)
                     .strokeBorder(edge.color, lineWidth: w)
@@ -63,8 +69,9 @@ private struct NotchShape: View {
             shape.fill(.black)
                 .overlay {
                     if let edge, !notch {
-                        // Pilule : entièrement visible, le trait reste à l'intérieur, tout autour.
-                        shape.strokeBorder(edge.color, lineWidth: edge.lineWidth)
+                        // Pilule : entièrement visible, cerne puis trait à l'intérieur, tout autour.
+                        shape.strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: NotchSignal.Edge.keyline)
+                        shape.inset(by: NotchSignal.Edge.keyline).strokeBorder(edge.color, lineWidth: edge.lineWidth)
                             .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
                     }
                 }
