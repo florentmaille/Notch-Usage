@@ -39,7 +39,7 @@ Règles :
 | `imminent` | rouge `#FF453A` | 3 pt | ombre 6 pt | heure |
 | `exhausted` | rouge `#FF453A` | 3 pt | ombre 6 pt | durée avant retour |
 
-Chaque palier est cerné d'un filet noir à 60 % de 1,5 pt, côté fond d'écran, pour rester lisible sur un
+Chaque palier est cerné d'un filet noir à 85 % de 2,5 pt, ombré, côté fond d'écran, pour rester lisible sur un
 fond clair ou de la même teinte.
 
 ## Panneau

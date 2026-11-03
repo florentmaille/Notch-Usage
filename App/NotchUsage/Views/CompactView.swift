@@ -180,8 +180,8 @@ extension NotchSignal.Edge {
 
     /// Cerne sombre autour du trait : le sépare d'un fond clair ou de la même teinte (le trait n'a aucune
     /// teinte lisible sur un fond orange sans lui).
-    static let keyline: CGFloat = 1.5
-    static let keylineColor = Color.black.opacity(0.6)
+    static let keyline: CGFloat = 2.5
+    static let keylineColor = Color.black.opacity(0.85)
 
     /// Débord hors de l'encoche physique : le trait, son cerne, plus le halo s'il y en a un.
     var outerPad: CGFloat { lineWidth + Self.keyline + (hasHalo ? Self.haloPad : 0) }

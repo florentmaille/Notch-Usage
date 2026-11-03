@@ -57,6 +57,7 @@ private struct NotchShape: View {
                                        topTrailingRadius: 0, style: .continuous)
                     .strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: k)
                     .frame(width: narrow ? display.layout.width + 2 * (w + k) : nil, height: display.layout.height + w + k)
+                    .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
                 UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w, bottomTrailingRadius: radius + w,
                                        topTrailingRadius: 0, style: .continuous)
                     .strokeBorder(edge.color, lineWidth: w)
@@ -71,6 +72,7 @@ private struct NotchShape: View {
                     if let edge, !notch {
                         // Pilule : entièrement visible, cerne puis trait à l'intérieur, tout autour.
                         shape.strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: NotchSignal.Edge.keyline)
+                            .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
                         shape.inset(by: NotchSignal.Edge.keyline).strokeBorder(edge.color, lineWidth: edge.lineWidth)
                             .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
                     }
