@@ -14,6 +14,10 @@
 
 ### Session 2026-11-03
 
+- Q (retour sur build) : faut-il un texte à côté du liseré ? → A: non. Dans l'encoche, le liseré seul, sans
+  oreilles ni texte, pour tous les états à liseré ; le survol montre les informations. La pilule, sans encoche
+  à entourer, garde sa donnée unique.
+
 - Q: Fenêtre de 5 h au-dessus du seuil mais rythme tenable : que montre l'encoche ? → A: la prévision prime ; silence tant que le rythme tient, le seuil ne sert que si la prévision est indisponible.
 - Q: En état calme, quelle zone déclenche le survol ? → A: l'encoche physique seule ; les oreilles rejoignent la zone dès qu'elles sont visibles.
 
@@ -126,9 +130,9 @@ blocage prévu ; VoiceOver sur l'encoche silencieuse puis signalante.
 - **FR-002**: Les oreilles noires MUST n'exister que pour porter du texte ; l'encoche MUST NOT s'élargir sans texte à afficher, dans aucun état.
 - **FR-003**: Le survol de l'encoche MUST faire apparaître la bande complète (aile gauche : prévision ou coche + réinitialisation ; aile droite : pourcentage ou pastille), puis déplier le panneau selon le délai existant ; le clic MUST épingler comme aujourd'hui.
 - **FR-004**: Quand un blocage approche, un liseré coloré MUST border le bas de la forme noire (encoche et oreilles) ; sa teinte et son épaisseur MUST suivre l'échéance du blocage prévu : ambre fin à 1 h et plus, orange plus épais sous 1 h, rouge épais avec halo sous 30 min, rouge plein quand la limite est épuisée.
-- **FR-005**: Avec un liseré d'échéance, l'aile droite MUST montrer une seule donnée : sablier + temps avant le blocage (« 2h 05m »), ou heure du blocage sous 1 h (« 10:06 », format du système) ; l'aile gauche MUST rester vide ; aucun pourcentage.
-- **FR-006**: Limite épuisée : liseré rouge plein, « Full » (« Bloqué ») en pastille rouge à gauche, flèche circulaire + temps avant le retour à droite.
-- **FR-007**: Limite au-dessus d'un seuil sans prévision disponible (limites hebdomadaires ; fenêtre de 5 h seulement tant que la prévision est indisponible) : liseré ambre au seuil d'attention, rouge au seuil critique ; aile droite en pastille de pourcentage ; aile gauche avec un libellé court de la limite (« 7d » / « 7 j » pour les limites hebdomadaires, « 5h » / « 5 h » pour la fenêtre).
+- **FR-005**: Dans l'encoche, un état à liseré MUST NOT afficher de texte ni d'oreilles : le liseré borde la seule encoche physique ; les informations (temps avant le blocage, pourcentage) sont celles de la bande complète, au survol. Sur un écran sans encoche, la pilule MUST montrer une seule donnée : sablier + temps avant le blocage (« 2h 05m »), ou heure du blocage sous 1 h (« 10:06 », format du système).
+- **FR-006**: Limite épuisée : liseré rouge plein autour de l'encoche ; en pilule, « Full » (« Bloqué ») en pastille rouge puis flèche circulaire + temps avant le retour.
+- **FR-007**: Limite au-dessus d'un seuil sans prévision disponible (limites hebdomadaires ; fenêtre de 5 h seulement tant que la prévision est indisponible) : liseré ambre au seuil d'attention, rouge au seuil critique, autour de l'encoche ; en pilule, libellé court de la limite (« 7d » / « 7 j », « 5h » / « 5 h ») puis pastille de pourcentage.
 - **FR-007a**: Pour la fenêtre de 5 h, la prévision MUST primer sur le seuil : rythme tenable = silence, quel que soit le pourcentage ; blocage prévu = liseré d'échéance.
 - **FR-007b**: En état calme, la zone de survol MUST se limiter à la largeur de l'encoche physique ; les oreilles MUST rejoindre la zone dès qu'elles sont visibles.
 - **FR-008**: Le liseré MUST avoir un seul sens, « un blocage approche » ; aucune autre couleur de l'encoche MUST NOT porter ce sens. Cadenas, « Sign in » et textes gris restent sans liseré.

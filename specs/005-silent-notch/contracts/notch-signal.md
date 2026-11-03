@@ -5,7 +5,10 @@ le palier du liseré et l'annonce. La vue dessine ; le contrôleur du panneau li
 
 ## Contenu par état
 
-| État | Contenu | Aile gauche | Aile droite | Liseré |
+Dans l'encoche, seul `band` dessine les ailes ; `deadline`, `exhausted` et `threshold` ne dessinent que le liseré
+autour de l'encoche physique (retour du 2026-11-03). Les colonnes « aile » décrivent la pilule et la bande.
+
+| État | Contenu | Aile gauche (pilule) | Aile droite (pilule) | Liseré |
 |---|---|---|---|---|
 | Calme (prévision tenable, ou indisponible sous le seuil) | `silent` | rien | rien | aucun |
 | Survol ou épinglé, quel que soit l'état | `band` | bande 003 | bande 003 | selon l'état sous-jacent |
@@ -40,8 +43,8 @@ Règles :
 
 | Signal | Largeur du panneau (encoche) | Largeur (pilule) | Zone de survol |
 |---|---|---|---|
-| `silent` | largeur de l'encoche physique | 150 pt | la forme seule |
-| autre | encoche + 2 × 72 pt | 150 pt | la forme avec ses oreilles |
+| `silent`, `deadline`, `exhausted`, `threshold` | largeur de l'encoche physique | 150 pt | la forme seule |
+| `band` | encoche + 2 × 72 pt | 150 pt | la forme avec ses oreilles |
 
 Passage au silence : fondu 600 ms, puis rétrécissement. Passage au signal : élargissement, puis
 fondu 600 ms. Mode réduit d'animations : pas de fondu.

@@ -38,9 +38,9 @@
 | 1 | ✅ | Capture `normal` : 220 pt de large (le panneau se réduit à l'encoche), 0 pixel non transparent sur l'échantillon complet |
 | 2 | ✅ | `hover=1` : bande « ✓ 2h 14m · 42% » puis panneau, en et fr |
 | 3, 4, 5 | ⚠️ non rejoués à la main | Survol réel, zone de 50 pt à côté de l'encoche, clic : le cadre du panneau vaut la largeur de l'encoche en silence (R2), donc la zone suit par construction ; à confirmer à la souris |
-| 6 | ✅ | `far` ⌛ 2h 05m ambre 2 pt ; `near` ⌛ heure orange 2,5 pt ; `imminent` ⌛ heure rouge 3 pt + halo ; aile gauche vide, aucun pourcentage ; en et fr (« 2 h 05 ») |
-| 7 | ✅ | `blocked` : liseré rouge + halo, « Full » / « Bloqué » en pastille, ↻ 1h 02m |
-| 8 | ✅ | `warning` : « 5h » / « 5 h » gris, pastille ambre 83 %, liseré ambre |
+| 6 | ✅ | Encoche : liseré seul autour de l'encoche physique (220 pt), ambre 2 pt / orange 2,5 pt / rouge 3 pt + halo, sans texte (retour utilisateur) ; pilule : ⌛ 2h 05m / heure, en et fr |
+| 7 | ✅ | `blocked` : encoche, liseré rouge + halo seul ; pilule, « Full » / « Bloqué » en pastille, ↻ 1h 02m |
+| 8 | ✅ | `warning` : encoche, liseré ambre seul ; pilule, « 5h » / « 5 h » gris et pastille ambre 83 % |
 | 9 | ✅ (core) | `forecastWinsOverThresholdForTheFiveHourWindow` ; pas de hook démo pour `holds` |
 | 10 | ⚠️ non vu | Fondu 0,6 s et rétrécissement différé : code en place (`silenceFade`, `shrinkWork`), à regarder à l'œil |
 | 11 | ✅ | Limite épinglée Fable + `far` : capture de 220 pt, silence ; panneau non vérifié |

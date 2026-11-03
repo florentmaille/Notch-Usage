@@ -1,8 +1,9 @@
 import NotchUsageCore
 import SwiftUI
 
-/// Bandeau replié (003, 005) : dessine `NotchSignal`. La bande complète (`CompactStrip`) sert au survol,
-/// à l'épinglage et aux états gris ; la donnée unique, l'épuisement et le seuil n'occupent que ce qu'il faut.
+/// Bandeau replié (003, 005) : dessine `NotchSignal`. Dans l'encoche, seule la bande complète (`CompactStrip`)
+/// porte du texte : survol, épinglage, états gris ; prévision, seuil et épuisement n'y sont que le liseré de la
+/// forme. La pilule, sans encoche à entourer, garde une donnée unique.
 struct CompactView: View {
     let display: DisplayState
     let signal: NotchSignal
@@ -12,7 +13,7 @@ struct CompactView: View {
 
     var body: some View {
         Group {
-            if signal.isSilent {
+            if signal.isSilent || (display.mode == .notch && !signal.isBand) {
                 Color.clear
             } else if display.mode == .notch {
                 HStack(spacing: 0) {

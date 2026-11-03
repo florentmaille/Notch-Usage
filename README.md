@@ -26,9 +26,9 @@ everything, click to pin.
 ## Features
 
 - **Silent when all is well**: nothing is drawn next to the notch until something needs your attention. Hover to see the limit most likely to block you (the 5-hour window by default; pin another one in Settings), how much is used and when it resets; click to pin the panel.
-- **Warned before the wall**: from your pace over the last hour, the notch predicts when the 5-hour window will run out. Its bottom edge lights up amber, then orange, then red as the block gets closer, next to the time left ("2h 05m", then "10:06"). One signal, one meaning: a block is coming.
+- **Warned before the wall**: from your pace over the last hour, the notch predicts when the 5-hour window will run out. Its bottom edge lights up amber, then orange, then red as the block gets closer. Nothing else: hover for the time left ("blocked in 2h 05m", then "at 10:06"). One signal, one meaning: a block is coming.
 - **Every limit, one hover away**: 5-hour window, weekly, per model, with "resets in 2h 14m", the exact time and "at this pace: blocked at 16:40".
-- **Thresholds as a fallback**: when no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % shows the percentage as an amber or red pill with the same edge. Thresholds are adjustable, one alert per limit and per reset period.
+- **Thresholds as a fallback**: when no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % lights the same edge, amber or red. Thresholds are adjustable, one alert per limit and per reset period.
 - **Works everywhere**: a pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
 - **Two ways to connect**: reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal**: refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. 0.2 % CPU on average.

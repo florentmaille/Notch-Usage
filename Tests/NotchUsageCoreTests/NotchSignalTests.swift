@@ -57,6 +57,14 @@ struct NotchSignalTests {
         #expect(signal(display(.reauthRequired(previous: nil))).edge == nil)
     }
 
+    @Test func onlyTheBandWidensTheNotch() {
+        #expect(signal(display(.idle(snap(42)), hover: true)).isBand)
+        #expect(!signal(display(.idle(snap(42)))).isBand)
+        #expect(!signal(display(.idle(snap(55)), forecasts: ["session": .blockAt(now.addingTimeInterval(7200))])).isBand)
+        #expect(!signal(display(.idle(snap(83)), level: .warning)).isBand)
+        #expect(!signal(display(.idle(snap(100)), level: .critical)).isBand)
+    }
+
     // MARK: US2 - paliers
 
     @Test func tiersFollowTheDeadline() {

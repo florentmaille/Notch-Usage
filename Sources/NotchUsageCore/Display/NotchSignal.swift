@@ -1,7 +1,9 @@
 import Foundation
 
 /// Ce que l'encoche repliée montre sans survol (feature 005, contrat notch-signal.md) : la vue dessine,
-/// le panneau lit `isSilent`. La bande complète (`CompactStrip`) reste celle de la 003.
+/// le panneau lit `isSilent` et `isBand`. Dans l'encoche, seul `band` porte du texte : les autres contenus
+/// se réduisent au liseré autour de l'encoche physique, leurs textes ne servent qu'à la pilule.
+/// La bande complète (`CompactStrip`) reste celle de la 003.
 public struct NotchSignal: Sendable, Equatable {
     public enum Content: Sendable, Equatable {
         case silent                                   // rien : ni oreille, ni texte
@@ -37,6 +39,12 @@ public struct NotchSignal: Sendable, Equatable {
     public let accessibility: String
 
     public var isSilent: Bool { content == .silent }
+
+    /// Seul contenu qui élargit l'encoche : survol, épinglage, gris, session, compte.
+    public var isBand: Bool {
+        if case .band = content { return true }
+        return false
+    }
 
     public static func make(display: DisplayState, now: Date, language: InterfaceLanguage, strings: CompactStrip.Strings,
                             locale: Locale = .current, timeZone: TimeZone = .current) -> NotchSignal {

@@ -511,7 +511,9 @@ final class AppModel {
         signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app)
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
-        panel?.apply(display, silent: signal.isSilent, halo: signal.edge?.hasHalo ?? false)
+        // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
+        let narrow = signal.isSilent || (display.mode == .notch && !signal.isBand)
+        panel?.apply(display, narrow: narrow, halo: signal.edge?.hasHalo ?? false)
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
