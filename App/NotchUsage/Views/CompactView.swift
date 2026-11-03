@@ -134,6 +134,17 @@ enum LimitLabel {
         case .weeklyModel(let name): return String(localized: "Weekly · \(name)")
         }
     }
+
+    /// Libellé d'une limite connue seulement par son identifiant (choix enregistré, relevé absent).
+    static func text(forID id: String) -> String {
+        switch id {
+        case "session": return String(localized: "5-hour window")
+        case "weekly_all": return String(localized: "Weekly, all models")
+        default:
+            let name = id.hasPrefix("weekly_scoped:") ? String(id.dropFirst("weekly_scoped:".count)) : id
+            return String(localized: "Weekly · \(name)")
+        }
+    }
 }
 
 extension CompactStrip.Strings {

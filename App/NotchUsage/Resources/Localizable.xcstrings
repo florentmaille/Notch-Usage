@@ -117,6 +117,26 @@
         }
       }
     },
+    "Automatic": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatique"
+          }
+        }
+      }
+    },
+    "Automatic shows the limit predicted to run out before its reset, otherwise the 5-hour window. A reached 5-hour or all-models weekly limit always shows.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatique affiche la limite dont le blocage est prévu avant son reset, sinon la fenêtre 5 h. Une limite 5 h ou hebdomadaire tous modèles atteinte s'affiche toujours."
+          }
+        }
+      }
+    },
     "Back": {
       "localizations": {
         "fr": {
@@ -327,6 +347,16 @@
         }
       }
     },
+    "Limit shown": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limite affichée"
+          }
+        }
+      }
+    },
     "No Claude Code session found. Sign in to Claude Code first, or use the browser.": {
       "localizations": {
         "fr": {
@@ -343,6 +373,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas de connexion réseau."
+          }
+        }
+      }
+    },
+    "Notch": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encoche"
           }
         }
       }

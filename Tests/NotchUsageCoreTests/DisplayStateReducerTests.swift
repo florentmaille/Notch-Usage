@@ -32,16 +32,22 @@ struct DisplayStateReducerTests {
 
     @Test func headlinePrefersTheEarliestPredictedBlock() {
         let snap = makeSnapshot([("session", 55), ("weekly_all", 60)], fetchedAt: now)
-        #expect(reduce(.idle(snap)).headline?.limit.id == "weekly_all")
-        let block: [String: Forecast] = ["session": .blockAt(now.addingTimeInterval(3600))]
+        let block: [String: Forecast] = ["weekly_all": .blockAt(now.addingTimeInterval(3600))]
         let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
                                            fullscreen: false, hover: false, pinned: false, now: now, forecasts: block)
-        #expect(d.headline?.limit.id == "session")
+        #expect(d.headline?.limit.id == "weekly_all")
         #expect(d.forecasts == block)
-        let holds: [String: Forecast] = ["session": .holdsUntilReset]
+        let holds: [String: Forecast] = ["weekly_all": .holdsUntilReset]
         let h = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
                                            fullscreen: false, hover: false, pinned: false, now: now, forecasts: holds)
-        #expect(h.headline?.limit.id == "weekly_all")
+        #expect(h.headline?.limit.id == "session")
+    }
+
+    @Test func headlineFollowsTheChosenLimit() {
+        let snap = makeSnapshot([("session", 70), ("weekly_all", 40)], fetchedAt: now)
+        let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
+                                           fullscreen: false, hover: false, pinned: false, now: now, choice: .limit("weekly_all"))
+        #expect(d.headline?.limit.id == "weekly_all")
     }
 
     @Test func failedReadingIsFlagged() {

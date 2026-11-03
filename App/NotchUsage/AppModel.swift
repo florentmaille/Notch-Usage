@@ -29,6 +29,7 @@ final class AppModel {
     private(set) var account: Account?
     private(set) var refreshSettings: RefreshSettings
     private(set) var alertSettings: AlertSettings
+    private(set) var headlineChoice: HeadlineChoice
     private(set) var fetchState: FetchState = .idle(nil)
     /// Dernier état émis par le coordinateur (`fetchState` peut garder un échec pendant une nouvelle tentative).
     @ObservationIgnored private var lastReceivedState: FetchState = .idle(nil)
@@ -56,6 +57,7 @@ final class AppModel {
     private static let accountKey = "account"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
+    private static let headlineKey = "headlineLimit"
 
     init() {
         let defaults = UserDefaults.standard
@@ -69,6 +71,7 @@ final class AppModel {
         } else {
             alertSettings = AlertSettings()
         }
+        headlineChoice = HeadlineChoice(storedValue: defaults.string(forKey: Self.headlineKey))
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
@@ -127,7 +130,7 @@ final class AppModel {
             synthetic = synthetic.appending(current)
             demoState = .idle(current)
             demoForecasts = PaceForecaster.forecasts(history: synthetic, snapshot: current, now: now)
-        case "warning": demoState = .idle(snapshot(64, 38, 83))
+        case "warning": demoState = .idle(snapshot(83, 38, 64))
         case "critical":
             demoState = .idle(snapshot(97, 52, 71))
             demoForecasts = ["session": .blockAt(now.addingTimeInterval(50 * 60))]
@@ -449,6 +452,12 @@ final class AppModel {
         recompute()
     }
 
+    func setHeadlineChoice(_ choice: HeadlineChoice) {
+        headlineChoice = choice
+        defaults.set(choice.storedValue, forKey: Self.headlineKey)
+        recompute()
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         launchAtLoginStatus = LaunchAtLogin.set(enabled: enabled)
     }
@@ -477,10 +486,12 @@ final class AppModel {
         #if DEBUG
         if let demo = demoState { state = demo; connected = true }
         #endif
-        let level = state.snapshot.map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
+        // Pastille et point d'alerte suivent la limite affichée, pas la plus haute de toutes (004).
+        let level = state.snapshot.flatMap { headlineChoice.pick(in: $0, forecasts: forecasts) }
+            .map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
         display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
                                              layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now,
-                                             forecasts: forecasts)
+                                             forecasts: forecasts, choice: headlineChoice)
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
         #endif

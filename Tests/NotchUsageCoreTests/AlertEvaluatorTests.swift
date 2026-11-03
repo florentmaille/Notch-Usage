@@ -108,3 +108,13 @@ struct AlertEvaluatorTests {
         #expect(l2.entries["session"] == nil)
     }
 }
+
+@Suite("AlertEvaluator, niveau d'une limite (004)")
+struct AlertEvaluatorLimitLevelTests {
+    @Test func levelOfASingleLimit() {
+        let snap = makeSnapshot([("session", 30), ("weekly_all", 96)])
+        let settings = AlertSettings()
+        #expect(AlertEvaluator().level(for: snap.limits[0], settings: settings) == .none)
+        #expect(AlertEvaluator().level(for: snap.limits[1], settings: settings) == .critical)
+    }
+}
