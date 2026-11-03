@@ -137,12 +137,12 @@
         }
       }
     },
-    "Alerts": {
+    "Advanced": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alertes"
+            "value": "Avancé"
           }
         }
       }
@@ -267,16 +267,6 @@
         }
       }
     },
-    "Claude rate-limits this endpoint. 3 minutes is a safe default.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude limite la fréquence de ces demandes. 3 minutes est une valeur sûre."
-          }
-        }
-      }
-    },
     "Claude rejected the credentials. Try signing in again.": {
       "localizations": {
         "fr": {
@@ -393,16 +383,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Données indisponibles, affichage du dernier relevé."
-          }
-        }
-      }
-    },
-    "Fallback if the browser sign-in is blocked: paste the sessionKey cookie from claude.ai.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Solution de secours si la connexion par navigateur est bloquée : collez le cookie sessionKey de claude.ai."
           }
         }
       }
@@ -527,12 +507,12 @@
         }
       }
     },
-    "Notify me when a block is under 30 minutes or a limit is reached": {
+    "Notify me before a block": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Me notifier quand un blocage est à moins de 30 minutes ou qu'une limite est atteinte"
+            "value": "Me prévenir avant un blocage"
           }
         }
       }
@@ -563,6 +543,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ouvre claude.ai dans une petite fenêtre. Le cookie de session reste dans votre trousseau."
+          }
+        }
+      }
+    },
+    "Other method…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autre méthode…"
+          }
+        }
+      }
+    },
+    "Paste the sessionKey cookie from claude.ai if the browser sign-in is blocked.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collez le cookie sessionKey de claude.ai si la connexion par navigateur est bloquée."
           }
         }
       }
@@ -603,16 +603,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reconnexion nécessaire"
-          }
-        }
-      }
-    },
-    "Refresh": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Actualisation"
           }
         }
       }
@@ -687,16 +677,6 @@
         }
       }
     },
-    "Session key": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Clé de session"
-          }
-        }
-      }
-    },
     "Settings": {
       "localizations": {
         "fr": {
@@ -747,16 +727,6 @@
         }
       }
     },
-    "Startup": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Démarrage"
-          }
-        }
-      }
-    },
     "System": {
       "localizations": {
         "fr": {
@@ -803,6 +773,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cette offre Claude ne fournit pas de limites de consommation. Pro, Max ou Team est nécessaire."
+          }
+        }
+      }
+    },
+    "Thresholds colour the gauge for weekly limits and before a forecast exists. Claude rate-limits usage requests: 3 minutes is a safe refresh.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les seuils colorent la jauge pour les limites hebdomadaires et avant qu'une prévision existe. Claude limite les requêtes d'usage : 3 minutes est une cadence sûre."
           }
         }
       }
@@ -963,16 +943,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "sk-ant-sid…"
-          }
-        }
-      }
-    },
-    "Thresholds colour the gauge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les seuils colorent la jauge et le panneau pour les limites hebdomadaires et avant qu'une prévision existe. L'encoche montre toujours la limite la plus susceptible de bloquer."
           }
         }
       }

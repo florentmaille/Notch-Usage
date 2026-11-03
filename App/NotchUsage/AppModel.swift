@@ -48,8 +48,13 @@ final class AppModel {
     @ObservationIgnored private var pausedReasons: Set<PauseReason> = []
     /// Réglages d'alerte lus par le hook du coordinateur à chaque relevé : un changement de seuil ne redémarre rien.
     @ObservationIgnored private let alertSettingsBox: OSAllocatedUnfairLock<AlertSettings>
-    var hover = false { didSet { recompute() } }
-    var pinned = false { didSet { recompute() } }
+    /// Survol de l'encoche (013 : seule façon d'ouvrir le panneau). En le quittant, on revient aux limites.
+    var hover = false {
+        didSet {
+            if !hover { showSettings = false }
+            recompute()
+        }
+    }
     var fullscreen = false { didSet { recompute() } }
     var showSettings = false { didSet { recompute() } }
     /// Hauteur idéale du contenu déplié, mesurée par la vue (hors réglages).
@@ -87,7 +92,7 @@ final class AppModel {
         let initialLayout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 0, auxLeftWidth: nil, auxRightWidth: nil)
         layout = initialLayout
         let initialDisplay = DisplayStateReducer.reduce(state: .idle(nil), connected: false, settings: settings, alertLevel: .none,
-                                                        layout: initialLayout, fullscreen: false, hover: false, pinned: false, now: Date())
+                                                        layout: initialLayout, fullscreen: false, hover: false, now: Date())
         display = initialDisplay
         signal = NotchSignal.make(display: initialDisplay, now: Date(), language: AppLanguage.current, strings: .app)
     }
@@ -162,7 +167,6 @@ final class AppModel {
         } else {
             let controller = NotchPanelController(target: target, rootView: AnyView(NotchRootView().environment(self)))
             controller.onHoverChange = { [weak self] inside in self?.hover = inside }
-            controller.onToggleClick = { [weak self] in self?.togglePinned() }
             controller.onDismiss = { [weak self] in self?.dismiss() }
             panel = controller
         }
@@ -405,7 +409,6 @@ final class AppModel {
         fetchState = .idle(nil)
         lastReceivedState = .idle(nil)
         showSettings = false
-        pinned = false
         recompute()
     }
 
@@ -466,14 +469,9 @@ final class AppModel {
 
     // MARK: Interaction
 
-    func togglePinned() {
-        pinned.toggle()
-        if !pinned { showSettings = false }
-    }
-
+    /// Échap : referme le panneau ouvert au survol.
     func dismiss() {
-        pinned = false
-        showSettings = false
+        hover = false
     }
 
     // MARK: Dérivation
@@ -489,7 +487,7 @@ final class AppModel {
         let level = state.snapshot.flatMap { HeadlinePicker.pick(in: $0, forecasts: forecasts, settings: alertSettings, now: now) }
             .map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
         display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
-                                             layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now,
+                                             layout: layout, fullscreen: fullscreen, hover: hover, now: now,
                                              forecasts: forecasts, alertSettings: alertSettings)
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
@@ -497,7 +495,6 @@ final class AppModel {
         signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app)
         notifier.notifyIfNeeded(signal: signal, display: display, enabled: alertSettings.notifications, now: now)
         panel?.contentHeight = expandedContentHeight
-        panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée.
         let ear = NotchPanelController.earWidth
@@ -505,10 +502,12 @@ final class AppModel {
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
-        guard !showSettings, height > 40 else { return }
+        guard height > 40 else { return }
         let clamped = min(height.rounded(.up), 480)
         guard abs(clamped - expandedContentHeight) > 0.5 else { return }
         expandedContentHeight = clamped
-        recompute()
+        // Hors de la passe de mise en page qui a produit la mesure : redimensionner la fenêtre pendant cette passe
+        // laissait la vue racine à l'ancienne hauteur (réglages coupés, 013).
+        Task { @MainActor [weak self] in self?.recompute() }
     }
 }

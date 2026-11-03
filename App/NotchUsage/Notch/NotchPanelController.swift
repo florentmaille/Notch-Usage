@@ -10,11 +10,10 @@ final class NotchPanelController {
     /// Oreille de l'île repliée (012).
     static let earWidth: CGFloat = 52
     static let expandedWidth: CGFloat = 440
-    /// Hauteur des réglages, et plafond du contenu mesuré.
+    /// Hauteur de départ du contenu déplié, avant la première mesure.
     static let expandedHeight: CGFloat = 320
     /// Hauteur du contenu déplié mesurée par SwiftUI (hors réglages).
     var contentHeight: CGFloat = expandedHeight
-    var showsSettings = false
     static let hiddenStripHeight: CGFloat = 2
     /// Fondu de l'île (012) : le cadre attend sa fin avant de rétrécir.
     static let islandFade: TimeInterval = 0.3
@@ -22,7 +21,6 @@ final class NotchPanelController {
     static let hoverCloseDelay: TimeInterval = 0.10
 
     var onHoverChange: ((Bool) -> Void)?
-    var onToggleClick: (() -> Void)?
     var onDismiss: (() -> Void)?
 
     private let panel: NotchPanel
@@ -30,7 +28,9 @@ final class NotchPanelController {
     private let hosting: FirstMouseHostingView
     private var target: ScreenObserver.Target
     private var display: DisplayState?
-    private var globalClickMonitor: Any?
+    /// Un menu (Langue) est ouvert : il sort du panneau, qui ne doit pas se refermer pendant le choix.
+    private var menuTracking = false
+    private var menuObservers: [any NSObjectProtocol] = []
     private var localKeyMonitor: Any?
     private var hoverWork: DispatchWorkItem?
     private var shrinkWork: DispatchWorkItem?
@@ -55,7 +55,15 @@ final class NotchPanelController {
         panel.contentView = hoverView
         hoverView.onEnter = { [weak self] in self?.scheduleHover(true) }
         hoverView.onExit = { [weak self] in self?.scheduleHover(false) }
-        panel.onClick = { [weak self] point in self?.handleClick(at: point) }
+        let center = NotificationCenter.default
+        menuObservers = [
+            center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.menuTracking = true }
+            },
+            center.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.menuDidEnd() }
+            },
+        ]
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.keyCode == 53 else { return event } // Échap
             self.onDismiss?()
@@ -87,7 +95,7 @@ final class NotchPanelController {
         if display.fullscreenHidden {
             rect = Self.centered(CGSize(width: wideWidth, height: Self.hiddenStripHeight), in: screen)
         } else if display.isExpanded {
-            let height = layout.height + (showsSettings ? Self.expandedHeight : contentHeight)
+            let height = layout.height + contentHeight
             rect = Self.centered(CGSize(width: max(wideWidth, Self.expandedWidth), height: height), in: screen)
         } else if layout.mode == .notch {
             let width = layout.width + ears.left + ears.right
@@ -101,22 +109,25 @@ final class NotchPanelController {
         let shrinking = rect.width < panel.frame.width && !display.isExpanded && !display.fullscreenHidden && previous?.isExpanded == false
         if shrinking {
             // L'oreille qui disparaît joue son fondu dans l'ancien cadre ; le cadre rétrécit ensuite.
-            let work = DispatchWorkItem { [weak self] in self?.panel.setFrame(rect, display: true) }
+            let work = DispatchWorkItem { [weak self] in self?.setFrame(rect) }
             shrinkWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.islandFade, execute: work)
         } else {
-            panel.setFrame(rect, display: true)
+            setFrame(rect)
         }
         if !panel.isVisible { panel.orderFrontRegardless() }
 
-        let pinned = display.panel == .pinned
-        if pinned, previous?.panel != .pinned {
+        // Ouvert : le panneau prend le clavier (champ de clé, Échap) ; replié, il le rend.
+        if display.isExpanded, previous?.isExpanded != true {
             panel.makeKey()
-            installGlobalClickMonitor()
-        } else if !pinned, previous?.panel == .pinned {
-            removeGlobalClickMonitor()
-            if panel.isKeyWindow { panel.resignKey() }
+        } else if !display.isExpanded, previous?.isExpanded == true, panel.isKeyWindow {
+            panel.resignKey()
         }
+    }
+
+    private func setFrame(_ rect: NSRect) {
+        guard rect != panel.frame else { return }
+        panel.setFrame(rect, display: true)
     }
 
     private static func centered(_ size: CGSize, in screen: NSRect) -> NSRect {
@@ -124,7 +135,8 @@ final class NotchPanelController {
     }
 
     func close() {
-        removeGlobalClickMonitor()
+        menuObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        menuObservers = []
         if let localKeyMonitor { NSEvent.removeMonitor(localKeyMonitor) }
         localKeyMonitor = nil
         hoverWork?.cancel()
@@ -133,32 +145,19 @@ final class NotchPanelController {
         panel.close()
     }
 
-    /// FR-012 : un clic épingle ; une fois épinglé, seul un clic sur la bande de l'encoche désépingle
-    /// (les clics dans le contenu servent aux boutons et aux réglages).
-    private func handleClick(at point: NSPoint) {
-        guard let display else { return }
-        let inStrip = point.y >= panel.frame.height - display.layout.height
-        if display.panel != .pinned || inStrip { onToggleClick?() }
-    }
-
     private func scheduleHover(_ inside: Bool) {
+        // Le menu Langue recouvre le pointeur : la sortie n'en est pas une tant qu'il est ouvert.
+        if !inside, menuTracking { return }
         hoverWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.onHoverChange?(inside) }
         hoverWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + (inside ? Self.hoverOpenDelay : Self.hoverCloseDelay), execute: work)
     }
 
-    private func installGlobalClickMonitor() {
-        guard globalClickMonitor == nil else { return }
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            // Les moniteurs globaux ne reçoivent pas les clics dans notre propre fenêtre : c'est donc un clic ailleurs.
-            Task { @MainActor in self?.onDismiss?() }
-        }
-    }
-
-    private func removeGlobalClickMonitor() {
-        if let globalClickMonitor { NSEvent.removeMonitor(globalClickMonitor) }
-        globalClickMonitor = nil
+    /// Menu refermé : si le pointeur a quitté le panneau entre-temps, on referme.
+    private func menuDidEnd() {
+        menuTracking = false
+        if !panel.frame.contains(NSEvent.mouseLocation) { scheduleHover(false) }
     }
 }
 

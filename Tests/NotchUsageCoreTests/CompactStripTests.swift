@@ -29,7 +29,7 @@ struct CompactStripTests {
     func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, now: Date? = nil,
                  forecasts: [String: Forecast] = [:]) -> DisplayState {
         var d = DisplayStateReducer.reduce(state: state, connected: connected, settings: RefreshSettings(), alertLevel: level,
-                                           layout: layout, fullscreen: false, hover: false, pinned: false, now: now ?? self.now)
+                                           layout: layout, fullscreen: false, hover: false, now: now ?? self.now)
         d.forecasts = forecasts
         return d
     }

@@ -2,10 +2,10 @@ import Foundation
 
 public enum DisplayStateReducer {
     public static func reduce(state: FetchState, connected: Bool, settings: RefreshSettings, alertLevel: AlertLevel,
-                              layout: NotchLayout, fullscreen: Bool, hover: Bool, pinned: Bool, now: Date,
+                              layout: NotchLayout, fullscreen: Bool, hover: Bool, now: Date,
                               forecasts: [String: Forecast] = [:], alertSettings: AlertSettings = AlertSettings()) -> DisplayState {
-        let panel: DisplayState.Panel = pinned ? .pinned : (hover ? .hoverOpen : .collapsed)
-        let fullscreenHidden = fullscreen && !hover && !pinned
+        let panel: DisplayState.Panel = hover ? .hoverOpen : .collapsed
+        let fullscreenHidden = fullscreen && !hover
 
         var d = DisplayState(
             layout: layout, panel: panel, content: .connect, limits: [], headline: nil, banner: nil,

@@ -3,6 +3,8 @@ import SwiftUI
 /// Premier lancement : les deux voies de connexion et la note de risque (US1 sc. 1, FR-001).
 struct ConnectView: View {
     @Environment(AppModel.self) private var model
+    @State private var showsKey = false
+    @State private var pastedKey = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -26,6 +28,26 @@ struct ConnectView: View {
             }
             Text("Opens claude.ai in a small window. The session cookie stays in your Keychain.")
                 .font(.caption2).foregroundStyle(.secondary)
+
+            // Repli quand la connexion par navigateur est bloquée (déplacé depuis les réglages, 013).
+            DisclosureGroup(isExpanded: $showsKey) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        SecureField("sk-ant-sid…", text: $pastedKey)
+                            .textFieldStyle(.roundedBorder)
+                        Button("Use") {
+                            model.applySessionKey(pastedKey)
+                            pastedKey = ""
+                        }
+                        .disabled(pastedKey.isEmpty || model.isConnecting)
+                    }
+                    Text("Paste the sessionKey cookie from claude.ai if the browser sign-in is blocked.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                .padding(.top, 4)
+            } label: {
+                Text("Other method…").font(.caption).foregroundStyle(.secondary)
+            }
 
             if model.isConnecting {
                 HStack(spacing: 6) { ProgressView().controlSize(.small).tint(.white); Text("Checking your usage…").font(.caption) }
