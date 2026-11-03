@@ -24,7 +24,9 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
 
     func show() {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        // Magasin en mémoire : le cookie de session ne touche jamais le disque (007, H1). Un magasin
+        // persistant écrivait `sessionKey` dans ~/Library/HTTPStorages, lisible par tout processus.
+        config.websiteDataStore = .nonPersistent()
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 520, height: 700), configuration: config)
         webView.navigationDelegate = self
         webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
@@ -47,15 +49,18 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         checkCookies()
     }
 
-    /// Efface les cookies claude.ai du magasin WebKit : sans cela, un cookie périmé est recapturé
-    /// aussitôt la fenêtre ouverte et chaque tentative échoue sans afficher la page de connexion.
-    static func clearClaudeCookies() async {
+    /// Efface tout ce que WebKit et CFNetwork ont pu écrire sur disque pour l'app : le magasin persistant
+    /// des versions antérieures à 0.4.1 (cookies claude.ai et fournisseurs d'identité, stockage local) et
+    /// les cookies partagés. Appelé au lancement, à la déconnexion et sur 401 ; sans effet s'il n'y a rien.
+    static func purgeBrowserData() async {
         let store = WKWebsiteDataStore.default()
         let records = await store.dataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
-        let claude = records.filter { $0.displayName.hasSuffix("claude.ai") }
-        guard !claude.isEmpty else { return }
-        await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: claude)
-        Log.auth.notice("claude.ai browser data cleared")
+        if !records.isEmpty {
+            await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records)
+        }
+        await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
+        HTTPCookieStorage.shared.removeCookies(since: .distantPast)
+        if !records.isEmpty { Log.auth.notice("legacy browser data purged (\(records.count, privacy: .public) records)") }
     }
 
     /// App sans Dock (LSUIElement) : l'activation peut être refusée, d'où `orderFrontRegardless`.
@@ -88,7 +93,10 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
                 Log.auth.notice("sessionKey captured from browser sign-in")
                 let value = session.value
                 let org = cookies.first { $0.name == "lastActiveOrg" && $0.domain.hasSuffix("claude.ai") }?.value
+                // Le magasin est en mémoire ; on le vide quand même pour ne rien garder des fournisseurs d'identité.
+                let dataStore = self.webView?.configuration.websiteDataStore
                 self.close()
+                Task { await dataStore?.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) }
                 self.onCaptured(value, org)
             }
         }

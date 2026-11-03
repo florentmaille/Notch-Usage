@@ -44,14 +44,15 @@ public actor WebUsageProvider: UsageProvider {
         let match = orgs.first { ($0["uuid"] as? String) == preferred && preferred != nil }
             ?? orgs.first(where: personal)
             ?? orgs.first(where: business)
-        guard let uuid = match?["uuid"] as? String, !uuid.isEmpty else { throw FetchError.unsupported }
+        // Un UUID strict : la valeur vient du serveur et finit dans un chemin d'URL (007).
+        guard let uuid = match?["uuid"] as? String, UUID(uuidString: uuid) != nil else { throw FetchError.unsupported }
         organizationID = uuid
         return uuid
     }
 
     public func fetch() async throws(FetchError) -> UsageSnapshot {
         let org: String
-        if let organizationID { org = organizationID } else { org = try await resolveOrganization() }
+        if let organizationID, UUID(uuidString: organizationID) != nil { org = organizationID } else { org = try await resolveOrganization() }
         let url = Self.organizationsURL.appending(path: org).appending(path: "usage")
         let response = try await ProviderSupport.send(try request(url), via: http)
         return try ProviderSupport.snapshot(from: response, now: now())
