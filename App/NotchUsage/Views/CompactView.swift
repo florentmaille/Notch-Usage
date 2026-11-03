@@ -175,8 +175,8 @@ extension NotchSignal.Edge {
 
     var hasHalo: Bool { self == .imminent || self == .exhausted }
 
-    /// Débord du halo au-delà du trait, transparent.
-    static let haloPad: CGFloat = 8
+    /// Débord du halo au-delà du trait, transparent : couvre le rayon de 14 pt au sommet du battement (006).
+    static let haloPad: CGFloat = 16
 
     /// Cerne sombre autour du trait : le sépare d'un fond clair ou de la même teinte (le trait n'a aucune
     /// teinte lisible sur un fond orange sans lui).

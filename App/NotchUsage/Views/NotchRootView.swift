@@ -87,22 +87,28 @@ private struct NotchShape: View {
     }
 }
 
-/// Halo du liseré (paliers avec halo) : respire 0,6 → 1 → 0,6 en 600 ms à chaque battement (006, R4). Seule
-/// l'opacité de l'ombre change ; en mode réduit d'animations, le halo reste à 0,6.
+/// Halo du liseré (paliers avec halo) : double battement de cœur à chaque incrément de `beat` (006, R4),
+/// opacité 0,6 → 1 → 0,7 → 1 → 0,6 et rayon 6 → 14 pt sur la montée, en 1 s. Le trait ne change pas ;
+/// en mode réduit d'animations, le halo reste à 0,6 et 6 pt.
 private struct HaloBeat: ViewModifier {
     let edge: NotchSignal.Edge
     let beat: Int
     let reduceMotion: Bool
 
+    static let restOpacity = 0.6
+    static let restRadius: CGFloat = 6
+    static let peakRadius: CGFloat = 14
+
     func body(content: Content) -> some View {
         if !edge.hasHalo {
             content
         } else if reduceMotion {
-            content.shadow(color: edge.color.opacity(0.6), radius: 6, y: 2)
+            content.shadow(color: edge.color.opacity(Self.restOpacity), radius: Self.restRadius, y: 2)
         } else {
-            content.phaseAnimator([0.6, 1.0], trigger: beat) { view, opacity in
-                view.shadow(color: edge.color.opacity(opacity), radius: 6, y: 2)
-            } animation: { _ in .easeInOut(duration: 0.3) }
+            content.phaseAnimator([Self.restOpacity, 1.0, 0.7, 1.0], trigger: beat) { view, opacity in
+                let rise = (opacity - Self.restOpacity) / (1 - Self.restOpacity)
+                view.shadow(color: edge.color.opacity(opacity), radius: Self.restRadius + (Self.peakRadius - Self.restRadius) * rise, y: 2)
+            } animation: { _ in .easeInOut(duration: 0.2) }
         }
     }
 }

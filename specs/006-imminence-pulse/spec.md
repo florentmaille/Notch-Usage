@@ -65,9 +65,9 @@ est dessus. Réduire les animations activé : aucun battement en `imminent`.
 
 ### Functional Requirements
 
-- **FR-001**: L'encoche MUST faire respirer le halo du liseré (intensité qui monte puis revient, durée d'environ 600 ms) quand le palier du liseré est « imminent » au sens de la 005 (blocage prévu dans moins de 30 min sur la limite affichée).
+- **FR-001**: L'encoche MUST faire battre le halo du liseré (double battement de cœur : intensité et étendue du halo qui montent, reviennent à mi-chemin, remontent et reviennent, durée d'environ 1 s) quand le palier du liseré est « imminent » au sens de la 005 (blocage prévu dans moins de 30 min sur la limite affichée).
 - **FR-002**: Le rythme MUST être d'un battement par minute entre 30 min et 10 min avant le blocage prévu, et d'un battement toutes les 30 s sous 10 min.
-- **FR-003**: Un battement MUST ne changer que l'intensité du halo : trait, épaisseur, teinte, forme et largeur de l'encoche ou de la pilule restent identiques pendant et après le battement.
+- **FR-003**: Un battement MUST ne changer que l'intensité et l'étendue du halo : trait, épaisseur, teinte, forme et largeur de l'encoche ou de la pilule restent identiques pendant et après le battement.
 - **FR-004**: Aucun battement MUST NOT se produire pour les paliers lointain, proche et épuisé, ni quand le liseré rouge vient d'un seuil critique sans prévision.
 - **FR-005**: Aucun battement MUST NOT se produire pendant le survol de l'encoche ni quand le panneau est épinglé.
 - **FR-006**: Quand le système demande de réduire les animations, aucun battement MUST NOT se produire ; le liseré reste celui de la 005, immobile.
@@ -96,7 +96,7 @@ est dessus. Réduire les animations activé : aucun battement en `imminent`.
 
 - Les paliers, teintes, épaisseurs et le halo sont ceux de la 005 ; cette feature n'en change aucun.
 - « Imminent » couvre uniquement un blocage prévu par la prévision (003) ; le seuil critique à 95 % sans prévision donne un rouge statique et reste hors champ.
-- La respiration va de l'intensité normale du halo à son maximum et retour ; elle ne s'éteint jamais complètement, pour qu'un regard posé à n'importe quel instant voie le liseré.
+- Le battement va de l'intensité normale du halo à son maximum et retour, deux fois (cœur), et élargit le halo sur la montée ; il ne s'éteint jamais complètement, pour qu'un regard posé à n'importe quel instant voie le liseré. Retour utilisateur du 2026-11-03 : à ce rythme, un battement marqué vaut mieux qu'une respiration discrète.
 - Le rafraîchissement périodique de la vue repliée (celui qui met à jour les comptes à rebours) bat toutes les 30 s, à 5 s près ; le rythme de 30 s s'obtient en battant à chaque rafraîchissement, celui d'une minute un rafraîchissement sur deux, sans nouvelle horloge.
 - Un seul rythme à la fois ; le passage d'un rythme à l'autre n'est pas animé.
 - Hors champ : son, notification système, battement du point d'alerte en plein écran (inchangé, 001), battement dans le panneau déplié.

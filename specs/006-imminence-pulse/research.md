@@ -42,10 +42,12 @@
 
 ## R4. Animation du halo
 
-- **Decision**: dans `NotchShape`, le `shadow` du trait (le halo) prend son opacité d'un
-  `phaseAnimator([0.6, 1.0], trigger: beat)` avec `.easeInOut(duration: 0.3)` par phase :
-  0,6 → 1 → 0,6 en 600 ms, puis repos à 0,6. Aucun autre paramètre n'est animé : trait,
-  épaisseur, rayon, cadre du panneau, `edgePad` restent fixes. Même modificateur pour la pilule.
+- **Decision**: dans `NotchShape`, le `shadow` du trait (le halo) suit un
+  `phaseAnimator([0.6, 1.0, 0.7, 1.0], trigger: beat)` avec `.easeInOut(duration: 0.2)` par phase :
+  double battement de cœur en 1 s, opacité 0,6 → 1 → 0,7 → 1 → 0,6 et rayon du halo 6 → 14 pt sur
+  la montée (retour utilisateur : plus marqué, puisque rare). Aucun autre paramètre n'est animé :
+  trait, épaisseur, cadre du panneau restent fixes ; `haloPad` passe à 16 pt pour que le halo au
+  sommet ne soit pas coupé par le cadre. Même modificateur pour la pilule.
   Avec `accessibilityReduceMotion`, le modificateur n'est pas appliqué : opacité fixe à 0,6.
 - **Rationale**: `phaseAnimator` (macOS 14) revient de lui-même à la phase initiale après le
   déclenchement : pas d'état `isBeating` à gérer. Animer l'opacité d'une ombre est rendu par le
