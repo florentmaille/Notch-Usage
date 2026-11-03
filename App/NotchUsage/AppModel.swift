@@ -161,6 +161,8 @@ final class AppModel {
         #if DEBUG
         installDemoHook()
         #endif
+        // Les versions antérieures à 0.4.1 laissaient le cookie de session sur disque (007).
+        Task { await BrowserLoginWindow.purgeBrowserData() }
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
@@ -399,7 +401,7 @@ final class AppModel {
             } catch {
                 connectionError = error.localizedDescription
                 Log.auth.error("browser connection failed: \(error.localizedDescription, privacy: .public)")
-                if case ConnectionError.fetch(.unauthorized) = error { await BrowserLoginWindow.clearClaudeCookies() }
+                if case ConnectionError.fetch(.unauthorized) = error { await BrowserLoginWindow.purgeBrowserData() }
             }
         }
     }
@@ -415,7 +417,7 @@ final class AppModel {
         debouncer = ForecastDebouncer()
         forecasts = [:]
         lastRecordedAt = nil
-        Task { await BrowserLoginWindow.clearClaudeCookies() }
+        Task { await BrowserLoginWindow.purgeBrowserData() }
         setAccount(nil)
         fetchState = .idle(nil)
         lastReceivedState = .idle(nil)

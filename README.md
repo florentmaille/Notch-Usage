@@ -108,7 +108,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 
 - The only hosts the app talks to are `api.anthropic.com` and `claude.ai`.
 - No telemetry, no analytics, no crash reporting.
-- Secrets live in the macOS Keychain only. They never appear in logs.
+- Secrets live in the macOS Keychain only. They never appear in logs. The browser sign-in window keeps its cookies in memory and discards everything once the session key is captured.
 - The last reading and the last two hours of readings (for the forecast) are cached locally, and wiped on sign-out.
 
 ## Rate limits and refresh cadence
