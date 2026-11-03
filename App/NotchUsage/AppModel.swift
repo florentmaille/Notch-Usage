@@ -15,7 +15,8 @@ final class AppModel {
     @ObservationIgnored let http = URLSessionHTTPClient()
     @ObservationIgnored let defaults = UserDefaults.standard
     @ObservationIgnored let alertEvaluator = AlertEvaluator()
-    @ObservationIgnored private(set) lazy var connection = ConnectionManager(credentials: credentials, claudeCode: ClaudeCodeKeychainReader(), http: http, snapshots: snapshots, defaults: defaults)
+    @ObservationIgnored private(set) lazy var connection = ConnectionManager(credentials: credentials, claudeCode: ClaudeCodeKeychainReader(), http: http, snapshots: snapshots, defaults: defaults,
+                                                                                     log: { Log.auth.notice("\($0, privacy: .public)") })
     @ObservationIgnored private let power = PowerObserver()
     @ObservationIgnored let screens = ScreenObserver()
     @ObservationIgnored private let fullscreenObserver = FullscreenObserver()

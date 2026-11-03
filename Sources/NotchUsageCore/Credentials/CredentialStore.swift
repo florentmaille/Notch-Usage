@@ -14,6 +14,8 @@ public protocol CredentialStore: Sendable {
 
 /// Lecture de l'entrée Trousseau de Claude Code. `interactive == false` ⇒ aucun dialogue système.
 public protocol ClaudeCodeCredentialSource: Sendable {
+    /// Vrai si l'entrée existe, sans en lire le contenu ni déclencher de dialogue.
+    func entryExists() -> Bool
     func readRawJSON(interactive: Bool) async throws -> Data?
 }
 

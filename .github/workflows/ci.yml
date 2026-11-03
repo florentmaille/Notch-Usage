@@ -9,8 +9,8 @@ on:
 permissions:
   contents: read
 
-# Machines Intel pour les jobs bloquants : les runners macOS arm64 de GitHub manquent de capacité
-# (jobs annulés faute de runner). Un job arm64 non bloquant couvre la cible réelle (tout Mac à encoche).
+# Machines Intel : GitHub n'attribue pas de runner macOS arm64 à ce dépôt (jobs annulés sans démarrer, run
+# marqué en échec). La cible arm64 est couverte par les tests locaux ; à réessayer sur une autre image.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -53,20 +53,11 @@ jobs:
           -configuration Debug -destination 'platform=macOS'
           -derivedDataPath .build/DerivedData
           CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO build
+      - name: App tests
+        run: >
+          xcodebuild -project NotchUsage.xcodeproj -scheme NotchUsage
+          -configuration Debug -destination 'platform=macOS'
+          -derivedDataPath .build/DerivedData
+          CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO test
       - name: Check translations
         run: scripts/check-localizations.sh .build/DerivedData
-
-  core-tests-arm64:
-    name: swift test (arm64, non bloquant)
-    runs-on: macos-15
-    timeout-minutes: 30
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Select Xcode
-        run: |
-          xcode=$(ls -d /Applications/Xcode_*.app | grep -vi -e beta -e rc | sort -V | tail -1)
-          sudo xcode-select -s "$xcode"
-          xcodebuild -version
-      - name: Run tests
-        run: swift test

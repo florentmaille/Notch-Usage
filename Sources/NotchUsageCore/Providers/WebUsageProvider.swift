@@ -22,13 +22,7 @@ public actor WebUsageProvider: UsageProvider {
     @discardableResult
     public func resolveOrganization(preferred: String? = nil) async throws(FetchError) -> String {
         let response = try await ProviderSupport.send(try request(Self.organizationsURL), via: http)
-        if response.isChallenge || (response.status == 200 && response.isHTML) { throw FetchError.challenge }
-        switch response.status {
-        case 200: break
-        case 401, 403: throw FetchError.unauthorized
-        case 429: throw FetchError.rateLimited(retryAfter: response.retryAfter)
-        default: throw FetchError.server(response.status)
-        }
+        try ProviderSupport.check(response)
         guard let orgs = (try? JSONSerialization.jsonObject(with: response.body)) as? [[String: Any]] else {
             throw FetchError.malformed
         }

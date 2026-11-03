@@ -906,6 +906,26 @@
           }
         }
       }
+    },
+    "Claude did not answer in time. Try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude n'a pas répondu à temps. Réessayez."
+          }
+        }
+      }
+    },
+    "Could not reach Claude. Check your connection and try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre Claude. Vérifiez votre connexion et réessayez."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
