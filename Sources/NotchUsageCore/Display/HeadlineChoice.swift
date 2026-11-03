@@ -17,14 +17,16 @@ public enum HeadlineChoice: Sendable, Hashable {
 
     /// Une limite 5 h ou hebdomadaire tous modèles épuisée passe devant le choix : plus aucun modèle n'est
     /// utilisable. Sinon la limite choisie ; à défaut, ou si elle a disparu, la plus susceptible de bloquer :
-    /// blocage prévu le plus proche, puis pourcentage le plus élevé (003, research R6).
+    /// une limite atteinte, puis le blocage prévu le plus proche, sinon la fenêtre de 5 h.
     public func pick(in snapshot: UsageSnapshot, forecasts: [String: Forecast]) -> UsageLimit? {
         if let blocking = snapshot.limits.first(where: { $0.isBlocked && $0.kind != .weeklyModel }) { return blocking }
         if case .limit(let id) = self, let chosen = snapshot.limits.first(where: { $0.id == id }) { return chosen }
+        if let reached = snapshot.limits.first(where: \.isBlocked) { return reached }
         let predicted = snapshot.limits.compactMap { limit -> (UsageLimit, Date)? in
             if case .blockAt(let date)? = forecasts[limit.id] { return (limit, date) }
             return nil
         }.min { $0.1 < $1.1 }?.0
-        return predicted ?? snapshot.mostConstraining
+        // Sans fenêtre de 5 h (abonnement qui ne l'expose pas), la plus utilisée reste le meilleur repère.
+        return predicted ?? snapshot.limits.first { $0.kind == .rollingFiveHour } ?? snapshot.mostConstraining
     }
 }

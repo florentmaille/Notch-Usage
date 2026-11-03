@@ -130,7 +130,7 @@ final class AppModel {
             synthetic = synthetic.appending(current)
             demoState = .idle(current)
             demoForecasts = PaceForecaster.forecasts(history: synthetic, snapshot: current, now: now)
-        case "warning": demoState = .idle(snapshot(64, 38, 83))
+        case "warning": demoState = .idle(snapshot(83, 38, 64))
         case "critical":
             demoState = .idle(snapshot(97, 52, 71))
             demoForecasts = ["session": .blockAt(now.addingTimeInterval(50 * 60))]

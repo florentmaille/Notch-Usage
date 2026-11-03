@@ -5,10 +5,22 @@ import Testing
 @Suite("HeadlineChoice")
 struct HeadlineChoiceTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
-    let snap = makeSnapshot([("session", 70), ("weekly_all", 40), ("weekly_scoped:Fable", 20)])
+    let snap = makeSnapshot([("session", 30), ("weekly_all", 60), ("weekly_scoped:Fable", 20)])
 
-    @Test func automaticShowsTheMostUsedLimit() {
+    @Test func automaticShowsTheFiveHourWindowWhenNothingIsAtRisk() {
         #expect(HeadlineChoice.automatic.pick(in: snap, forecasts: [:])?.id == "session")
+        let holds: [String: Forecast] = ["session": .holdsUntilReset]
+        #expect(HeadlineChoice.automatic.pick(in: snap, forecasts: holds)?.id == "session")
+    }
+
+    @Test func automaticShowsAReachedModelLimit() {
+        let fable = makeSnapshot([("session", 30), ("weekly_all", 60), ("weekly_scoped:Fable", 100)])
+        #expect(HeadlineChoice.automatic.pick(in: fable, forecasts: [:])?.id == "weekly_scoped:Fable")
+    }
+
+    @Test func automaticFallsBackToTheMostUsedWithoutAFiveHourWindow() {
+        let weekly = makeSnapshot([("weekly_all", 30), ("weekly_scoped:Fable", 50)])
+        #expect(HeadlineChoice.automatic.pick(in: weekly, forecasts: [:])?.id == "weekly_scoped:Fable")
     }
 
     @Test func chosenLimitIsShownEvenWhenAnotherIsHigher() {

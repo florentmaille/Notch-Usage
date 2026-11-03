@@ -51,7 +51,7 @@ textes existants de la feature 001 (« Notch Usage, reconnect required », …).
 |---|---|---|
 | `normal` | ✓ 2 h 14 | 42 % |
 | `pace` | ⌛ 1 h 10 (orange) | 55 % |
-| `warning` | ✓ 3 j 5 h | [83 %] orange |
+| `warning` | ✓ 2 h 14 | [83 %] orange |
 | `critical` | ⌛ 16:40 (rouge) | [97 %] rouge |
 | `blocked` | ↻ 1 h 02 (rouge) | [Bloqué] rouge |
 | `offline` | wifi barré 1 h 49 (gris) | 42 % gris |
