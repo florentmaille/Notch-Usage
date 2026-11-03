@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your Claude Pro, Max or Team limits, live in the MacBook notch.</strong><br>
-  Native Swift. Local-first. No telemetry. Under 20 MB of memory.
+  Silent when all is well. A coloured edge when a block is coming. Hover for the details.
 </p>
 
 <p align="center">
@@ -18,27 +18,41 @@
 
 ---
 
-Ever been cut off by Claude in the middle of a task? Notch Usage keeps your subscription limits
-one glance away: the **5-hour window**, the **weekly limit** and the **per-model weekly limits**
-(Fable, …), each with its reset time. A compact gauge sits next to the notch. Hover to see
-everything, click to pin.
+Ever been cut off by Claude in the middle of a task? Notch Usage keeps your subscription limits one
+glance away: the **5-hour window**, the **weekly limit** and the **per-model weekly limits**, each
+with its reset time and, for the 5-hour window, a forecast of when you will hit the wall.
+
+It is native Swift, local-first, free of telemetry, and uses about 25 MB of memory.
+
+## How it reads
+
+<p align="center">
+  <img src="docs/images/states.png" alt="Notch states: all clear, hover, block predicted in 2 h, in 40 min, in 8 min, limit reached, offline" width="820">
+</p>
+
+| State | What you see |
+|---|---|
+| All clear | Nothing. The notch is your Mac's notch. |
+| Hover | Time to reset and usage of the limit most likely to block you, then the full panel. Click to pin it. |
+| A block is coming | A coloured edge around the notch: amber two hours out, orange under an hour, red with a halo under 30 minutes. |
+| Limit reached | Red edge; the panel shows when the limit comes back. |
+| Offline or stale reading | A grey strip with the last reading; the countdown keeps running. |
+
+The edge has one meaning, "a block is coming", and its colour says how soon. Nothing else in the
+notch carries that meaning, and the notch never widens without text to show.
 
 ## Features
 
-- **Silent when all is well**: nothing is drawn next to the notch until something needs your attention. Hover to see the limit most likely to block you (the 5-hour window by default; pin another one in Settings), how much is used and when it resets; click to pin the panel.
-- **Warned before the wall**: from your pace over the last hour, the notch predicts when the 5-hour window will run out. Its bottom edge lights up amber, then orange, then red as the block gets closer. Nothing else: hover for the time left ("blocked in 2h 05m", then "at 10:06"). One signal, one meaning: a block is coming.
-- **Every limit, one hover away**: 5-hour window, weekly, per model, with "resets in 2h 14m", the exact time and "at this pace: blocked at 16:40".
-- **Thresholds as a fallback**: when no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % lights the same edge, amber or red. Thresholds are adjustable, one alert per limit and per reset period.
-- **Works everywhere**: a pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
-- **Two ways to connect**: reuse your Claude Code session, or sign in to claude.ai in a small window.
-- **Frugal**: refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. 0.2 % CPU on average.
-- **Private**: talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
-- **Accessible**: every limit is announced by VoiceOver in one sentence.
-- **English and French**: follows your Mac's language, or pick one in Settings.
-
-<p align="center">
-  <img src="docs/images/states.png" alt="Notch states: block predicted in 2 h, in 40 min, in 8 min, threshold without forecast, limit reached, offline" width="720">
-</p>
+- **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace: blocked at 16:40"; the edge follows the same forecast.
+- **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % lights the same edge. Thresholds are adjustable; one alert per limit and per reset period.
+- **Choose the limit shown.** Automatic shows the limit predicted to run out first, otherwise the 5-hour window. Or pin the weekly limit, or one model, in Settings.
+- **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
+- **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
+- **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
+- **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
+- **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
+- **Accessible.** Every limit is announced by VoiceOver in one sentence, in the silent state too.
+- **English and French.** Follows your Mac's language, or pick one in Settings.
 
 ## Install
 
@@ -52,7 +66,10 @@ Or **download the [latest preview](https://github.com/florentmaille/Notch-Usage/
 **NotchUsage.app** to Applications. The preview is not notarized yet: the first time, open it, then click
 **Open Anyway** in System Settings → Privacy & Security. Step-by-step instructions are in the release notes.
 
-Signed and notarized builds will follow. To build from source:
+Requirements: macOS 14 (Sonoma) or later, Apple Silicon or Intel, and a Claude **Pro**, **Max** or **Team**
+subscription.
+
+To build from source (Xcode 16 or later):
 
 ```bash
 brew install xcodegen
@@ -60,9 +77,6 @@ git clone https://github.com/florentmaille/Notch-Usage.git && cd Notch-Usage
 xcodegen generate
 xcodebuild -project NotchUsage.xcodeproj -scheme NotchUsage -configuration Release build
 ```
-
-Requirements: macOS 14 (Sonoma) or later, Apple Silicon or Intel, Xcode 16 or later to build.
-A Claude **Pro**, **Max** or **Team** subscription.
 
 ## Connecting your account
 
@@ -79,9 +93,11 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 
 ## Settings
 
-<img src="docs/images/settings.png" alt="Settings: refresh interval, alert thresholds, session key, open at login" width="440" align="right">
+<img src="docs/images/settings.png" alt="Settings: language, limit shown in the notch, refresh interval, alerts" width="440" align="right">
 
-- **Refresh interval**: 1 to 15 minutes, 3 by default.
+- **Language**: system, English or French.
+- **Limit shown**: Automatic, or a pinned limit. The edge and the hover strip follow this choice.
+- **Refresh every**: 1 to 15 minutes, 3 by default.
 - **Alerts**: on or off, warning and critical thresholds.
 - **Session key**: paste a `claude.ai` session key manually if the browser sign-in is blocked.
 - **Open at login**.
@@ -93,7 +109,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 - The only hosts the app talks to are `api.anthropic.com` and `claude.ai`.
 - No telemetry, no analytics, no crash reporting.
 - Secrets live in the macOS Keychain only. They never appear in logs.
-- The last reading is cached locally so the panel stays useful while offline, and is wiped on sign-out.
+- The last reading and the last two hours of readings (for the forecast) are cached locally, and wiped on sign-out.
 
 ## Rate limits and refresh cadence
 
@@ -122,11 +138,12 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 | macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Builds from source are not signed with a stable identity, so the prompt returns after each rebuild. |
 | "Reconnect required" with the Claude Code session | Run any `claude` command: it renews its token and Notch Usage picks it up within a minute. |
 | Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key in Settings. |
+| The edge is hard to see on your wallpaper | It is drawn with a dark outline for light or warm wallpapers. If it still blends in, hover: the strip and panel carry the same information. |
 | Nothing shows on an external display | The pill appears at the top of the display that holds the menu bar. Check Displays → Arrange. |
 
 ## Development
 
-The logic lives in `NotchUsageCore`, a Swift package with no dependency beyond Foundation and 128 tests:
+The logic lives in `NotchUsageCore`, a Swift package with no dependency beyond Foundation and 200+ tests:
 
 ```bash
 swift test
@@ -136,9 +153,13 @@ The app (`App/NotchUsage`) is generated with [xcodegen](https://github.com/yonas
 Debug builds are signed ad hoc, so macOS asks for Keychain access again after each build. With an Apple Development
 certificate (free with an Apple ID, Xcode → Settings → Accounts), run `scripts/setup-local-signing.sh` once to sign
 Debug builds with it and keep Keychain access across builds.
-Specs, plan and validation results are in [`specs/001-claude-usage-notch`](specs/001-claude-usage-notch), written with
-[GitHub Spec Kit](https://github.com/github/spec-kit). `scripts/release.sh <version>` signs, notarizes and packages
-a DMG (Developer ID required).
+
+`scripts/demo.swift` drives a Debug build through its demo states (`normal`, `far`, `near`, `imminent`, `blocked`,
+`offline`, …) and captures the notch; the README images come from it.
+
+Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
+[`specs/`](specs): the notch itself (001), the forecast (003), the limit shown (004) and the silent notch with its
+deadline edge (005). `scripts/release.sh <version>` signs, notarizes and packages a DMG (Developer ID required).
 
 ## License
 
