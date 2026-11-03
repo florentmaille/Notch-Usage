@@ -43,7 +43,7 @@ La vue observe `beat` ; chaque incrément déclenche un battement. `beat` n'est 
 
 | Entrée | Effet |
 |---|---|
-| `beat` change | double battement en 1 s : opacité 0,6 → 1 → 0,7 → 1 → 0,6, rayon 6 → 14 pt sur la montée |
+| `beat` change | double battement en 1 s : opacité 0,6 → 1 → 0,7 → 1 → 0,6, rayon 6 → 14 pt et trait éclairci de 35 % sur la montée |
 | `reduceMotion` | opacité fixe à 0,6, rayon 6 pt, aucune animation |
 | `edge` sans halo (`far`, `near`) ou `nil` | aucun halo, `beat` sans effet |
 

@@ -98,6 +98,7 @@ private struct HaloBeat: ViewModifier {
     static let restOpacity = 0.6
     static let restRadius: CGFloat = 6
     static let peakRadius: CGFloat = 14
+    static let peakBrightness = 0.35
 
     func body(content: Content) -> some View {
         if !edge.hasHalo {
@@ -107,7 +108,9 @@ private struct HaloBeat: ViewModifier {
         } else {
             content.phaseAnimator([Self.restOpacity, 1.0, 0.7, 1.0], trigger: beat) { view, opacity in
                 let rise = (opacity - Self.restOpacity) / (1 - Self.restOpacity)
-                view.shadow(color: edge.color.opacity(opacity), radius: Self.restRadius + (Self.peakRadius - Self.restRadius) * rise, y: 2)
+                // Le trait s'éclaircit vers le blanc sur la montée (retour utilisateur) ; le halo garde la teinte du palier.
+                view.brightness(Self.peakBrightness * rise)
+                    .shadow(color: edge.color.opacity(opacity), radius: Self.restRadius + (Self.peakRadius - Self.restRadius) * rise, y: 2)
             } animation: { _ in .easeInOut(duration: 0.2) }
         }
     }

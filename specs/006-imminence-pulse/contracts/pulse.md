@@ -32,10 +32,10 @@
 
 | Condition | Halo |
 |---|---|
-| `beat` incrémenté, `edge.hasHalo`, animations normales | double battement en 1 s : opacité 0,6 → 1 → 0,7 → 1 → 0,6, rayon 6 → 14 pt sur la montée, puis repos |
+| `beat` incrémenté, `edge.hasHalo`, animations normales | double battement en 1 s : opacité 0,6 → 1 → 0,7 → 1 → 0,6, rayon 6 → 14 pt et trait éclairci de 35 % sur la montée, puis repos |
 | `reduceMotion` | 0,6 et 6 pt fixes |
 | `edge` sans halo | aucun halo |
-| pendant le battement | trait, épaisseur, teinte, rayon des coins, cadre du panneau, `edgePad` : identiques |
+| pendant le battement | épaisseur, rayon des coins, cadre du panneau, `edgePad` : identiques ; le trait s'éclaircit sans changer de palier |
 
 ## Démo
 

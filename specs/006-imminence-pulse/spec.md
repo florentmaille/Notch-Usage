@@ -67,7 +67,7 @@ est dessus. Réduire les animations activé : aucun battement en `imminent`.
 
 - **FR-001**: L'encoche MUST faire battre le halo du liseré (double battement de cœur : intensité et étendue du halo qui montent, reviennent à mi-chemin, remontent et reviennent, durée d'environ 1 s) quand le palier du liseré est « imminent » au sens de la 005 (blocage prévu dans moins de 30 min sur la limite affichée).
 - **FR-002**: Le rythme MUST être d'un battement par minute entre 30 min et 10 min avant le blocage prévu, et d'un battement toutes les 30 s sous 10 min.
-- **FR-003**: Un battement MUST ne changer que l'intensité et l'étendue du halo : trait, épaisseur, teinte, forme et largeur de l'encoche ou de la pilule restent identiques pendant et après le battement.
+- **FR-003**: Un battement MUST ne changer que l'intensité et l'étendue du halo et la clarté du trait (qui s'éclaircit vers le blanc sur la montée, sans changer de palier) : épaisseur, forme et largeur de l'encoche ou de la pilule restent identiques pendant et après le battement.
 - **FR-004**: Aucun battement MUST NOT se produire pour les paliers lointain, proche et épuisé, ni quand le liseré rouge vient d'un seuil critique sans prévision.
 - **FR-005**: Aucun battement MUST NOT se produire pendant le survol de l'encoche ni quand le panneau est épinglé.
 - **FR-006**: Quand le système demande de réduire les animations, aucun battement MUST NOT se produire ; le liseré reste celui de la 005, immobile.

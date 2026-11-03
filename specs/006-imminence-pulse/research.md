@@ -44,8 +44,9 @@
 
 - **Decision**: dans `NotchShape`, le `shadow` du trait (le halo) suit un
   `phaseAnimator([0.6, 1.0, 0.7, 1.0], trigger: beat)` avec `.easeInOut(duration: 0.2)` par phase :
-  double battement de cœur en 1 s, opacité 0,6 → 1 → 0,7 → 1 → 0,6 et rayon du halo 6 → 14 pt sur
-  la montée (retour utilisateur : plus marqué, puisque rare). Aucun autre paramètre n'est animé :
+  double battement de cœur en 1 s, opacité 0,6 → 1 → 0,7 → 1 → 0,6 et rayon du halo 6 → 14 pt et
+  `brightness` du trait 0 → 0,35 sur la montée (retours utilisateur : plus marqué, puisque rare ; le trait
+  s'éclaircit, le halo garde la teinte du palier). Aucun autre paramètre n'est animé :
   trait, épaisseur, cadre du panneau restent fixes ; `haloPad` passe à 16 pt pour que le halo au
   sommet ne soit pas coupé par le cadre. Même modificateur pour la pilule.
   Avec `accessibilityReduceMotion`, le modificateur n'est pas appliqué : opacité fixe à 0,6.
