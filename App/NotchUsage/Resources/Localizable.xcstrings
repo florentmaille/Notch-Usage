@@ -207,6 +207,56 @@
         }
       }
     },
+    "Claude Code could not renew its session. Run claude in Terminal, or sign in with your browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code n'a pas pu renouveler sa session. Lancez claude dans le Terminal, ou connectez-vous avec votre navigateur."
+          }
+        }
+      }
+    },
+    "Claude Code did not answer in time. Try again, or run claude in Terminal.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code n'a pas répondu à temps. Réessayez, ou lancez claude dans le Terminal."
+          }
+        }
+      }
+    },
+    "Claude Code is signed out. Run claude in Terminal and sign in, or use your browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code est déconnecté. Lancez claude dans le Terminal et connectez-vous, ou utilisez votre navigateur."
+          }
+        }
+      }
+    },
+    "Claude Code was not found on this Mac. Run claude in Terminal, or sign in with your browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code est introuvable sur ce Mac. Lancez claude dans le Terminal, ou connectez-vous avec votre navigateur."
+          }
+        }
+      }
+    },
+    "Claude did not answer in time. Try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude n'a pas répondu à temps. Réessayez."
+          }
+        }
+      }
+    },
     "Claude is rate-limiting usage requests. Try again in a few minutes.": {
       "localizations": {
         "fr": {
@@ -283,6 +333,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connecté via le navigateur"
+          }
+        }
+      }
+    },
+    "Could not reach Claude. Check your connection and try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre Claude. Vérifiez votre connexion et réessayez."
           }
         }
       }
@@ -577,6 +637,26 @@
         }
       }
     },
+    "Renew session": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renouveler la session"
+          }
+        }
+      }
+    },
+    "Renewing…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renouvellement…"
+          }
+        }
+      }
+    },
     "Reset pending": {
       "localizations": {
         "fr": {
@@ -727,16 +807,6 @@
         }
       }
     },
-    "Thresholds colour the edge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les seuils colorent le liseré et le panneau pour les limites hebdomadaires et avant qu'une prévision existe. L'encoche montre toujours la limite la plus susceptible de bloquer."
-          }
-        }
-      }
-    },
     "Usage warning": {
       "localizations": {
         "fr": {
@@ -837,6 +907,16 @@
         }
       }
     },
+    "Your Claude Code session has expired. Renew it here: Notch Usage asks Claude Code for a one-word reply, which counts as a tiny request. Or run claude in Terminal, or sign in with your browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre session Claude Code a expiré. Renouvelez-la ici : Notch Usage demande à Claude Code une réponse d'un mot, qui compte comme une toute petite requête. Ou lancez claude dans le Terminal, ou connectez-vous avec votre navigateur."
+          }
+        }
+      }
+    },
     "Your Claude Code session has expired. Run claude in Terminal once to renew it: Notch Usage reconnects automatically.": {
       "localizations": {
         "fr": {
@@ -887,102 +967,12 @@
         }
       }
     },
-    "—": {
+    "Thresholds colour the gauge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "—"
-          }
-        }
-      }
-    },
-    "Claude did not answer in time. Try again.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude n'a pas répondu à temps. Réessayez."
-          }
-        }
-      }
-    },
-    "Could not reach Claude. Check your connection and try again.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible de joindre Claude. Vérifiez votre connexion et réessayez."
-          }
-        }
-      }
-    },
-    "Your Claude Code session has expired. Renew it here: Notch Usage asks Claude Code for a one-word reply, which counts as a tiny request. Or run claude in Terminal, or sign in with your browser.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Votre session Claude Code a expiré. Renouvelez-la ici : Notch Usage demande à Claude Code une réponse d'un mot, qui compte comme une toute petite requête. Ou lancez claude dans le Terminal, ou connectez-vous avec votre navigateur."
-          }
-        }
-      }
-    },
-    "Renew session": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Renouveler la session"
-          }
-        }
-      }
-    },
-    "Renewing…": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Renouvellement…"
-          }
-        }
-      }
-    },
-    "Claude Code was not found on this Mac. Run claude in Terminal, or sign in with your browser.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Code est introuvable sur ce Mac. Lancez claude dans le Terminal, ou connectez-vous avec votre navigateur."
-          }
-        }
-      }
-    },
-    "Claude Code is signed out. Run claude in Terminal and sign in, or use your browser.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Code est déconnecté. Lancez claude dans le Terminal et connectez-vous, ou utilisez votre navigateur."
-          }
-        }
-      }
-    },
-    "Claude Code did not answer in time. Try again, or run claude in Terminal.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Code n'a pas répondu à temps. Réessayez, ou lancez claude dans le Terminal."
-          }
-        }
-      }
-    },
-    "Claude Code could not renew its session. Run claude in Terminal, or sign in with your browser.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Code n'a pas pu renouveler sa session. Lancez claude dans le Terminal, ou connectez-vous avec votre navigateur."
+            "value": "Les seuils colorent la jauge et le panneau pour les limites hebdomadaires et avant qu'une prévision existe. L'encoche montre toujours la limite la plus susceptible de bloquer."
           }
         }
       }

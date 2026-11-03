@@ -40,7 +40,6 @@ final class AppModel {
     private(set) var signal: NotchSignal
     private(set) var layout: NotchLayout
     /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
-    private(set) var alertPulse = 0
     /// Battements du halo (006) : incrémenté sur le tick de 30 s selon `signal.pulse`, jamais remis à zéro.
     /// Battements du halo (006) : `BeatCounter` sur le tick de 30 s, jamais remis à zéro.
     private var beatCounter = BeatCounter()
@@ -198,9 +197,8 @@ final class AppModel {
         let alerts = c.alerts
         alertTask = Task { [weak self] in
             for await event in alerts {
-                guard let self else { return }
+                guard self != nil else { return }
                 Log.refresh.notice("alert \(event.level.rawValue, privacy: .public) on \(event.limitID, privacy: .public)")
-                self.alertPulse += 1
             }
         }
         Task { await c.start() }
@@ -501,7 +499,9 @@ final class AppModel {
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
-        panel?.apply(display, narrow: signal.collapsesToNotch(in: display), edgePad: display.mode == .notch ? (signal.edge?.outerPad ?? 0) : 0)
+        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée.
+        let ear = NotchPanelController.earWidth
+        panel?.apply(display, ears: (ear, signal.island.trailing == nil ? 0 : ear))
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
