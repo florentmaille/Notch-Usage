@@ -53,6 +53,12 @@ jobs:
           -configuration Debug -destination 'platform=macOS'
           -derivedDataPath .build/DerivedData
           CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO build
+      - name: App tests
+        run: >
+          xcodebuild -project NotchUsage.xcodeproj -scheme NotchUsage
+          -configuration Debug -destination 'platform=macOS'
+          -derivedDataPath .build/DerivedData
+          CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO test
       - name: Check translations
         run: scripts/check-localizations.sh .build/DerivedData
 

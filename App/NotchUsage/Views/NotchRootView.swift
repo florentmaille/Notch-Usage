@@ -135,9 +135,9 @@ private struct ExpandedContainer: View {
                 }
                 .padded()
                 .fixedSize(horizontal: false, vertical: true)
-                .background(GeometryReader { geo in Color.clear.preference(key: ExpandedHeightKey.self, value: geo.size.height) })
-                .onPreferenceChange(ExpandedHeightKey.self) { height in
-                    MainActor.assumeIsolated { model.setExpandedContentHeight(height) }
+                // Fermeture isolée au main actor : ni clé de préférence ni `assumeIsolated` (010).
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    model.setExpandedContentHeight(height)
                 }
             }
         }
@@ -151,7 +151,3 @@ private extension View {
     }
 }
 
-private struct ExpandedHeightKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}

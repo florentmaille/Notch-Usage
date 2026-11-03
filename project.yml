@@ -58,6 +58,22 @@ targets:
         INFOPLIST_KEY_LSUIElement: YES
         SWIFT_OBJC_BRIDGING_HEADER: ""
 
+  NotchUsageAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/NotchUsageAppTests
+    dependencies:
+      - target: NotchUsage
+      - package: NotchUsageCore
+        product: NotchUsageCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notchusage.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/NotchUsage.app/Contents/MacOS/NotchUsage"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
 schemes:
   NotchUsage:
     build:
@@ -65,5 +81,9 @@ schemes:
         NotchUsage: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - NotchUsageAppTests
     archive:
       config: Release

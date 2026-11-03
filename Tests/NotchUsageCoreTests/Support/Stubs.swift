@@ -160,3 +160,16 @@ func makeSnapshot(_ pairs: [(String, Double)], fetchedAt: Date = .iso("2026-11-0
         return UsageLimit(id: id, kind: kind, modelName: model, utilization: pct, resetsAt: resetsAt)
     }, fetchedAt: fetchedAt)
 }
+
+/// Entrée Trousseau de Claude Code factice : contenu fixe, compte les lectures et leur mode.
+final class StubClaudeCodeSource: ClaudeCodeCredentialSource, @unchecked Sendable {
+    private let lock = NSLock()
+    var json: Data?
+    var exists: Bool
+    private(set) var reads: [Bool] = []
+    init(json: Data?, exists: Bool = true) { self.json = json; self.exists = exists }
+    func entryExists() -> Bool { exists }
+    func readRawJSON(interactive: Bool) async throws -> Data? {
+        lock.withLock { reads.append(interactive); return json }
+    }
+}

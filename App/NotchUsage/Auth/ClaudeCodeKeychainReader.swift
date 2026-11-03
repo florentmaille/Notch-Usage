@@ -5,7 +5,7 @@ import Security
 
 /// Lit l'entrée Trousseau de Claude Code (R1). L'entrée appartient au binaire `claude` :
 /// en mode non interactif, macOS refuse sans dialogue (`errSecInteractionNotAllowed`) → `nil`.
-final class ClaudeCodeKeychainReader: ClaudeCodeCredentialSource {
+final class ClaudeCodeKeychainReader: ClaudeCodeCredentialSource, @unchecked Sendable {
     static let service = "Claude Code-credentials"
 
     /// Vrai si une entrée existe, sans en lire le contenu ni déclencher de dialogue.

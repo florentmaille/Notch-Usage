@@ -12,8 +12,8 @@ enum UserAgents {
 }
 
 enum ProviderSupport {
-    /// Mapping commun HTTP → FetchError, puis parse du corps.
-    static func snapshot(from response: HTTPResponse, now: Date) throws(FetchError) -> UsageSnapshot {
+    /// Mapping commun HTTP → FetchError, pour toute réponse JSON attendue (usage, organisations).
+    static func check(_ response: HTTPResponse) throws(FetchError) {
         if response.isChallenge { throw FetchError.challenge }
         switch response.status {
         case 200 where response.isHTML: throw FetchError.challenge
@@ -21,9 +21,13 @@ enum ProviderSupport {
             if response.body.isEmpty { throw FetchError.emptyBody }
         case 401, 403: throw FetchError.unauthorized
         case 429: throw FetchError.rateLimited(retryAfter: response.retryAfter)
-        case 500...599: throw FetchError.server(response.status)
         default: throw FetchError.server(response.status)
         }
+    }
+
+    /// Mapping commun, puis parse du corps d'usage.
+    static func snapshot(from response: HTTPResponse, now: Date) throws(FetchError) -> UsageSnapshot {
+        try check(response)
         do {
             let limits = try UsageResponseParser.parse(response.body)
             return UsageSnapshot(limits: limits, fetchedAt: now)
