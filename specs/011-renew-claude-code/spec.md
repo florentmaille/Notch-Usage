@@ -30,3 +30,4 @@ Sur l'écran « Reconnexion requise » d'un compte Claude Code, un bouton « Ren
 - `claude -p … --model haiku` avec environnement vide : « Not logged in ». Avec `USER` et `LOGNAME` : expiration passée de 15:49 à 07:04 le lendemain.
 - Commande finale (`--strict-mcp-config --setting-sources "" --no-session-persistence`) : sortie « OK », code 0, aucun MCP ni hook.
 - 226 tests core (5 nouveaux), build, 98 textes traduits. Parcours bouton non rejoué sur jeton expiré (jeton renouvelé pendant l'essai).
+- Attentes bornées (relecture du 2026-11-03) : on attend la fin du processus (45 s, puis arrêt, puis SIGKILL), jamais la fin de la sortie. Essai sur faux binaires, délai réduit à 2 s : enfant qui garde la sortie ouverte → « OK » en 0,6 s (l'ancienne lecture bloquait 30 s) ; « Not logged in » détecté ; binaire muet → délai dépassé en 2,0 s. Un plantage (signal) donne « échec » et non plus « délai dépassé ».
