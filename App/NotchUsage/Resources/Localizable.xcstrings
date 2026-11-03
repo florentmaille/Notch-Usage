@@ -807,16 +807,6 @@
         }
       }
     },
-    "Thresholds colour the edge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les seuils colorent le liseré et le panneau pour les limites hebdomadaires et avant qu'une prévision existe. L'encoche montre toujours la limite la plus susceptible de bloquer."
-          }
-        }
-      }
-    },
     "Usage warning": {
       "localizations": {
         "fr": {
@@ -973,6 +963,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "sk-ant-sid…"
+          }
+        }
+      }
+    },
+    "Thresholds colour the gauge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les seuils colorent la jauge et le panneau pour les limites hebdomadaires et avant qu'une prévision existe. L'encoche montre toujours la limite la plus susceptible de bloquer."
           }
         }
       }

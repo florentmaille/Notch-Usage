@@ -76,7 +76,7 @@ struct SettingsView: View {
                         HStack { Circle().fill(.red).frame(width: 8, height: 8); Text("Critical at \(model.alertSettings.criticalThreshold)%") }
                     }
                 }
-                Text("Thresholds colour the edge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.")
+                Text("Thresholds colour the gauge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         } label: { Text("Alerts").font(.caption) }
