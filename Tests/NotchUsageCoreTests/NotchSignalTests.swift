@@ -179,4 +179,58 @@ struct NotchSignalTests {
             guard case .deadline = s.content else { Issue.record("expected deadline"); continue }
         }
     }
+
+    // MARK: 012 - île
+
+    typealias Island = NotchSignal.Island
+
+    @Test func islandDeadlineFormat() {
+        #expect(IslandFormat.deadline(remaining: 125 * 60) == "2:05")
+        #expect(IslandFormat.deadline(remaining: 60 * 60) == "1:00")
+        #expect(IslandFormat.deadline(remaining: 59 * 60 + 1) == "1:00")
+        #expect(IslandFormat.deadline(remaining: 58 * 60 + 30) == "59\u{2032}")
+        #expect(IslandFormat.deadline(remaining: 7 * 60 + 30) == "8\u{2032}")
+        #expect(IslandFormat.deadline(remaining: 8 * 60) == "8\u{2032}")
+        #expect(IslandFormat.deadline(remaining: -30) == "0\u{2032}")
+    }
+
+    @Test func calmIslandIsAGreyGaugeAlone() {
+        #expect(signal(display(.idle(snap(42)))).island == Island(leading: .gauge(value: 42, tint: .calm)))
+        #expect(signal(display(.idle(snap(97)), level: .critical, forecasts: ["session": .holdsUntilReset])).island
+                == Island(leading: .gauge(value: 97, tint: .calm)))
+    }
+
+    @Test func forecastTiersColourTheGaugeAndAddTheDeadline() {
+        let far = signal(display(.idle(snap(55, reset: 4 * 3600)), forecasts: ["session": .blockAt(now.addingTimeInterval(125 * 60))])).island
+        #expect(far == Island(leading: .gauge(value: 55, tint: .far), trailing: .deadline("2:05")))
+        let near = signal(display(.idle(snap(78)), forecasts: ["session": .blockAt(now.addingTimeInterval(40 * 60))])).island
+        #expect(near == Island(leading: .gauge(value: 78, tint: .near), trailing: .deadline("40\u{2032}")))
+        let imminent = signal(display(.idle(snap(92)), forecasts: ["session": .blockAt(now.addingTimeInterval(8 * 60))])).island
+        #expect(imminent == Island(leading: .gauge(value: 92, tint: .imminent), trailing: .deadline("8\u{2032}")))
+    }
+
+    @Test func exhaustedIslandIsAFullGaugeWithTheReturn() {
+        let s = signal(display(.idle(snap(100, reset: 3600 + 2 * 60)), level: .critical)).island
+        #expect(s == Island(leading: .gauge(value: 100, tint: .exhausted), trailing: .back("1:02")))
+    }
+
+    @Test func thresholdWithoutForecastShowsTheShortLabel() {
+        let weekly = makeSnapshot([("session", 30), ("weekly_all", 97)], fetchedAt: now, resetsAt: now.addingTimeInterval(3 * 86400))
+        #expect(signal(display(.idle(weekly), level: .critical)).island == Island(leading: .gauge(value: 97, tint: .imminent), trailing: .label("7d")))
+        #expect(signal(display(.idle(snap(83)), level: .warning)).island == Island(leading: .gauge(value: 83, tint: .far), trailing: .label("5h")))
+    }
+
+    @Test func greyAndSessionStatesUseAGlyph() {
+        #expect(signal(display(.failed(.server(503), previous: snap(42)))).island == Island(leading: .glyph(.offline), trailing: .muted("42%")))
+        #expect(signal(display(.idle(snap(42, age: 45 * 60)))).island.leading == .glyph(.offline))
+        #expect(signal(display(.reauthRequired(previous: nil))).island == Island(leading: .glyph(.locked)))
+        #expect(signal(display(.idle(nil), connected: false)).island == Island(leading: .glyph(.account)))
+        #expect(signal(display(.unsupported)).island == Island(leading: .glyph(.unavailable)))
+    }
+
+    @Test func hoverKeepsTheIslandForTheViewToChoose() {
+        let s = signal(display(.idle(snap(42)), hover: true))
+        #expect(s.isBand && s.island == Island(leading: .gauge(value: 42, tint: .calm)))
+    }
 }
+

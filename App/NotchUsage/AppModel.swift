@@ -501,7 +501,9 @@ final class AppModel {
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
-        panel?.apply(display, narrow: signal.collapsesToNotch(in: display), edgePad: display.mode == .notch ? (signal.edge?.outerPad ?? 0) : 0)
+        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée.
+        let ear = NotchPanelController.earWidth
+        panel?.apply(display, ears: (ear, signal.island.trailing == nil ? 0 : ear))
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {

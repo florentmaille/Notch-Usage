@@ -21,13 +21,12 @@ struct AppPresentationTests {
         for e in errors { #expect(!(e.errorDescription ?? "").isEmpty) }
     }
 
-    @Test func edgeTiersGrowWithUrgency() {
-        let tiers: [NotchSignal.Edge] = [.far, .near, .imminent]
-        #expect(tiers.map(\.lineWidth) == [2, 2.5, 3])
-        #expect(!NotchSignal.Edge.near.hasHalo && NotchSignal.Edge.imminent.hasHalo)
-        // Le débord couvre le trait, le cerne et, pour les paliers à halo, le halo au sommet du battement.
-        #expect(NotchSignal.Edge.imminent.outerPad == 3 + NotchSignal.Edge.keyline + NotchSignal.Edge.haloPad)
-        #expect(NotchSignal.Edge.far.outerPad == 2 + NotchSignal.Edge.keyline)
+    @Test func islandTintsFollowTheEdgeColours() {
+        #expect(NotchSignal.Island.Tint.calm.edge == nil)
+        #expect(NotchSignal.Island.Tint.near.color == NotchSignal.Edge.near.color)
+        #expect(NotchSignal.Island.Tint.exhausted.edge?.hasHalo == true && NotchSignal.Island.Tint.far.edge?.hasHalo == false)
+        // L'île tient dans l'encoche et deux oreilles : au plus 104 pt de plus (012, SC-002).
+        #expect(2 * NotchPanelController.earWidth <= 104)
     }
 
     @Test func lighteningMovesTowardWhite() {

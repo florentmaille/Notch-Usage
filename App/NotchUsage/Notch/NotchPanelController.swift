@@ -5,7 +5,10 @@ import SwiftUI
 /// Position, taille, survol, épinglage et fermeture du panneau (R5, FR-012, FR-012a).
 @MainActor
 final class NotchPanelController {
+    /// Aile de la bande au survol (003).
     static let wingWidth: CGFloat = 72
+    /// Oreille de l'île repliée (012).
+    static let earWidth: CGFloat = 52
     static let expandedWidth: CGFloat = 440
     /// Hauteur des réglages, et plafond du contenu mesuré.
     static let expandedHeight: CGFloat = 320
@@ -13,8 +16,8 @@ final class NotchPanelController {
     var contentHeight: CGFloat = expandedHeight
     var showsSettings = false
     static let hiddenStripHeight: CGFloat = 2
-    /// Durée du fondu de sortie avant que le panneau ne rétrécisse à l'encoche (005, R2).
-    static let silenceFade: TimeInterval = 0.6
+    /// Fondu de l'île (012) : le cadre attend sa fin avant de rétrécir.
+    static let islandFade: TimeInterval = 0.3
     static let hoverOpenDelay: TimeInterval = 0.15
     static let hoverCloseDelay: TimeInterval = 0.10
 
@@ -31,7 +34,7 @@ final class NotchPanelController {
     private var localKeyMonitor: Any?
     private var hoverWork: DispatchWorkItem?
     private var shrinkWork: DispatchWorkItem?
-    private var narrow = false
+    private var ears: (left: CGFloat, right: CGFloat) = (0, 0)
 
     init(target: ScreenObserver.Target, rootView: AnyView) {
         self.target = target
@@ -69,36 +72,38 @@ final class NotchPanelController {
         if let display { apply(display) }
     }
 
-    /// Redimensionne et repositionne selon l'état d'affichage. Sans texte à montrer (005 : silence ou liseré
-    /// seul), le panneau replié se limite à l'encoche physique : la zone de survol et les clics suivent le cadre.
-    /// `edgePad` : débord du liseré tracé hors de l'encoche physique (trait + halo), ajouté au cadre réduit.
-    func apply(_ display: DisplayState, narrow: Bool = false, edgePad: CGFloat = 0) {
+    /// Redimensionne et repositionne selon l'état d'affichage. Replié dans l'encoche, le cadre couvre l'encoche
+    /// physique et les oreilles visibles (012) : la zone de survol et les clics suivent ces oreilles seulement.
+    func apply(_ display: DisplayState, ears: (left: CGFloat, right: CGFloat)? = nil) {
         let previous = self.display
-        let wasNarrow = self.narrow
         self.display = display
-        self.narrow = narrow
+        // Changement d'écran : les oreilles restent celles du dernier état.
+        let ears = ears ?? self.ears
+        self.ears = ears
         let layout = display.layout
+        let screen = target.screen.frame
         let wideWidth = layout.mode == .notch ? layout.width + 2 * Self.wingWidth : layout.width
-        let collapsedWidth = narrow ? layout.width : wideWidth
-        let size: CGSize
+        let rect: NSRect
         if display.fullscreenHidden {
-            size = CGSize(width: wideWidth, height: Self.hiddenStripHeight)
+            rect = Self.centered(CGSize(width: wideWidth, height: Self.hiddenStripHeight), in: screen)
         } else if display.isExpanded {
-            size = CGSize(width: max(wideWidth, Self.expandedWidth), height: layout.height + (showsSettings ? Self.expandedHeight : contentHeight))
+            let height = layout.height + (showsSettings ? Self.expandedHeight : contentHeight)
+            rect = Self.centered(CGSize(width: max(wideWidth, Self.expandedWidth), height: height), in: screen)
+        } else if layout.mode == .notch {
+            let width = layout.width + ears.left + ears.right
+            let x = (screen.midX - layout.width / 2 - ears.left).rounded()
+            rect = NSRect(x: x, y: screen.maxY - layout.height, width: width, height: layout.height)
         } else {
-            let pad = narrow ? edgePad : 0
-            size = CGSize(width: collapsedWidth + 2 * pad, height: layout.height + pad)
+            rect = Self.centered(CGSize(width: layout.width, height: layout.height), in: screen)
         }
-        let frame = target.screen.frame
-        let origin = CGPoint(x: (frame.midX - size.width / 2).rounded(), y: frame.maxY - size.height)
-        let rect = NSRect(origin: origin, size: size)
         shrinkWork?.cancel()
         shrinkWork = nil
-        if narrow, !wasNarrow, !display.isExpanded, !display.fullscreenHidden {
-            // Le fondu de sortie a besoin des oreilles encore présentes ; le cadre rétrécit après.
+        let shrinking = rect.width < panel.frame.width && !display.isExpanded && !display.fullscreenHidden && previous?.isExpanded == false
+        if shrinking {
+            // L'oreille qui disparaît joue son fondu dans l'ancien cadre ; le cadre rétrécit ensuite.
             let work = DispatchWorkItem { [weak self] in self?.panel.setFrame(rect, display: true) }
             shrinkWork = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.silenceFade, execute: work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.islandFade, execute: work)
         } else {
             panel.setFrame(rect, display: true)
         }
@@ -112,6 +117,10 @@ final class NotchPanelController {
             removeGlobalClickMonitor()
             if panel.isKeyWindow { panel.resignKey() }
         }
+    }
+
+    private static func centered(_ size: CGSize, in screen: NSRect) -> NSRect {
+        NSRect(origin: CGPoint(x: (screen.midX - size.width / 2).rounded(), y: screen.maxY - size.height), size: size)
     }
 
     func close() {

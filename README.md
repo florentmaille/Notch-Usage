@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your Claude Pro, Max or Team limits, live in the MacBook notch.</strong><br>
-  Silent when all is well. A coloured edge when a block is coming. Hover for the details.
+  A gauge on the left of the notch, the time before a block on the right. Hover for the details.
 </p>
 
 <p align="center">
@@ -30,21 +30,25 @@ It is native Swift, local-first, free of telemetry, and uses about 25 MB of memo
   <img src="docs/images/states.png" alt="Notch states: all clear, hover, block predicted in 2 h, in 40 min, in 8 min, limit reached, offline" width="820">
 </p>
 
-| State | What you see |
-|---|---|
-| All clear | Nothing. The notch is your Mac's notch. |
-| Hover | Time to reset and usage of the limit most likely to block you (forecast first, thresholds otherwise, across all limits), then the full panel. Click to pin it. |
-| A block is coming | A coloured edge around the notch: amber two hours out, orange under an hour, red with a halo under 30 minutes. The halo beats once a minute, then every 30 seconds under 10 minutes. In full-screen apps, a dot of the same colour beats with it. |
-| Limit reached | Red edge; the panel shows when the limit comes back. |
-| Offline or stale reading | A grey strip with the last reading; the countdown keeps running. |
+Like the Dynamic Island: on the left of the notch, a small gauge shows the usage of the limit most likely
+to block you; on the right, one number says how long before the block.
 
-The edge has one meaning, "a block is coming", and its colour says how soon. Nothing else in the
-notch carries that meaning, and the notch never widens without text to show.
+| State | Left | Right |
+|---|---|---|
+| All clear | grey gauge | nothing |
+| A block is coming | amber gauge (2 h out), orange (under an hour), red (under 30 minutes) | time left: `2:05`, then `40′` |
+| Block under 30 minutes | red gauge that beats once a minute, every 30 seconds under 10 minutes | minutes left |
+| Limit reached | full red gauge | `↻1:02`, time until it comes back |
+| Weekly or model limit over its threshold | amber or red gauge | the limit's short name (`7d`, `Fable`) |
+| Offline or stale reading | grey wifi glyph | last known usage |
+| Hover | time to reset and usage, then the full panel; click to pin | |
+
+The gauge fill and the number carry the information without colour.
 
 ## Features
 
-- **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace: blocked at 16:40"; the edge follows the same forecast, and its halo beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on.
-- **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % lights the same edge. Thresholds are adjustable; one alert per limit and per reset period.
+- **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace (last hour): blocked at 16:40"; the gauge and the time on the right follow the same forecast, and the gauge beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on.
+- **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable; one alert per limit and per reset period.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
 - **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
@@ -137,7 +141,6 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 | macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Builds from source are not signed with a stable identity, so the prompt returns after each rebuild. |
 | "Reconnect required" with the Claude Code session | Click **Renew session** in the panel (it asks `claude` for a one-word reply), or run any `claude` command: Notch Usage picks up the renewed token within a minute. |
 | Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key in Settings. |
-| The edge is hard to see on your wallpaper | It is drawn with a dark outline for light or warm wallpapers. If it still blends in, hover: the strip and panel carry the same information. |
 | Nothing shows on an external display | The pill appears at the top of the display that holds the menu bar. Check Displays → Arrange. |
 
 ## Development
@@ -158,7 +161,7 @@ Debug builds with it and keep Keychain access across builds.
 
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
 [`specs/`](specs): the notch itself (001), the forecast (003), the limit shown (004) and the silent notch with its
-deadline edge (005). `scripts/release.sh <version>` signs, notarizes and packages a DMG (Developer ID required).
+deadline edge (005), now the island (012). `scripts/release.sh <version>` signs, notarizes and packages a DMG (Developer ID required).
 
 ## License
 
