@@ -157,12 +157,21 @@ struct CompactView: View {
 
 /// Rendu des paliers du liseré (contrat notch-signal.md) : teintes système en apparence sombre.
 extension NotchSignal.Edge {
-    var color: Color {
+    var rgb: (red: Double, green: Double, blue: Double) {
         switch self {
-        case .far: return Color(red: 1.0, green: 0.62, blue: 0.04)          // ambre #FF9F0A
-        case .near: return Color(red: 1.0, green: 0.42, blue: 0.10)         // orange #FF6A1A
-        case .imminent, .exhausted: return Color(red: 1.0, green: 0.27, blue: 0.23) // rouge #FF453A
+        case .far: return (1.0, 0.62, 0.04)                 // ambre #FF9F0A
+        case .near: return (1.0, 0.42, 0.10)                // orange #FF6A1A
+        case .imminent, .exhausted: return (1.0, 0.27, 0.23) // rouge #FF453A
         }
+    }
+
+    var color: Color { color(lightened: 0) }
+
+    /// Teinte du palier mélangée au blanc (`amount` de 0 à 1) : éclaircit le trait pendant le battement (006).
+    /// Une couleur calculée plutôt qu'un filtre `brightness`, que `cacheDisplay` (captures) ne rend pas.
+    func color(lightened amount: Double) -> Color {
+        let c = rgb
+        return Color(red: c.red + (1 - c.red) * amount, green: c.green + (1 - c.green) * amount, blue: c.blue + (1 - c.blue) * amount)
     }
 
     var lineWidth: CGFloat {
@@ -175,8 +184,8 @@ extension NotchSignal.Edge {
 
     var hasHalo: Bool { self == .imminent || self == .exhausted }
 
-    /// Débord du halo au-delà du trait, transparent.
-    static let haloPad: CGFloat = 8
+    /// Débord du halo au-delà du trait, transparent : couvre le rayon de 14 pt au sommet du battement (006).
+    static let haloPad: CGFloat = 16
 
     /// Cerne sombre autour du trait : le sépare d'un fond clair ou de la même teinte (le trait n'a aucune
     /// teinte lisible sur un fond orange sans lui).

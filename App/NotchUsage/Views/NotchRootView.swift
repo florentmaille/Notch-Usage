@@ -26,7 +26,7 @@ struct NotchRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(alignment: .top) {
             // Toujours présente, seule son opacité s'anime : un retrait conditionnel saccade à la sortie.
-            NotchShape(display: d, edge: s.edge, narrow: s.isSilent || (d.mode == .notch && !s.isBand))
+            NotchShape(display: d, edge: s.edge, narrow: s.isSilent || (d.mode == .notch && !s.isBand), beat: model.beat)
                 .opacity(s.isSilent ? 0 : 1)
         }
         .animation(reduceMotion ? nil : .easeOut(duration: NotchPanelController.silenceFade), value: s.isSilent)
@@ -41,6 +41,9 @@ private struct NotchShape: View {
     let edge: NotchSignal.Edge?
     /// Forme réduite à l'encoche physique (silence ou liseré seul) plutôt qu'au panneau entier.
     let narrow: Bool
+    /// Compteur de battements (006) : chaque incrément fait respirer le halo.
+    let beat: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let expanded = display.isExpanded
@@ -58,11 +61,10 @@ private struct NotchShape: View {
                     .strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: k)
                     .frame(width: narrow ? display.layout.width + 2 * (w + k) : nil, height: display.layout.height + w + k)
                     .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w, bottomTrailingRadius: radius + w,
-                                       topTrailingRadius: 0, style: .continuous)
-                    .strokeBorder(edge.color, lineWidth: w)
+                BeatingStroke(shape: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w, bottomTrailingRadius: radius + w,
+                                                            topTrailingRadius: 0, style: .continuous),
+                              lineWidth: w, edge: edge, beat: beat, reduceMotion: reduceMotion)
                     .frame(width: narrow ? display.layout.width + 2 * w : nil, height: display.layout.height + w)
-                    .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
             }
             let shape = UnevenRoundedRectangle(topLeadingRadius: notch ? 0 : radius,
                                                bottomLeadingRadius: radius, bottomTrailingRadius: radius,
@@ -73,8 +75,8 @@ private struct NotchShape: View {
                         // Pilule : entièrement visible, cerne puis trait à l'intérieur, tout autour.
                         shape.strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: NotchSignal.Edge.keyline)
                             .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                        shape.inset(by: NotchSignal.Edge.keyline).strokeBorder(edge.color, lineWidth: edge.lineWidth)
-                            .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
+                        BeatingStroke(shape: shape.inset(by: NotchSignal.Edge.keyline), lineWidth: edge.lineWidth,
+                                      edge: edge, beat: beat, reduceMotion: reduceMotion)
                     }
                 }
                 .frame(width: narrow && notch ? display.layout.width : nil, height: narrow ? display.layout.height : nil)
@@ -82,6 +84,39 @@ private struct NotchShape: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .opacity(display.fullscreenHidden ? 0 : 1)
     }
+}
+
+/// Trait du liseré avec son halo. Sur les paliers à halo, chaque incrément de `beat` déclenche un double
+/// battement de cœur en 1 s (006, R4) : halo 0,6 → 1 → 0,7 → 1 → 0,6 et rayon 6 → 14 pt, trait éclairci vers le
+/// blanc sur la montée. Épaisseur et géométrie ne changent pas ; en mode réduit d'animations, tout est fixe.
+private struct BeatingStroke<S: InsettableShape>: View {
+    let shape: S
+    let lineWidth: CGFloat
+    let edge: NotchSignal.Edge
+    let beat: Int
+    let reduceMotion: Bool
+
+    var body: some View {
+        if !edge.hasHalo {
+            shape.strokeBorder(edge.color, lineWidth: lineWidth)
+        } else if reduceMotion {
+            shape.strokeBorder(edge.color, lineWidth: lineWidth)
+                .shadow(color: edge.color.opacity(Beat.restOpacity), radius: Beat.restRadius, y: 2)
+        } else {
+            Color.clear.phaseAnimator([Beat.restOpacity, 1.0, 0.7, 1.0], trigger: beat) { _, opacity in
+                let rise = (opacity - Beat.restOpacity) / (1 - Beat.restOpacity)
+                shape.strokeBorder(edge.color(lightened: Beat.peakLightening * rise), lineWidth: lineWidth)
+                    .shadow(color: edge.color.opacity(opacity), radius: Beat.restRadius + (Beat.peakRadius - Beat.restRadius) * rise, y: 2)
+            } animation: { _ in .easeInOut(duration: 0.2) }
+        }
+    }
+}
+
+private enum Beat {
+    static let restOpacity = 0.6
+    static let restRadius: CGFloat = 6
+    static let peakRadius: CGFloat = 14
+    static let peakLightening = 0.45
 }
 
 /// Contenu déplié : connexion, limites ou réglages.

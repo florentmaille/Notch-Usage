@@ -34,7 +34,7 @@ It is native Swift, local-first, free of telemetry, and uses about 25 MB of memo
 |---|---|
 | All clear | Nothing. The notch is your Mac's notch. |
 | Hover | Time to reset and usage of the limit most likely to block you, then the full panel. Click to pin it. |
-| A block is coming | A coloured edge around the notch: amber two hours out, orange under an hour, red with a halo under 30 minutes. |
+| A block is coming | A coloured edge around the notch: amber two hours out, orange under an hour, red with a halo under 30 minutes. The halo beats once a minute, then every 30 seconds under 10 minutes. |
 | Limit reached | Red edge; the panel shows when the limit comes back. |
 | Offline or stale reading | A grey strip with the last reading; the countdown keeps running. |
 
@@ -43,7 +43,7 @@ notch carries that meaning, and the notch never widens without text to show.
 
 ## Features
 
-- **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace: blocked at 16:40"; the edge follows the same forecast.
+- **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace: blocked at 16:40"; the edge follows the same forecast, and its halo beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on.
 - **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % lights the same edge. Thresholds are adjustable; one alert per limit and per reset period.
 - **Choose the limit shown.** Automatic shows the limit predicted to run out first, otherwise the 5-hour window. Or pin the weekly limit, or one model, in Settings.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
@@ -154,7 +154,7 @@ Debug builds are signed ad hoc, so macOS asks for Keychain access again after ea
 certificate (free with an Apple ID, Xcode → Settings → Accounts), run `scripts/setup-local-signing.sh` once to sign
 Debug builds with it and keep Keychain access across builds.
 
-`scripts/demo.swift` drives a Debug build through its demo states (`normal`, `far`, `near`, `imminent`, `blocked`,
+`scripts/demo.swift` drives a Debug build through its demo states (`normal`, `far`, `near`, `imminent25`, `imminent`, `blocked`,
 `offline`, …) and captures the notch; the README images come from it.
 
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in

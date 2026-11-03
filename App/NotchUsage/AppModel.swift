@@ -39,6 +39,9 @@ final class AppModel {
     private(set) var layout: NotchLayout
     /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
     private(set) var alertPulse = 0
+    /// Battements du halo (006) : incrémenté sur le tick de 30 s selon `signal.pulse`, jamais remis à zéro.
+    private(set) var beat = 0
+    @ObservationIgnored private var tickCount = 0
     var hover = false { didSet { recompute() } }
     var pinned = false { didSet { recompute() } }
     var fullscreen = false { didSet { recompute() } }
@@ -89,7 +92,8 @@ final class AppModel {
 
     #if DEBUG
     /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
-    /// `com.notchusage.debug.demo` objet "normal" | "warning" | "critical" | "reauth" | "off".
+    /// `com.notchusage.debug.demo` objet "normal" | "far" | "near" | "imminent25" | "imminent" | "warning" | "critical" | "reauth" | "off" ;
+    /// `com.notchusage.debug.tick` force un tick de 30 s (006).
     @ObservationIgnored private var demoState: FetchState?
     @ObservationIgnored private var demoForecasts: [String: Forecast] = [:]
 
@@ -97,6 +101,9 @@ final class AppModel {
         DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.demo"), object: nil, queue: .main) { [weak self] note in
             let mode = (note.object as? String) ?? "off"
             MainActor.assumeIsolated { self?.applyDemo(mode) }
+        }
+        DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.tick"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tick() }
         }
         // `com.notchusage.debug.layout` objet "pill" | "notch" : simule un écran sans encoche pour les captures.
         DistributedNotificationCenter.default().addObserver(forName: .init("com.notchusage.debug.layout"), object: nil, queue: .main) { [weak self] note in
@@ -130,6 +137,9 @@ final class AppModel {
         case "near":
             demoState = .idle(snapshot(78, 30, 28))
             demoForecasts = ["session": .blockAt(now.addingTimeInterval(40 * 60))]
+        case "imminent25":
+            demoState = .idle(snapshot(85, 30, 28, sessionReset: 3600))
+            demoForecasts = ["session": .blockAt(now.addingTimeInterval(25 * 60))]
         case "imminent":
             demoState = .idle(snapshot(92, 30, 28, sessionReset: 3600))
             demoForecasts = ["session": .blockAt(now.addingTimeInterval(8 * 60))]
@@ -176,8 +186,7 @@ final class AppModel {
         tickTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30), tolerance: .seconds(5))
-                self?.now = Date()
-                self?.recompute()
+                self?.tick()
                 await self?.recoverIfExpired()
             }
         }
@@ -318,6 +327,18 @@ final class AppModel {
         now = Date()
         let c = coordinator
         Task { await c?.refreshNow() }
+    }
+
+    /// Tick de 30 s : avance l'heure, recalcule, puis compte un battement d'après le rythme lu *avant* le recalcul,
+    /// pour que le tick qui fait entrer l'état imminent ne batte pas (006, R3). Une minute = un tick sur deux.
+    private func tick() {
+        let rhythm = signal.pulse
+        now = Date()
+        recompute()
+        tickCount += 1
+        if rhythm == .everyHalfMinute || (rhythm == .everyMinute && tickCount.isMultiple(of: 2)) {
+            beat += 1
+        }
     }
 
     private func pause(_ reason: PauseReason) {

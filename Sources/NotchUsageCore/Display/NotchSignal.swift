@@ -33,10 +33,29 @@ public struct NotchSignal: Sendable, Equatable {
         }
     }
 
+    /// Rythme du battement du halo (006, contrat pulse.md) : seul un blocage prévu imminent bat.
+    public enum Pulse: Sendable, Equatable {
+        case none, everyMinute, everyHalfMinute
+
+        /// Sous 10 min, toutes les 30 s ; sinon, en palier imminent, chaque minute.
+        public static func rhythm(blockAt: Date, now: Date) -> Pulse {
+            if blockAt.timeIntervalSince(now) < 600 { return .everyHalfMinute }
+            return Edge.tier(blockAt: blockAt, now: now) == .imminent ? .everyMinute : .none
+        }
+    }
+
     public let content: Content
     public let edge: Edge?
+    public let pulse: Pulse
     /// Toujours l'annonce de la bande complète, silence compris (FR-015).
     public let accessibility: String
+
+    init(content: Content, edge: Edge?, pulse: Pulse = .none, accessibility: String) {
+        self.content = content
+        self.edge = edge
+        self.pulse = pulse
+        self.accessibility = accessibility
+    }
 
     public var isSilent: Bool { content == .silent }
 
@@ -62,7 +81,8 @@ public struct NotchSignal: Sendable, Equatable {
         switch display.forecasts[limit.id] {
         case .blockAt(let date)?:
             let label = RelativeTimeFormatter.blockLabel(date, now: now, language: language, locale: locale, timeZone: timeZone)
-            return NotchSignal(content: .deadline(label), edge: .tier(blockAt: date, now: now), accessibility: strip.accessibility)
+            return NotchSignal(content: .deadline(label), edge: .tier(blockAt: date, now: now), pulse: .rhythm(blockAt: date, now: now),
+                               accessibility: strip.accessibility)
         case .holdsUntilReset?:
             return NotchSignal(content: .silent, edge: nil, accessibility: strip.accessibility)
         case .unavailable?, nil:
