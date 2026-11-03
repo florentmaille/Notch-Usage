@@ -56,6 +56,8 @@ final class AppModel {
     /// Hauteur idéale du contenu déplié, mesurée par la vue (hors réglages).
     @ObservationIgnored private var expandedContentHeight: CGFloat = NotchPanelController.expandedHeight
     var isConnecting = false
+    /// Renouvellement de Claude Code en cours (011) : libellé du bouton.
+    private(set) var isRenewing = false
     var connectionError: String?
     /// Prévisions affichées (003), stabilisées par l'hystérésis ; recalculées à chaque relevé réussi.
     private(set) var forecasts: [String: Forecast] = [:]
@@ -313,6 +315,32 @@ final class AppModel {
             } catch {
                 connectionError = error.localizedDescription
                 Log.auth.error("Claude Code connection failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    /// Renouvelle la session de Claude Code en lançant son CLI en arrière-plan, puis reconnecte (011).
+    func renewClaudeCodeSession() {
+        guard !isConnecting else { return }
+        isConnecting = true
+        isRenewing = true
+        connectionError = nil
+        Task {
+            let outcome = await ClaudeCodeRenewer.renew()
+            Log.auth.notice("Claude Code renewal: \(String(describing: outcome), privacy: .public)")
+            isRenewing = false
+            isConnecting = false
+            switch outcome {
+            case .renewed:
+                connectWithClaudeCode()
+            case .notFound:
+                connectionError = String(localized: "Claude Code was not found on this Mac. Run claude in Terminal, or sign in with your browser.")
+            case .notLoggedIn:
+                connectionError = String(localized: "Claude Code is signed out. Run claude in Terminal and sign in, or use your browser.")
+            case .timedOut:
+                connectionError = String(localized: "Claude Code did not answer in time. Try again, or run claude in Terminal.")
+            case .failed:
+                connectionError = String(localized: "Claude Code could not renew its session. Run claude in Terminal, or sign in with your browser.")
             }
         }
     }

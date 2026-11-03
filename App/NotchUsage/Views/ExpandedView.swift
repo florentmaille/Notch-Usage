@@ -74,13 +74,22 @@ struct ExpandedView: View {
 
     private var reauthMessage: String {
         model.account?.connectionMethod == .claudeCode
-            ? String(localized: "Your Claude Code session has expired. Run claude in Terminal once to renew it: Notch Usage reconnects automatically within 30 seconds. Or sign in with your browser.")
+            ? String(localized: "Your Claude Code session has expired. Renew it here: Notch Usage asks Claude Code for a one-word reply, which counts as a tiny request. Or run claude in Terminal, or sign in with your browser.")
             : String(localized: "Your claude.ai session has expired. Sign in again.")
     }
 
     private var reconnectButtons: some View {
         HStack {
-            if model.claudeCodeAvailable {
+            if model.claudeCodeAvailable && model.account?.connectionMethod == .claudeCode {
+                Button { model.renewClaudeCodeSession() } label: {
+                    if model.isRenewing {
+                        HStack(spacing: 4) { ProgressView().controlSize(.mini); Text("Renewing…") }
+                    } else {
+                        Text("Renew session")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            } else if model.claudeCodeAvailable {
                 Button("Use Claude Code session") { model.connectWithClaudeCode() }
             }
             Button("Sign in with browser") { model.connectWithBrowser() }
