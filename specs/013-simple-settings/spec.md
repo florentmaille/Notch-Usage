@@ -1,0 +1,29 @@
+# Feature Specification: Réglages simplifiés
+
+**Feature Branch**: `013-simple-settings` | **Created**: 2026-11-04 | **Status**: Draft
+
+**Input**: Demande utilisateur du 2026-11-03 (« possibilité de simplifier le menu settings ? ») et proposition acceptée : trois lignes pour l'essentiel, le reste replié, la clé de session sur l'écran de connexion.
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - L'essentiel en trois lignes (Priority: P1)
+
+À l'ouverture des réglages : « Ouvrir à la connexion », « Me prévenir avant un blocage » (interrupteurs) et la langue (menu). Rien ne défile. « Avancé », replié par défaut, contient la cadence de rafraîchissement et les seuils de repli avec une seule légende. La clé de session n'est plus dans les réglages : elle est sur l'écran de connexion, sous « Autre méthode… ».
+
+**Acceptance Scenarios**:
+
+1. **Given** les réglages ouverts, **Then** trois réglages visibles, « Avancé » replié, le pied « Connecté via … / Se déconnecter » inchangé.
+2. **Given** « Avancé » déplié, **Then** cadence (1 à 15 min), interrupteur des seuils, seuils d'attention et critique (grisés si l'interrupteur est coupé), une légende.
+3. **Given** l'écran de connexion, **When** « Autre méthode… » est déplié, **Then** le champ de clé de session et son bouton « Utiliser ».
+
+## Requirements *(mandatory)*
+
+- **FR-001**: Réglages visibles par défaut : ouverture à la connexion, notifications, langue.
+- **FR-002**: Cadence et seuils dans un groupe « Avancé » replié par défaut.
+- **FR-003**: Clé de session sur l'écran de connexion uniquement.
+- **FR-004**: Aucun réglage supprimé ni changement de comportement ; textes anglais et français.
+
+## Success Criteria *(mandatory)*
+
+- **SC-001**: 3 contrôles visibles à l'ouverture (contre 9 et 5 légendes en 0.4.2).
+- **SC-002**: 0 texte sans traduction, 0 texte obsolète.
