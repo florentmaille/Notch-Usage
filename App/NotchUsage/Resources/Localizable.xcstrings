@@ -127,12 +127,12 @@
         }
       }
     },
-    "Automatic shows the most used limit, or the one predicted to block first. A reached 5-hour or all-models weekly limit always shows.": {
+    "Automatic shows the limit most likely to block you first. A reached 5-hour or all-models weekly limit always shows.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatique affiche la limite la plus utilisée, ou celle dont le blocage est prévu en premier. Une limite 5 h ou hebdomadaire tous modèles atteinte s'affiche toujours."
+            "value": "Automatique affiche la limite la plus susceptible de vous bloquer en premier. Une limite 5 h ou hebdomadaire tous modèles atteinte s'affiche toujours."
           }
         }
       }
