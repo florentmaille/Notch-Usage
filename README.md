@@ -41,7 +41,7 @@ to block you; on the right, one number says how long before the block.
 | Limit reached | full red gauge | `↻1:02`, time until it comes back |
 | Weekly or model limit over its threshold | amber or red gauge | the limit's short name (`7d`, `Fable`) |
 | Offline or stale reading | grey wifi glyph | last known usage |
-| Hover | the island stays, the full panel opens below; click to pin | |
+| Hover | the island stays, the full panel opens below and closes when the pointer leaves | |
 
 The gauge fill and the number carry the information without colour.
 

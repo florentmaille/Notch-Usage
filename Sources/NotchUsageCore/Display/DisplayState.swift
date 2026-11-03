@@ -2,10 +2,10 @@ import Foundation
 
 /// Tout ce dont les vues ont besoin, dérivé à chaque changement. Non persisté.
 public struct DisplayState: Sendable, Equatable {
+    /// Replié, ou ouvert tant que le pointeur survole l'encoche (013 : plus d'épinglage).
     public enum Panel: Sendable, Equatable {
         case collapsed
         case hoverOpen
-        case pinned
     }
 
     public enum Content: Sendable, Equatable {

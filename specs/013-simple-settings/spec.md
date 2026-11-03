@@ -4,6 +4,12 @@
 
 **Input**: Demande utilisateur du 2026-11-03 (« possibilité de simplifier le menu settings ? ») et proposition acceptée : trois lignes pour l'essentiel, le reste replié, la clé de session sur l'écran de connexion.
 
+## Clarifications
+
+### Session 2026-11-04
+
+- Q (retour utilisateur) : l'épinglage au clic gêne ; le garder ? → A: non. Le panneau s'ouvre au survol et se referme quand le pointeur sort ; un clic ne le fige plus. En le quittant, il revient aux limites (les réglages ne restent pas ouverts). Échap le referme. Pendant qu'un menu est ouvert (Langue), le panneau reste ouvert.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - L'essentiel en trois lignes (Priority: P1)
@@ -21,7 +27,8 @@
 - **FR-001**: Réglages visibles par défaut : ouverture à la connexion, notifications, langue.
 - **FR-002**: Cadence et seuils dans un groupe « Avancé » replié par défaut.
 - **FR-003**: Clé de session sur l'écran de connexion uniquement.
-- **FR-004**: Aucun réglage supprimé ni changement de comportement ; textes anglais et français.
+- **FR-004**: Aucun réglage supprimé ; textes anglais et français.
+- **FR-005**: Plus d'épinglage : le panneau suit le survol seul ; il prend le clavier quand il s'ouvre et le rend en se repliant ; un menu ouvert le garde ouvert ; en se repliant il revient aux limites.
 
 ## Success Criteria *(mandatory)*
 

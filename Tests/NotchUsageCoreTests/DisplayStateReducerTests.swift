@@ -8,8 +8,8 @@ struct DisplayStateReducerTests {
     let notch = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
     let settings = RefreshSettings()
 
-    func reduce(_ state: FetchState, connected: Bool = true, hover: Bool = false, pinned: Bool = false, fullscreen: Bool = false, alertLevel: AlertLevel = .none, now: Date? = nil) -> DisplayState {
-        DisplayStateReducer.reduce(state: state, connected: connected, settings: settings, alertLevel: alertLevel, layout: notch, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now ?? self.now)
+    func reduce(_ state: FetchState, connected: Bool = true, hover: Bool = false, fullscreen: Bool = false, alertLevel: AlertLevel = .none, now: Date? = nil) -> DisplayState {
+        DisplayStateReducer.reduce(state: state, connected: connected, settings: settings, alertLevel: alertLevel, layout: notch, fullscreen: fullscreen, hover: hover, now: now ?? self.now)
     }
 
     @Test func blockedLimit() {
@@ -34,19 +34,19 @@ struct DisplayStateReducerTests {
         let snap = makeSnapshot([("session", 55), ("weekly_all", 60)], fetchedAt: now)
         let block: [String: Forecast] = ["weekly_all": .blockAt(now.addingTimeInterval(3600))]
         let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
-                                           fullscreen: false, hover: false, pinned: false, now: now, forecasts: block)
+                                           fullscreen: false, hover: false, now: now, forecasts: block)
         #expect(d.headline?.limit.id == "weekly_all")
         #expect(d.forecasts == block)
         let holds: [String: Forecast] = ["weekly_all": .holdsUntilReset]
         let h = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
-                                           fullscreen: false, hover: false, pinned: false, now: now, forecasts: holds)
+                                           fullscreen: false, hover: false, now: now, forecasts: holds)
         #expect(h.headline?.limit.id == "session")
     }
 
     @Test func headlineIsTheMostThreateningLimit() {
         let snap = makeSnapshot([("session", 30), ("weekly_all", 97)], fetchedAt: now)
         let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
-                                           fullscreen: false, hover: false, pinned: false, now: now)
+                                           fullscreen: false, hover: false, now: now)
         #expect(d.headline?.limit.id == "weekly_all")
     }
 
@@ -108,8 +108,6 @@ struct DisplayStateReducerTests {
         let snap = makeSnapshot([("session", 40)], fetchedAt: now)
         #expect(reduce(.idle(snap)).panel == .collapsed)
         #expect(reduce(.idle(snap), hover: true).panel == .hoverOpen)
-        #expect(reduce(.idle(snap), hover: true, pinned: true).panel == .pinned)
-        #expect(reduce(.idle(snap), hover: false, pinned: true).panel == .pinned)
     }
 
     @Test func fullscreenHidesUnlessHovered() {
@@ -138,10 +136,10 @@ struct DisplayStateReducerFullscreenTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
     let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
 
-    func reduce(hover: Bool, pinned: Bool = false, alertLevel: AlertLevel) -> DisplayState {
+    func reduce(hover: Bool, alertLevel: AlertLevel) -> DisplayState {
         let snap = makeSnapshot([("session", 85)], fetchedAt: now)
         return DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: RefreshSettings(), alertLevel: alertLevel,
-                                          layout: layout, fullscreen: true, hover: hover, pinned: pinned, now: now)
+                                          layout: layout, fullscreen: true, hover: hover, now: now)
     }
 
     @Test func hiddenWithAlertShowsDot() {
@@ -159,8 +157,4 @@ struct DisplayStateReducerFullscreenTests {
         #expect(!d.fullscreenHidden && !d.showAlertDot && d.panel == .hoverOpen)
     }
 
-    @Test func pinnedStaysVisibleInFullscreen() {
-        let d = reduce(hover: false, pinned: true, alertLevel: .none)
-        #expect(!d.fullscreenHidden && d.panel == .pinned)
-    }
 }

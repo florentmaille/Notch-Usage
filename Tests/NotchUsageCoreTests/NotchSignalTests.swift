@@ -8,10 +8,10 @@ struct NotchSignalTests {
     let utc = TimeZone(identifier: "UTC")!
     let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
 
-    func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, hover: Bool = false, pinned: Bool = false,
+    func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, hover: Bool = false,
                  forecasts: [String: Forecast] = [:]) -> DisplayState {
         DisplayStateReducer.reduce(state: state, connected: connected, settings: RefreshSettings(), alertLevel: level, layout: layout,
-                                   fullscreen: false, hover: hover, pinned: pinned, now: now, forecasts: forecasts)
+                                   fullscreen: false, hover: hover, now: now, forecasts: forecasts)
     }
 
     func signal(_ d: DisplayState) -> NotchSignal {
@@ -36,7 +36,6 @@ struct NotchSignalTests {
         let d = display(.idle(snap(42)), hover: true)
         let strip = CompactStrip.make(display: d, now: now, language: .english, strings: CompactStripTests.english, locale: Locale(identifier: "en_US"), timeZone: utc)
         #expect(signal(d).content == .band(strip))
-        #expect(signal(display(.idle(snap(42)), pinned: true)).content == .band(strip))
         #expect(!signal(d).isSilent)
     }
 
@@ -167,7 +166,6 @@ struct NotchSignalTests {
     @Test func hoverPinAndBandsNeverBeat() {
         let forecasts: [String: Forecast] = ["session": .blockAt(now.addingTimeInterval(8 * 60))]
         #expect(signal(display(.idle(snap(92)), hover: true, forecasts: forecasts)).pulse == NotchSignal.Pulse.none)
-        #expect(signal(display(.idle(snap(92)), pinned: true, forecasts: forecasts)).pulse == NotchSignal.Pulse.none)
         #expect(signal(display(.failed(.server(503), previous: snap(92)), forecasts: forecasts)).pulse == NotchSignal.Pulse.none)
         #expect(signal(display(.reauthRequired(previous: nil))).pulse == NotchSignal.Pulse.none)
     }
