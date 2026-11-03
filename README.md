@@ -2,6 +2,10 @@
   <img src="docs/images/hero.jpg" alt="Notch Usage: Claude usage limits shown in the MacBook notch" width="100%">
 </p>
 
+<p align="center">
+  <img src="docs/images/icon.png" alt="Notch Usage icon" width="128">
+</p>
+
 <h1 align="center">Notch Usage</h1>
 
 <p align="center">
@@ -52,6 +56,7 @@ The gauge fill and the number carry the information without colour.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
 - **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
+- **Menu bar icon, if you want one.** A small gauge in the menu bar, filled to the usage of the limit most likely to block you; click it for every limit, the forecast, *Refresh now*, *Settings* and *Quit*. Off by default.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
 - **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
@@ -97,13 +102,15 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 
 ## Settings
 
-<img src="docs/images/settings.png" alt="Settings: language, limit shown in the notch, refresh interval, alerts" width="440" align="right">
+<img src="docs/images/settings.png" alt="Settings: open at login, menu bar icon, notifications, language" width="440" align="right">
 
-- **Language**: system, English or French.
-- **Refresh every**: 1 to 15 minutes, 3 by default.
-- **Alerts**: notifications on or off; fallback thresholds (80 % / 95 %) used when no forecast exists, adjustable.
-- **Session key**: paste a `claude.ai` session key manually if the browser sign-in is blocked.
 - **Open at login**.
+- **Show in menu bar**: the gauge icon and its menu.
+- **Notify me before a block**: a macOS notification under 30 minutes, at the critical threshold and when a limit is reached.
+- **Language**: system, English or French.
+- **Advanced**: refresh interval (1 to 15 minutes, 3 by default) and the fallback thresholds (80 % / 95 %) used when no forecast exists.
+
+If the browser sign-in is blocked, paste a `claude.ai` session key on the sign-in screen, under *Other method…*.
 
 <br clear="right">
 

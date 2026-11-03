@@ -55,6 +55,9 @@ struct SettingsView: View {
                     Text("Waiting for approval in System Settings → General → Login Items.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                row("Show in menu bar", isOn: Binding(
+                    get: { model.showsMenuBarIcon },
+                    set: { model.setMenuBarIcon($0) }))
                 row("Notify me before a block", isOn: Binding(
                     get: { model.alertSettings.notifications },
                     set: { model.setNotificationsEnabled($0) }))
