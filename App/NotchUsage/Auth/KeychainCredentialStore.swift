@@ -38,7 +38,6 @@ final class KeychainCredentialStore: CredentialStore {
         guard status == errSecItemNotFound else { throw KeychainError(status: status) }
         var add = baseQuery(key)
         add[kSecValueData as String] = data
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
         add[kSecAttrLabel as String] = "Notch Usage (\(key.rawValue))"
         let addStatus = SecItemAdd(add as CFDictionary, nil)
         guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else { throw KeychainError(status: addStatus) }
