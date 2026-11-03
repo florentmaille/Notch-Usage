@@ -3,7 +3,7 @@ import Foundation
 public enum DisplayStateReducer {
     public static func reduce(state: FetchState, connected: Bool, settings: RefreshSettings, alertLevel: AlertLevel,
                               layout: NotchLayout, fullscreen: Bool, hover: Bool, pinned: Bool, now: Date,
-                              forecasts: [String: Forecast] = [:], choice: HeadlineChoice = .automatic) -> DisplayState {
+                              forecasts: [String: Forecast] = [:], alertSettings: AlertSettings = AlertSettings()) -> DisplayState {
         let panel: DisplayState.Panel = pinned ? .pinned : (hover ? .hoverOpen : .collapsed)
         let fullscreenHidden = fullscreen && !hover && !pinned
 
@@ -19,7 +19,7 @@ public enum DisplayStateReducer {
             d.content = .limits
             d.limits = s.limits
             d.forecasts = forecasts
-            d.headline = choice.pick(in: s, forecasts: forecasts).map(DisplayState.Headline.init)
+            d.headline = HeadlinePicker.pick(in: s, forecasts: forecasts, settings: alertSettings, now: now).map(DisplayState.Headline.init)
             d.fetchedAt = s.fetchedAt
             let f = Freshness.of(s, now: now, interval: settings.interval)
             d.freshness = f

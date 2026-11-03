@@ -20,7 +20,6 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     languageSection
-                    notchSection
                     refreshSection
                     alertsSection
                     sessionSection
@@ -61,7 +60,10 @@ struct SettingsView: View {
     private var alertsSection: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 6) {
-                Toggle("Highlight the notch when a limit gets close", isOn: Binding(
+                Toggle("Notify me when a block is under 30 minutes or a limit is reached", isOn: Binding(
+                    get: { model.alertSettings.notifications },
+                    set: { model.setNotificationsEnabled($0) }))
+                Toggle("Use thresholds when no forecast exists", isOn: Binding(
                     get: { model.alertSettings.enabled },
                     set: { model.setAlertsEnabled($0) }))
                 HStack {
@@ -74,7 +76,7 @@ struct SettingsView: View {
                         HStack { Circle().fill(.red).frame(width: 8, height: 8); Text("Critical at \(model.alertSettings.criticalThreshold)%") }
                     }
                 }
-                Text("One alert per threshold, per limit and per reset period. Changes apply on the next refresh.")
+                Text("Thresholds colour the edge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         } label: { Text("Alerts").font(.caption) }
@@ -102,27 +104,6 @@ struct SettingsView: View {
         } label: { Text("Language").font(.caption) }
     }
 
-    private var notchSection: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 4) {
-                Picker(selection: Binding(get: { model.headlineChoice }, set: { model.setHeadlineChoice($0) })) {
-                    Text("Automatic").tag(HeadlineChoice.automatic)
-                    ForEach(headlineOptions, id: \.self) { id in
-                        Text(LimitLabel.text(forID: id)).tag(HeadlineChoice.limit(id))
-                    }
-                } label: { Text("Limit shown") }
-                Text("Automatic shows the limit predicted to run out before its reset, otherwise the 5-hour window. A reached 5-hour or all-models weekly limit always shows.")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-        } label: { Text("Notch").font(.caption) }
-    }
-
-    /// Limites du dernier relevé, plus le choix enregistré s'il n'y figure pas (relevé pas encore arrivé).
-    private var headlineOptions: [String] {
-        var ids = model.display.limits.map(\.id)
-        if case .limit(let id) = model.headlineChoice, !ids.contains(id) { ids.append(id) }
-        return ids
-    }
 
     private var sessionSection: some View {
         GroupBox {

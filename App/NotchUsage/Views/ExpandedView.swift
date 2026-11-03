@@ -145,7 +145,7 @@ struct LimitRow: View {
     /// Ligne « À ce rythme » (003, FR-016) ; aucune sans prévision exploitable.
     private var paceText: String? {
         switch forecast {
-        case .blockAt(let date)?: return String(localized: "At this pace: blocked at \(clock(date))")
+        case .blockAt(let date)?: return String(localized: "At this pace (last hour): blocked at \(clock(date))")
         case .holdsUntilReset?: return String(localized: "At this pace: holds until reset")
         default: return nil
         }

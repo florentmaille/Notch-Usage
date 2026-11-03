@@ -9,9 +9,9 @@ struct NotchSignalTests {
     let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
 
     func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, hover: Bool = false, pinned: Bool = false,
-                 forecasts: [String: Forecast] = [:], choice: HeadlineChoice = .automatic) -> DisplayState {
+                 forecasts: [String: Forecast] = [:]) -> DisplayState {
         DisplayStateReducer.reduce(state: state, connected: connected, settings: RefreshSettings(), alertLevel: level, layout: layout,
-                                   fullscreen: false, hover: hover, pinned: pinned, now: now, forecasts: forecasts, choice: choice)
+                                   fullscreen: false, hover: hover, pinned: pinned, now: now, forecasts: forecasts)
     }
 
     func signal(_ d: DisplayState) -> NotchSignal {
@@ -107,7 +107,7 @@ struct NotchSignalTests {
         let critical = signal(display(.idle(snap(97)), level: .critical, forecasts: ["session": .unavailable]))
         #expect(critical.content == .threshold(label: "5h", percent: "97%") && critical.edge == .imminent)
         let weekly = makeSnapshot([("session", 30), ("weekly_all", 97)], fetchedAt: now, resetsAt: now.addingTimeInterval(3 * 86400))
-        let w = signal(display(.idle(weekly), level: .critical, choice: .limit("weekly_all")))
+        let w = signal(display(.idle(weekly), level: .critical))   // 008 : l'hebdo à 97 % porte le signal d'elle-même
         #expect(w.content == .threshold(label: "7d", percent: "97%") && w.edge == .imminent)
     }
 
@@ -123,14 +123,15 @@ struct NotchSignalTests {
         #expect(s.edge == .imminent)
     }
 
-    @Test func signalFollowsTheShownLimitOnly() {
+    @Test func signalFollowsTheMostThreateningLimit() {
         let snapshot = makeSnapshot([("session", 30), ("weekly_all", 97)], fetchedAt: now, resetsAt: now.addingTimeInterval(3600))
-        // Épinglée sur la 5 h : l'hebdo à 97 % ne compte pas, le niveau fourni est celui de la 5 h (004).
-        let pinned = signal(display(.idle(snapshot), level: .none, choice: .limit("session")))
-        #expect(pinned.content == .silent)
-        // Épinglée sur l'hebdo : son seuil s'affiche même si la 5 h a une prévision.
-        let weekly = signal(display(.idle(snapshot), level: .critical, forecasts: ["session": .blockAt(now.addingTimeInterval(600))], choice: .limit("weekly_all")))
+        // Hebdo à 97 %, 5 h tranquille : l'hebdo porte le signal (008), avec le niveau que l'app calcule sur elle.
+        let weekly = signal(display(.idle(snapshot), level: .critical))
         #expect(weekly.content == .threshold(label: "7d", percent: "97%"))
+        // Prévision imminente sur la 5 h : elle passe devant l'hebdo.
+        let imminent = signal(display(.idle(snapshot), level: .none, forecasts: ["session": .blockAt(now.addingTimeInterval(600))]))
+        guard case .deadline = imminent.content else { Issue.record("expected deadline"); return }
+        #expect(imminent.edge == .imminent)
     }
 
     @Test func staleReadingTurnsTheEdgeOff() {

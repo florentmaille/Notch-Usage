@@ -29,7 +29,7 @@ final class AppModel {
     private(set) var account: Account?
     private(set) var refreshSettings: RefreshSettings
     private(set) var alertSettings: AlertSettings
-    private(set) var headlineChoice: HeadlineChoice
+    @ObservationIgnored private let notifier = SignalNotifier()
     private(set) var fetchState: FetchState = .idle(nil)
     /// Dernier état émis par le coordinateur (`fetchState` peut garder un échec pendant une nouvelle tentative).
     @ObservationIgnored private var lastReceivedState: FetchState = .idle(nil)
@@ -62,7 +62,6 @@ final class AppModel {
     private static let accountKey = "account"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
-    private static let headlineKey = "headlineLimit"
 
     init() {
         let defaults = UserDefaults.standard
@@ -76,7 +75,6 @@ final class AppModel {
         } else {
             alertSettings = AlertSettings()
         }
-        headlineChoice = HeadlineChoice(storedValue: defaults.string(forKey: Self.headlineKey))
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
@@ -469,6 +467,11 @@ final class AppModel {
         saveAlertSettings()
     }
 
+    func setNotificationsEnabled(_ enabled: Bool) {
+        alertSettings.notifications = enabled
+        saveAlertSettings()
+    }
+
     func setWarningThreshold(_ value: Int) {
         alertSettings.setWarning(value)
         saveAlertSettings()
@@ -483,12 +486,6 @@ final class AppModel {
     private func saveAlertSettings() {
         if let data = try? JSONEncoder().encode(alertSettings) { defaults.set(data, forKey: Self.alertsKey) }
         restartIfConnected()
-        recompute()
-    }
-
-    func setHeadlineChoice(_ choice: HeadlineChoice) {
-        headlineChoice = choice
-        defaults.set(choice.storedValue, forKey: Self.headlineKey)
         recompute()
     }
 
@@ -520,16 +517,17 @@ final class AppModel {
         #if DEBUG
         if let demo = demoState { state = demo; connected = true }
         #endif
-        // Pastille et point d'alerte suivent la limite affichée, pas la plus haute de toutes (004).
-        let level = state.snapshot.flatMap { headlineChoice.pick(in: $0, forecasts: forecasts) }
+        // Pastille et point d'alerte suivent la limite portée par l'encoche : la plus menaçante (008).
+        let level = state.snapshot.flatMap { HeadlinePicker.pick(in: $0, forecasts: forecasts, settings: alertSettings, now: now) }
             .map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
         display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
                                              layout: layout, fullscreen: fullscreen, hover: hover, pinned: pinned, now: now,
-                                             forecasts: forecasts, choice: headlineChoice)
+                                             forecasts: forecasts, alertSettings: alertSettings)
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
         #endif
         signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app)
+        notifier.notifyIfNeeded(signal: signal, display: display, enabled: alertSettings.notifications, now: now)
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
         // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.

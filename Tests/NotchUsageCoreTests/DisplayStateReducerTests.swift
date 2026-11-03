@@ -43,10 +43,10 @@ struct DisplayStateReducerTests {
         #expect(h.headline?.limit.id == "session")
     }
 
-    @Test func headlineFollowsTheChosenLimit() {
-        let snap = makeSnapshot([("session", 70), ("weekly_all", 40)], fetchedAt: now)
+    @Test func headlineIsTheMostThreateningLimit() {
+        let snap = makeSnapshot([("session", 30), ("weekly_all", 97)], fetchedAt: now)
         let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
-                                           fullscreen: false, hover: false, pinned: false, now: now, choice: .limit("weekly_all"))
+                                           fullscreen: false, hover: false, pinned: false, now: now)
         #expect(d.headline?.limit.id == "weekly_all")
     }
 
