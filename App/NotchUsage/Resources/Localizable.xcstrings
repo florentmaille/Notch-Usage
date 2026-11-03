@@ -17,6 +17,36 @@
         }
       }
     },
+    "%@: %@ used.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : %2$@ utilisés."
+          }
+        }
+      }
+    },
+    "%@: at this pace, blocked at %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : à ce rythme, blocage à %2$@."
+          }
+        }
+      }
+    },
+    "%@: back in %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : retour dans %2$@."
+          }
+        }
+      }
+    },
     "%lld min": {
       "localizations": {
         "fr": {
@@ -97,6 +127,16 @@
         }
       }
     },
+    "A block is coming": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un blocage approche"
+          }
+        }
+      }
+    },
     "Alerts": {
       "localizations": {
         "fr": {
@@ -117,12 +157,12 @@
         }
       }
     },
-    "At this pace: blocked at %@": {
+    "At this pace (last hour): blocked at %@": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À ce rythme : bloqué à %@"
+            "value": "À ce rythme (dernière heure) : blocage à %@"
           }
         }
       }
@@ -133,26 +173,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "À ce rythme : tient jusqu’à la réinitialisation"
-          }
-        }
-      }
-    },
-    "Automatic": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Automatique"
-          }
-        }
-      }
-    },
-    "Automatic shows the limit predicted to run out before its reset, otherwise the 5-hour window. A reached 5-hour or all-models weekly limit always shows.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Automatique affiche la limite dont le blocage est prévu avant son reset, sinon la fenêtre 5 h. Une limite 5 h ou hebdomadaire tous modèles atteinte s'affiche toujours."
           }
         }
       }
@@ -337,16 +357,6 @@
         }
       }
     },
-    "Highlight the notch when a limit gets close": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signaler dans l’encoche une limite proche"
-          }
-        }
-      }
-    },
     "Language": {
       "localizations": {
         "fr": {
@@ -367,12 +377,22 @@
         }
       }
     },
-    "Limit shown": {
+    "Limit almost reached": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limite affichée"
+            "value": "Limite presque atteinte"
+          }
+        }
+      }
+    },
+    "Limit reached": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limite atteinte"
           }
         }
       }
@@ -393,16 +413,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas de connexion réseau."
-          }
-        }
-      }
-    },
-    "Notch": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encoche"
           }
         }
       }
@@ -457,12 +467,12 @@
         }
       }
     },
-    "One alert per threshold, per limit and per reset period. Changes apply on the next refresh.": {
+    "Notify me when a block is under 30 minutes or a limit is reached": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une alerte par seuil, par limite et par période. Les changements s’appliquent au prochain relevé."
+            "value": "Me notifier quand un blocage est à moins de 30 minutes ou qu'une limite est atteinte"
           }
         }
       }
@@ -717,6 +727,16 @@
         }
       }
     },
+    "Thresholds colour the edge and the panel for weekly limits and before a forecast exists. The notch always shows the limit most likely to block you.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les seuils colorent le liseré et le panneau pour les limites hebdomadaires et avant qu'une prévision existe. L'encoche montre toujours la limite la plus susceptible de bloquer."
+          }
+        }
+      }
+    },
     "Usage warning": {
       "localizations": {
         "fr": {
@@ -743,6 +763,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Utiliser la session Claude Code"
+          }
+        }
+      }
+    },
+    "Use thresholds when no forecast exists": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser les seuils quand aucune prévision n'existe"
           }
         }
       }

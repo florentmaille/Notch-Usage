@@ -33,8 +33,8 @@ It is native Swift, local-first, free of telemetry, and uses about 25 MB of memo
 | State | What you see |
 |---|---|
 | All clear | Nothing. The notch is your Mac's notch. |
-| Hover | Time to reset and usage of the limit most likely to block you, then the full panel. Click to pin it. |
-| A block is coming | A coloured edge around the notch: amber two hours out, orange under an hour, red with a halo under 30 minutes. The halo beats once a minute, then every 30 seconds under 10 minutes. |
+| Hover | Time to reset and usage of the limit most likely to block you (forecast first, thresholds otherwise, across all limits), then the full panel. Click to pin it. |
+| A block is coming | A coloured edge around the notch: amber two hours out, orange under an hour, red with a halo under 30 minutes. The halo beats once a minute, then every 30 seconds under 10 minutes. In full-screen apps, a dot of the same colour beats with it. |
 | Limit reached | Red edge; the panel shows when the limit comes back. |
 | Offline or stale reading | A grey strip with the last reading; the countdown keeps running. |
 
@@ -45,7 +45,7 @@ notch carries that meaning, and the notch never widens without text to show.
 
 - **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace: blocked at 16:40"; the edge follows the same forecast, and its halo beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on.
 - **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % lights the same edge. Thresholds are adjustable; one alert per limit and per reset period.
-- **Choose the limit shown.** Automatic shows the limit predicted to run out first, otherwise the 5-hour window. Or pin the weekly limit, or one model, in Settings.
+- **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
 - **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
@@ -96,9 +96,8 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 <img src="docs/images/settings.png" alt="Settings: language, limit shown in the notch, refresh interval, alerts" width="440" align="right">
 
 - **Language**: system, English or French.
-- **Limit shown**: Automatic, or a pinned limit. The edge and the hover strip follow this choice.
 - **Refresh every**: 1 to 15 minutes, 3 by default.
-- **Alerts**: on or off, warning and critical thresholds.
+- **Alerts**: notifications on or off; fallback thresholds (80 % / 95 %) used when no forecast exists, adjustable.
 - **Session key**: paste a `claude.ai` session key manually if the browser sign-in is blocked.
 - **Open at login**.
 

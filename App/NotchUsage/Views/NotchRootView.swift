@@ -12,7 +12,7 @@ struct NotchRootView: View {
         let s = model.signal
         VStack(spacing: 0) {
             if d.fullscreenHidden {
-                AlertDotView(level: d.alertLevel, visible: d.showAlertDot, edge: s.edge)
+                AlertDotView(level: d.alertLevel, visible: d.showAlertDot, edge: s.edge, beat: model.beat)
                     .frame(height: NotchPanelController.hiddenStripHeight)
             } else {
                 CompactView(display: d, signal: s, now: model.now, pulse: model.alertPulse, onReconnect: { model.reconnect() })
