@@ -31,7 +31,7 @@
 |---|---|---|
 | 1 | ✅ (par `tick`) | `imminent25` : `tick snapshot` × 2 → un battement sur les deux ticks (un tick sur deux) ; observation réelle de 3 min non rejouée |
 | 2 | ✅ (par `tick`) | `imminent` : chaque `tick` bat ; observation réelle de 3 min non rejouée |
-| 3 | ✅ | Captures 494 × 104 px toutes deux ; pixel du trait (247,76) identique r241 g108 b87 ; halo (247,90) alpha 48 au repos, 63 à mi-battement, 48 après 1 s |
+| 3 | ✅ | Captures 494 × 104 px toutes deux ; trait (247,76) r241 g108 b87 au repos, r244 g164 b154 à mi-battement (éclairci, même épaisseur) ; halo (247,90) alpha 48 au repos, modifié pendant le battement, 48 après 1 s |
 | 4 | ✅ | `blocked` : `tick` ne change pas le halo (alpha 48 → 48) ; `near`, `far` : aucun halo ; `critical` (orange) et `warning` (ambre) : aucun halo, `pulse == .none` en core |
 | 5 | ✅ | `imminent hover=1 tick` : bande + panneau, aucun halo ; `pulse == .none` (core) |
 | 6 | ✅ (core) | Épinglé → `band` → `pulse == .none` ; reprise non rejouée à la souris |
