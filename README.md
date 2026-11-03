@@ -135,7 +135,7 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 | Symptom | What to do |
 |---|---|
 | macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Builds from source are not signed with a stable identity, so the prompt returns after each rebuild. |
-| "Reconnect required" with the Claude Code session | Run any `claude` command: it renews its token and Notch Usage picks it up within a minute. |
+| "Reconnect required" with the Claude Code session | Click **Renew session** in the panel (it asks `claude` for a one-word reply), or run any `claude` command: Notch Usage picks up the renewed token within a minute. |
 | Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key in Settings. |
 | The edge is hard to see on your wallpaper | It is drawn with a dark outline for light or warm wallpapers. If it still blends in, hover: the strip and panel carry the same information. |
 | Nothing shows on an external display | The pill appears at the top of the display that holds the menu bar. Check Displays → Arrange. |
