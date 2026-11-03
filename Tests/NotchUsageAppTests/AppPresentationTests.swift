@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import NotchUsageCore
 import Testing
@@ -41,5 +42,13 @@ struct AppPresentationTests {
         let fable = UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: 10, resetsAt: now)
         #expect(!CompactStrip.Strings.app.shortLabel(session).isEmpty)
         #expect(CompactStrip.Strings.app.shortLabel(fable) == "Fable")
+    }
+
+    @Test func menuBarGaugeIsATemplateImage() {
+        for usage in [nil, 0, 42, 100] as [Int?] {
+            let image = StatusItemController.gauge(usage)
+            #expect(image.isTemplate && image.size == NSSize(width: 18, height: 18))
+            #expect(image.cgImage(forProposedRect: nil, context: nil, hints: nil) != nil)
+        }
     }
 }

@@ -946,6 +946,16 @@
           }
         }
       }
+    },
+    "Show in menu bar": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher dans la barre de menus"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -70,11 +70,15 @@ final class AppModel {
     @ObservationIgnored private var lastRecordedAt: Date?
     var claudeCodeAvailable = false
     var launchAtLoginStatus: LaunchAtLogin.Status = .disabled
+    /// Icône facultative de la barre de menus (014), désactivée par défaut.
+    private(set) var showsMenuBarIcon = UserDefaults.standard.bool(forKey: AppModel.menuBarKey)
+    @ObservationIgnored private var statusItem: StatusItemController?
     var now = Date()
 
     private static let accountKey = "account"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
+    fileprivate static let menuBarKey = "showsMenuBarIcon"
 
     init() {
         let defaults = UserDefaults.standard
@@ -114,6 +118,7 @@ final class AppModel {
         Task { await BrowserLoginWindow.purgeBrowserData() }
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
+        if showsMenuBarIcon { statusItem = StatusItemController(model: self) }
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         screens.onChange = { [weak self] target in self?.applyScreen(target) }
         screens.start()
@@ -143,6 +148,8 @@ final class AppModel {
     }
 
     func stop() {
+        statusItem?.remove()
+        statusItem = nil
         tickTask?.cancel()
         stateTask?.cancel()
         alertTask?.cancel()
@@ -459,6 +466,18 @@ final class AppModel {
         recompute()
     }
 
+    func setMenuBarIcon(_ shown: Bool) {
+        showsMenuBarIcon = shown
+        defaults.set(shown, forKey: Self.menuBarKey)
+        if shown, statusItem == nil {
+            statusItem = StatusItemController(model: self)
+        } else if !shown {
+            statusItem?.remove()
+            statusItem = nil
+        }
+        recompute()
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         launchAtLoginStatus = LaunchAtLogin.set(enabled: enabled)
     }
@@ -499,6 +518,7 @@ final class AppModel {
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée.
         let ear = NotchPanelController.earWidth
         panel?.apply(display, ears: (ear, signal.island.trailing == nil ? 0 : ear))
+        statusItem?.update(display: display, accessibility: signal.accessibility)
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
