@@ -34,6 +34,8 @@ final class AppModel {
     /// Dernier état émis par le coordinateur (`fetchState` peut garder un échec pendant une nouvelle tentative).
     @ObservationIgnored private var lastReceivedState: FetchState = .idle(nil)
     private(set) var display: DisplayState
+    /// Ce que l'encoche repliée montre sans survol (005), dérivé de `display`.
+    private(set) var signal: NotchSignal
     private(set) var layout: NotchLayout
     /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
     private(set) var alertPulse = 0
@@ -77,8 +79,10 @@ final class AppModel {
         }
         let initialLayout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 0, auxLeftWidth: nil, auxRightWidth: nil)
         layout = initialLayout
-        display = DisplayStateReducer.reduce(state: .idle(nil), connected: false, settings: settings, alertLevel: .none,
-                                             layout: initialLayout, fullscreen: false, hover: false, pinned: false, now: Date())
+        let initialDisplay = DisplayStateReducer.reduce(state: .idle(nil), connected: false, settings: settings, alertLevel: .none,
+                                                        layout: initialLayout, fullscreen: false, hover: false, pinned: false, now: Date())
+        display = initialDisplay
+        signal = NotchSignal.make(display: initialDisplay, now: Date(), language: AppLanguage.current, strings: .app)
     }
 
     // MARK: Cycle de vie
@@ -120,6 +124,15 @@ final class AppModel {
         demoForecasts = [:]
         switch mode {
         case "normal": demoState = .idle(snapshot(42, 27, 35))
+        case "far":
+            demoState = .idle(snapshot(55, 30, 28, sessionReset: 4 * 3600))
+            demoForecasts = ["session": .blockAt(now.addingTimeInterval(125 * 60))]
+        case "near":
+            demoState = .idle(snapshot(78, 30, 28))
+            demoForecasts = ["session": .blockAt(now.addingTimeInterval(40 * 60))]
+        case "imminent":
+            demoState = .idle(snapshot(92, 30, 28, sessionReset: 3600))
+            demoForecasts = ["session": .blockAt(now.addingTimeInterval(8 * 60))]
         case "pace":
             // Historique synthétique passé par le vrai calcul : 29 → 55 % en 40 min, reset dans 4 h.
             let current = snapshot(55, 30, 28, sessionReset: 4 * 3600)
@@ -495,9 +508,10 @@ final class AppModel {
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
         #endif
+        signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app)
         panel?.contentHeight = expandedContentHeight
         panel?.showsSettings = showSettings
-        panel?.apply(display)
+        panel?.apply(display, silent: signal.isSilent, halo: signal.edge?.hasHalo ?? false)
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {

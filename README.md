@@ -25,10 +25,10 @@ everything, click to pin.
 
 ## Features
 
-- **Always in sight**: next to the notch, how much of the limit most likely to block you is used and when it resets: the 5-hour window, unless the 5-hour or weekly limit is reached or another limit is predicted to run out first. Prefer to watch one limit? Pin the 5-hour window, the weekly limit or a model's weekly limit in Settings.
-- **Warned before the wall**: from your pace over the last hour, the notch predicts when the 5-hour window will run out ("blocked in 1h 10m", then "blocked at 16:40") long before any threshold. Over 80 % and 95 %, the percentage turns into an amber or red pill, so the alert is a shape, not just a colour.
+- **Silent when all is well**: nothing is drawn next to the notch until something needs your attention. Hover to see the limit most likely to block you (the 5-hour window by default; pin another one in Settings), how much is used and when it resets; click to pin the panel.
+- **Warned before the wall**: from your pace over the last hour, the notch predicts when the 5-hour window will run out. Its bottom edge lights up amber, then orange, then red as the block gets closer, next to the time left ("2h 05m", then "10:06"). One signal, one meaning: a block is coming.
 - **Every limit, one hover away**: 5-hour window, weekly, per model, with "resets in 2h 14m", the exact time and "at this pace: blocked at 16:40".
-- **Alerts before you hit the wall**: the notch turns amber at 80 % and red at 95 %. Thresholds are adjustable, one alert per limit and per reset period.
+- **Thresholds as a fallback**: when no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % shows the percentage as an amber or red pill with the same edge. Thresholds are adjustable, one alert per limit and per reset period.
 - **Works everywhere**: a pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
 - **Two ways to connect**: reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal**: refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. 0.2 % CPU on average.
@@ -37,7 +37,7 @@ everything, click to pin.
 - **English and French**: follows your Mac's language, or pick one in Settings.
 
 <p align="center">
-  <img src="docs/images/states.png" alt="Notch states: normal, predicted block, warning, critical, limit reached, reconnect" width="720">
+  <img src="docs/images/states.png" alt="Notch states: block predicted in 2 h, in 40 min, in 8 min, threshold without forecast, limit reached, offline" width="720">
 </p>
 
 ## Install

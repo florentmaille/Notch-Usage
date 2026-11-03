@@ -1,53 +1,102 @@
 import NotchUsageCore
 import SwiftUI
 
-/// Bandeau permanent (003) : à gauche la prévision, à droite le pourcentage, le tout décidé par `CompactStrip`.
+/// Bandeau replié (003, 005) : dessine `NotchSignal`. La bande complète (`CompactStrip`) sert au survol,
+/// à l'épinglage et aux états gris ; la donnée unique, l'épuisement et le seuil n'occupent que ce qu'il faut.
 struct CompactView: View {
     let display: DisplayState
+    let signal: NotchSignal
     var now: Date = Date()
     var pulse: Int = 0
     var onReconnect: (() -> Void)?
 
-    private var strip: CompactStrip {
-        CompactStrip.make(display: display, now: now, language: AppLanguage.current, strings: .app)
-    }
-
     var body: some View {
-        let strip = strip
         Group {
-            if display.mode == .notch {
+            if signal.isSilent {
+                Color.clear
+            } else if display.mode == .notch {
                 HStack(spacing: 0) {
-                    leading(strip, glyph: true).frame(width: wing, alignment: .trailing)
+                    leftWing.frame(width: wing, alignment: .trailing)
                     Color.clear.frame(width: display.layout.width)
-                    trailing(strip).frame(width: wing, alignment: .leading)
+                    rightWing.frame(width: wing, alignment: .leading)
                 }
+                .transition(.opacity)
             } else {
                 // Pilule : une ligne, avec le glyphe si la place le permet, jamais de troncature (research R5).
                 ViewThatFits(in: .horizontal) {
-                    pillLine(strip, glyph: true)
-                    pillLine(strip, glyph: false)
+                    pillLine(glyph: true)
+                    pillLine(glyph: false)
                 }
+                .transition(.opacity)
             }
         }
         .padding(.horizontal, 10)
         .font(.system(size: 11, weight: .semibold, design: .rounded))
         .foregroundStyle(.white)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(strip.accessibility)
+        .accessibilityHidden(false)
+        .accessibilityLabel(signal.accessibility)
     }
 
     private var wing: CGFloat { NotchPanelController.wingWidth - 10 }
+    private var edgeColor: Color { signal.edge?.color ?? .orange }
 
-    private func pillLine(_ strip: CompactStrip, glyph: Bool) -> some View {
-        HStack(spacing: 5) {
-            leading(strip, glyph: glyph)
-            if leftText(strip) != nil { Text(verbatim: "·").foregroundStyle(.secondary) }
-            trailing(strip)
+    // MARK: Ailes
+
+    @ViewBuilder private var leftWing: some View {
+        switch signal.content {
+        case .silent, .deadline: EmptyView()
+        case .band(let strip): leading(strip, glyph: true)
+        case .exhausted(let full, _): pill(full, tint: .red)
+        case .threshold(let label, _): Text(label).fontWeight(.medium).foregroundStyle(.secondary).fixedSize()
         }
-        .fixedSize()
     }
 
-    // MARK: Aile gauche
+    @ViewBuilder private var rightWing: some View {
+        switch signal.content {
+        case .silent: EmptyView()
+        case .band(let strip): trailing(strip)
+        case .deadline(let label): glyphText("hourglass", label, edgeColor)
+        case .exhausted(_, let back): glyphText("arrow.clockwise", back, .red)
+        case .threshold(_, let percent): pill(percent, tint: edgeColor)
+        }
+    }
+
+    @ViewBuilder private func pillLine(glyph: Bool) -> some View {
+        switch signal.content {
+        case .silent: EmptyView()
+        case .band(let strip):
+            HStack(spacing: 5) {
+                leading(strip, glyph: glyph)
+                if leftText(strip) != nil { Text(verbatim: "·").foregroundStyle(.secondary) }
+                trailing(strip)
+            }
+            .fixedSize()
+        case .deadline(let label):
+            glyphText(glyph ? "hourglass" : nil, label, edgeColor).fixedSize()
+        case .exhausted(let full, let back):
+            HStack(spacing: 5) { pill(full, tint: .red); Text(verbatim: "·").foregroundStyle(.secondary); glyphText(glyph ? "arrow.clockwise" : nil, back, .red) }.fixedSize()
+        case .threshold(let label, let percent):
+            HStack(spacing: 5) { Text(label).fontWeight(.medium).foregroundStyle(.secondary); Text(verbatim: "·").foregroundStyle(.secondary); pill(percent, tint: edgeColor) }.fixedSize()
+        }
+    }
+
+    private func glyphText(_ symbol: String?, _ text: String, _ color: Color) -> some View {
+        HStack(spacing: 4) {
+            if let symbol { Image(systemName: symbol).symbolEffect(.bounce, value: pulse) }
+            Text(text).monospacedDigit().fixedSize()
+        }
+        .foregroundStyle(color)
+    }
+
+    private func pill(_ text: String, tint: Color) -> some View {
+        Text(text).monospacedDigit().fixedSize()
+            .foregroundStyle(.black.opacity(0.85))
+            .padding(.horizontal, 5).padding(.vertical, 1)
+            .background(Capsule().fill(tint))
+    }
+
+    // MARK: Bande complète (003)
 
     private func leftText(_ strip: CompactStrip) -> String? {
         switch strip.left {
@@ -78,17 +127,12 @@ struct CompactView: View {
         .foregroundStyle(color)
     }
 
-    // MARK: Aile droite
-
     @ViewBuilder private func trailing(_ strip: CompactStrip) -> some View {
         switch strip.right {
         case .percent(let t):
             Text(t).monospacedDigit().fixedSize().foregroundStyle(strip.tone == .muted ? Color.secondary : Color.white)
         case .pill(let t):
-            Text(t).monospacedDigit().fixedSize()
-                .foregroundStyle(.black.opacity(0.85))
-                .padding(.horizontal, 5).padding(.vertical, 1)
-                .background(Capsule().fill(tint(strip.tone)))
+            pill(t, tint: tint(strip.tone))
         case .signIn(let t):
             Button { onReconnect?() } label: { Text(t).foregroundStyle(.orange).fixedSize() }
                 .buttonStyle(.plain)
@@ -108,6 +152,27 @@ struct CompactView: View {
         case .normal: return .white
         }
     }
+}
+
+/// Rendu des paliers du liseré (contrat notch-signal.md) : teintes système en apparence sombre.
+extension NotchSignal.Edge {
+    var color: Color {
+        switch self {
+        case .far: return Color(red: 1.0, green: 0.62, blue: 0.04)          // ambre #FF9F0A
+        case .near: return Color(red: 1.0, green: 0.42, blue: 0.10)         // orange #FF6A1A
+        case .imminent, .exhausted: return Color(red: 1.0, green: 0.27, blue: 0.23) // rouge #FF453A
+        }
+    }
+
+    var lineWidth: CGFloat {
+        switch self {
+        case .far: return 2
+        case .near: return 2.5
+        case .imminent, .exhausted: return 3
+        }
+    }
+
+    var hasHalo: Bool { self == .imminent || self == .exhausted }
 }
 
 /// Barre piste + remplissage du panneau déplié : `ProgressView` et `Gauge` rendent mal sur fond noir.
@@ -156,6 +221,13 @@ extension CompactStrip.Strings {
         dash: "—",
         percent: { String(localized: "\($0)%") },
         limitLabel: { LimitLabel.text(for: $0) },
+        shortLabel: { limit in
+            switch limit.kind {
+            case .rollingFiveHour: String(localized: "5h")
+            case .weeklyAll: String(localized: "7d")
+            case .weeklyModel: limit.modelName ?? String(localized: "7d")
+            }
+        },
         limitAnnouncement: { String(localized: "\($0), \($1) percent, resets \($2)") },
         paceAnnouncement: { String(localized: ", at this pace blocked at \($0)") },
         stateAnnouncement: { state in

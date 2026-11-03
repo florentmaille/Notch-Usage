@@ -1,7 +1,8 @@
 #!/usr/bin/env swift
 // Pilote la build Debug de Notch Usage par notifications distribuées (hooks `com.notchusage.debug.*`).
 //
-//   swift scripts/demo.swift <état>            # normal | pace | warning | critical | blocked | offline | reauth | off
+//   swift scripts/demo.swift <état>            # normal | far | near | imminent | pace | warning | critical | blocked | offline | reauth | off
+//   far/near/imminent (005) : blocage prévu dans 2 h 05 / 40 min / 8 min ; normal est silencieux.
 //   swift scripts/demo.swift <état> snapshot   # capture l'encoche repliée dans $TMPDIR/notchusage-snapshot.png
 //   swift scripts/demo.swift <état> panel      # idem, panneau déplié (survol simulé)
 //   swift scripts/demo.swift hover=1 click=225,175 wait=2 snapshot   # commandes brutes, dans l'ordre
@@ -10,7 +11,7 @@
 // snapshot, wait=<secondes>.
 import Foundation
 
-let states = ["normal", "pace", "warning", "critical", "blocked", "offline", "reauth", "off"]
+let states = ["normal", "far", "near", "imminent", "pace", "warning", "critical", "blocked", "offline", "reauth", "off"]
 var args = Array(CommandLine.arguments.dropFirst())
 if let first = args.first, states.contains(first) {
     args.removeFirst()

@@ -31,6 +31,28 @@
 | 19 | Instruments, 10 min en `imminent` puis en `normal` | CPU < 1 %, empreinte à ± 2 Mo de la 0.3.0, aucun rafraîchissement hors changement d'état | SC-005 |
 | 20 | Compteur de requêtes (log) sur 10 min | Identique à la 0.3.0 | SC-006 |
 
-## Résultats
+## Résultats (2026-11-03, build Debug)
 
-À remplir à l'implémentation.
+| # | Résultat | Détail |
+|---|---|---|
+| 1 | ✅ | Capture `normal` : 220 pt de large (le panneau se réduit à l'encoche), 0 pixel non transparent sur l'échantillon complet |
+| 2 | ✅ | `hover=1` : bande « ✓ 2h 14m · 42% » puis panneau, en et fr |
+| 3, 4, 5 | ⚠️ non rejoués à la main | Survol réel, zone de 50 pt à côté de l'encoche, clic : le cadre du panneau vaut la largeur de l'encoche en silence (R2), donc la zone suit par construction ; à confirmer à la souris |
+| 6 | ✅ | `far` ⌛ 2h 05m ambre 2 pt ; `near` ⌛ heure orange 2,5 pt ; `imminent` ⌛ heure rouge 3 pt + halo ; aile gauche vide, aucun pourcentage ; en et fr (« 2 h 05 ») |
+| 7 | ✅ | `blocked` : liseré rouge + halo, « Full » / « Bloqué » en pastille, ↻ 1h 02m |
+| 8 | ✅ | `warning` : « 5h » / « 5 h » gris, pastille ambre 83 %, liseré ambre |
+| 9 | ✅ (core) | `forecastWinsOverThresholdForTheFiveHourWindow` ; pas de hook démo pour `holds` |
+| 10 | ⚠️ non vu | Fondu 0,6 s et rétrécissement différé : code en place (`silenceFade`, `shrinkWork`), à regarder à l'œil |
+| 11 | ✅ | Limite épinglée Fable + `far` : capture de 220 pt, silence ; panneau non vérifié |
+| 12 | ✅ | Pilule : absente en `normal` (150 pt transparents), « ⌛ 2h 05m » avec liseré en `far`, « Full · ↻ 1h 02m » en `blocked`, « 5h · [83 %] » en `warning`, pilule complète puis panneau au survol |
+| 13 | ⚠️ non rejoué | Plein écran : `AlertDotView` prend la couleur du palier ; pas de hook démo pour le plein écran |
+| 14 | ⚠️ non rejoué | VoiceOver : la vue reste dans la hiérarchie avec `accessibilityHidden(false)` et le libellé de la bande |
+| 15 | ✅ | `offline` : bande grise, aucun liseré, en et fr |
+| 16 | ⚠️ non rejoué | Mode réduit d'animations : `reduceMotion` → animation nil |
+| 17 | ✅ | Paliers distincts sans la couleur : épaisseur 2 / 2,5 / 3 pt et format durée → heure |
+| 18 | ✅ | 87 textes, 0 sans traduction française |
+| 19 | ✅ | 60 s en `imminent` : 0,36 s CPU (0,6 %) ; 60 s en `normal` : 0,41 s (0,7 %) ; empreinte 23,6 Mo (0.3.0 Debug : 24,5 Mo) |
+| 20 | ✅ (par construction) | Aucune requête, aucun timer ajoutés ; le signal se dérive dans `recompute()` |
+
+Écart assumé par rapport au contrat : au survol, la bande s'affiche sans liseré (le panneau donne le
+détail) ; le contrat disait « selon l'état sous-jacent ». À revoir si le liseré manque au survol.
