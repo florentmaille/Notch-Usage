@@ -38,7 +38,7 @@
 | 1 | ✅ | Capture `normal` : 220 pt de large (le panneau se réduit à l'encoche), 0 pixel non transparent sur l'échantillon complet |
 | 2 | ✅ | `hover=1` : bande « ✓ 2h 14m · 42% » puis panneau, en et fr |
 | 3, 4, 5 | ⚠️ non rejoués à la main | Survol réel, zone de 50 pt à côté de l'encoche, clic : le cadre du panneau vaut la largeur de l'encoche en silence (R2), donc la zone suit par construction ; à confirmer à la souris |
-| 6 | ✅ | Encoche : liseré seul, tracé hors de l'encoche physique (sous le bord et sur les arrondis ; un trait intérieur n'est pas visible à l'écran), ambre 2 pt / orange 2,5 pt / rouge 3 pt + halo, sans texte (retour utilisateur) ; pilule : ⌛ 2h 05m / heure, en et fr |
+| 6 | ✅ | Encoche : liseré seul, tracé hors de l'encoche physique, tout autour (flancs, arrondis, bas ; un trait intérieur n'est pas visible à l'écran), ambre 2 pt / orange 2,5 pt / rouge 3 pt + halo, sans texte (retour utilisateur) ; pilule : ⌛ 2h 05m / heure, en et fr |
 | 7 | ✅ | `blocked` : encoche, liseré rouge + halo seul ; pilule, « Full » / « Bloqué » en pastille, ↻ 1h 02m |
 | 8 | ✅ | `warning` : encoche, liseré ambre seul ; pilule, « 5h » / « 5 h » gris et pastille ambre 83 % |
 | 9 | ✅ (core) | `forecastWinsOverThresholdForTheFiveHourWindow` ; pas de hook démo pour `holds` |

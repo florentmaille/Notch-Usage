@@ -48,13 +48,13 @@ private struct NotchShape: View {
         let radius: CGFloat = notch ? (expanded ? 18 : 12) : 14
         ZStack(alignment: .top) {
             if let edge, notch {
-                // Contour extérieur : son bord intérieur coïncide avec l'encoche, masqué à la hauteur des arrondis.
+                // Contour extérieur tout autour de l'encoche (flancs, arrondis, bas) : son bord intérieur coïncide
+                // avec l'encoche physique ; le haut est le bord de l'écran.
                 let w = edge.lineWidth
                 UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius + w, bottomTrailingRadius: radius + w,
                                        topTrailingRadius: 0, style: .continuous)
                     .strokeBorder(edge.color, lineWidth: w)
                     .frame(width: narrow ? display.layout.width + 2 * w : nil, height: display.layout.height + w)
-                    .mask(alignment: .bottom) { Rectangle().frame(height: radius + w) }
                     .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
             }
             let shape = UnevenRoundedRectangle(topLeadingRadius: notch ? 0 : radius,
@@ -63,9 +63,8 @@ private struct NotchShape: View {
             shape.fill(.black)
                 .overlay {
                     if let edge, !notch {
-                        // Pilule : entièrement visible, le trait reste à l'intérieur, sur la moitié basse des arrondis.
+                        // Pilule : entièrement visible, le trait reste à l'intérieur, tout autour.
                         shape.strokeBorder(edge.color, lineWidth: edge.lineWidth)
-                            .mask(alignment: .bottom) { Rectangle().frame(height: radius) }
                             .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
                     }
                 }
