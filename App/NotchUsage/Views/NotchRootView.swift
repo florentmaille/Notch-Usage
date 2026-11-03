@@ -26,7 +26,7 @@ struct NotchRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(alignment: .top) {
             // Toujours présente, seule son opacité s'anime : un retrait conditionnel saccade à la sortie.
-            NotchShape(display: d, edge: s.edge, narrow: s.isSilent || (d.mode == .notch && !s.isBand))
+            NotchShape(display: d, edge: s.edge, narrow: s.isSilent || (d.mode == .notch && !s.isBand), beat: model.beat)
                 .opacity(s.isSilent ? 0 : 1)
         }
         .animation(reduceMotion ? nil : .easeOut(duration: NotchPanelController.silenceFade), value: s.isSilent)
@@ -41,6 +41,9 @@ private struct NotchShape: View {
     let edge: NotchSignal.Edge?
     /// Forme réduite à l'encoche physique (silence ou liseré seul) plutôt qu'au panneau entier.
     let narrow: Bool
+    /// Compteur de battements (006) : chaque incrément fait respirer le halo.
+    let beat: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let expanded = display.isExpanded
@@ -62,7 +65,7 @@ private struct NotchShape: View {
                                        topTrailingRadius: 0, style: .continuous)
                     .strokeBorder(edge.color, lineWidth: w)
                     .frame(width: narrow ? display.layout.width + 2 * w : nil, height: display.layout.height + w)
-                    .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
+                    .modifier(HaloBeat(edge: edge, beat: beat, reduceMotion: reduceMotion))
             }
             let shape = UnevenRoundedRectangle(topLeadingRadius: notch ? 0 : radius,
                                                bottomLeadingRadius: radius, bottomTrailingRadius: radius,
@@ -74,13 +77,33 @@ private struct NotchShape: View {
                         shape.strokeBorder(NotchSignal.Edge.keylineColor, lineWidth: NotchSignal.Edge.keyline)
                             .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
                         shape.inset(by: NotchSignal.Edge.keyline).strokeBorder(edge.color, lineWidth: edge.lineWidth)
-                            .shadow(color: edge.hasHalo ? edge.color.opacity(0.6) : .clear, radius: 6, y: 2)
+                            .modifier(HaloBeat(edge: edge, beat: beat, reduceMotion: reduceMotion))
                     }
                 }
                 .frame(width: narrow && notch ? display.layout.width : nil, height: narrow ? display.layout.height : nil)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .opacity(display.fullscreenHidden ? 0 : 1)
+    }
+}
+
+/// Halo du liseré (paliers avec halo) : respire 0,6 → 1 → 0,6 en 600 ms à chaque battement (006, R4). Seule
+/// l'opacité de l'ombre change ; en mode réduit d'animations, le halo reste à 0,6.
+private struct HaloBeat: ViewModifier {
+    let edge: NotchSignal.Edge
+    let beat: Int
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        if !edge.hasHalo {
+            content
+        } else if reduceMotion {
+            content.shadow(color: edge.color.opacity(0.6), radius: 6, y: 2)
+        } else {
+            content.phaseAnimator([0.6, 1.0], trigger: beat) { view, opacity in
+                view.shadow(color: edge.color.opacity(opacity), radius: 6, y: 2)
+            } animation: { _ in .easeInOut(duration: 0.3) }
+        }
     }
 }
 

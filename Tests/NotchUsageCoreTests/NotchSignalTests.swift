@@ -138,4 +138,44 @@ struct NotchSignalTests {
         guard case .band = s.content else { Issue.record("expected band"); return }
         #expect(s.edge == nil)
     }
+
+    // MARK: 006 - rythme du battement
+
+    func deadline(_ minutes: Double, session: Double = 92, level: AlertLevel = .none) -> NotchSignal {
+        signal(display(.idle(snap(session, reset: 3600)), level: level, forecasts: ["session": .blockAt(now.addingTimeInterval(minutes * 60))]))
+    }
+
+    @Test func imminentDeadlineBeatsEveryMinuteThenEveryHalfMinute() {
+        #expect(deadline(25, session: 85).pulse == .everyMinute)
+        #expect(deadline(29.9).pulse == .everyMinute)
+        #expect(deadline(10).pulse == .everyMinute)
+        #expect(deadline(9.98).pulse == .everyHalfMinute)
+        #expect(deadline(8).pulse == .everyHalfMinute)
+        #expect(deadline(-1).pulse == .everyHalfMinute)
+    }
+
+    @Test func onlyAnImminentForecastBeats() {
+        #expect(deadline(40, session: 78).pulse == NotchSignal.Pulse.none)
+        #expect(deadline(125, session: 55).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.idle(snap(100, reset: 3600)), level: .critical)).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.idle(snap(97)), level: .critical)).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.idle(snap(83)), level: .warning)).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.idle(snap(42)))).pulse == NotchSignal.Pulse.none)
+    }
+
+    @Test func hoverPinAndBandsNeverBeat() {
+        let forecasts: [String: Forecast] = ["session": .blockAt(now.addingTimeInterval(8 * 60))]
+        #expect(signal(display(.idle(snap(92)), hover: true, forecasts: forecasts)).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.idle(snap(92)), pinned: true, forecasts: forecasts)).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.failed(.server(503), previous: snap(92)), forecasts: forecasts)).pulse == NotchSignal.Pulse.none)
+        #expect(signal(display(.reauthRequired(previous: nil))).pulse == NotchSignal.Pulse.none)
+    }
+
+    @Test func aBeatImpliesTheImminentTier() {
+        for minutes in [25.0, 10, 9.9, 8, 0.5] {
+            let s = deadline(minutes)
+            #expect(s.pulse != NotchSignal.Pulse.none && s.edge == .imminent)
+            guard case .deadline = s.content else { Issue.record("expected deadline"); continue }
+        }
+    }
 }
