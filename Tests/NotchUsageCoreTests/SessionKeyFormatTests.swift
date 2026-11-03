@@ -16,6 +16,14 @@ struct SessionKeyFormatTests {
         #expect(!SessionKeyFormat.isValid("hello"))
     }
 
+    @Test func rejectsHeaderBreakingCharacters() {
+        let body = String(repeating: "a", count: 40)
+        #expect(!SessionKeyFormat.isValid("sk-ant-sid02-" + body + "; Path=/"))
+        #expect(!SessionKeyFormat.isValid("sk-ant-sid02-" + body + "\r\nX-Injected: 1"))
+        #expect(!SessionKeyFormat.isValid("sk-ant-sid02-" + body + " " + body))
+        #expect(SessionKeyFormat.isValid("sk-ant-sid02-" + body + "_-Z9"))
+    }
+
     @Test func trimsWhitespace() {
         #expect(SessionKeyFormat.normalized("  sk-ant-sid02-abcdefghijklmnopqrstuvwxyz\n") == "sk-ant-sid02-abcdefghijklmnopqrstuvwxyz")
     }
