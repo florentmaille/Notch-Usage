@@ -40,7 +40,6 @@ final class AppModel {
     private(set) var signal: NotchSignal
     private(set) var layout: NotchLayout
     /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
-    private(set) var alertPulse = 0
     /// Battements du halo (006) : incrémenté sur le tick de 30 s selon `signal.pulse`, jamais remis à zéro.
     /// Battements du halo (006) : `BeatCounter` sur le tick de 30 s, jamais remis à zéro.
     private var beatCounter = BeatCounter()
@@ -198,9 +197,8 @@ final class AppModel {
         let alerts = c.alerts
         alertTask = Task { [weak self] in
             for await event in alerts {
-                guard let self else { return }
+                guard self != nil else { return }
                 Log.refresh.notice("alert \(event.level.rawValue, privacy: .public) on \(event.limitID, privacy: .public)")
-                self.alertPulse += 1
             }
         }
         Task { await c.start() }

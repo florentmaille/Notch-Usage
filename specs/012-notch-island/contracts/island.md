@@ -13,6 +13,6 @@
 | Session expirée | glyphe cadenas | grise | aucune |
 | Aucun compte | glyphe compte | grise | aucune |
 | Non pris en charge, indisponible | glyphe point d'interrogation | grise | aucune |
-| Survol ou épinglé | bande 003, puis panneau | - | - |
+| Survol ou épinglé | l'île, inchangée, au-dessus du panneau | - | - |
 
 Cadre replié (encoche) : encoche + 52 pt à gauche + 52 pt à droite si donnée. Pilule : même contenu sur une ligne.

@@ -14,7 +14,7 @@ struct NotchRootView: View {
                 AlertDotView(level: d.alertLevel, visible: d.showAlertDot, edge: s.edge, beat: model.beat)
                     .frame(height: NotchPanelController.hiddenStripHeight)
             } else {
-                CompactView(display: d, signal: s, now: model.now, pulse: model.alertPulse, beat: model.beat, onReconnect: { model.reconnect() })
+                CompactView(display: d, signal: s, beat: model.beat)
                     .frame(height: d.layout.height)
                 if d.isExpanded {
                     ExpandedContainer()

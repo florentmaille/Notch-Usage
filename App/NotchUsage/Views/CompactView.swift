@@ -1,41 +1,26 @@
 import NotchUsageCore
 import SwiftUI
 
-/// Bandeau replié (003, 012) : au repos, l'île (jauge ou glyphe à gauche, une donnée à droite) ; au survol et
-/// épinglé, la bande complète (`CompactStrip`). La pilule montre l'île sur une ligne.
+/// Haut du panneau (012) : l'île, repliée comme dépliée (retour utilisateur : la bande à texte de la 003 au
+/// survol cassait l'effet Dynamic Island). Jauge ou glyphe à gauche, une donnée à droite ; la pilule l'aligne.
 struct CompactView: View {
     let display: DisplayState
     let signal: NotchSignal
-    var now: Date = Date()
-    var pulse: Int = 0
     var beat: Int = 0
-    var onReconnect: (() -> Void)?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
-            if display.isExpanded, case .band(let strip) = signal.content {
-                if display.mode == .notch {
-                    HStack(spacing: 0) {
-                        leading(strip, glyph: true).frame(width: wing, alignment: .trailing)
-                        Color.clear.frame(width: display.layout.width)
-                        trailing(strip).frame(width: wing, alignment: .leading)
-                    }
-                    .padding(.horizontal, Self.horizontalPadding)
-                } else {
-                    ViewThatFits(in: .horizontal) {
-                        bandLine(strip, glyph: true)
-                        bandLine(strip, glyph: false)
-                    }
-                    .padding(.horizontal, Self.horizontalPadding)
-                }
-            } else if display.mode == .notch {
-                // L'encoche physique au centre, une oreille de chaque côté ; la droite n'existe qu'avec une donnée.
+            if display.mode == .notch {
+                // L'encoche physique au centre. Repliée, l'oreille droite n'existe qu'avec une donnée ; dépliée, elle
+                // garde sa place pour que l'encoche reste au centre du panneau.
                 HStack(spacing: 0) {
                     islandLeading.frame(width: NotchPanelController.earWidth)
                     Color.clear.frame(width: display.layout.width)
                     if let trailing = signal.island.trailing {
                         islandTrailing(trailing).frame(width: NotchPanelController.earWidth).transition(.opacity)
+                    } else if display.isExpanded {
+                        Color.clear.frame(width: NotchPanelController.earWidth)
                     }
                 }
             } else {
@@ -43,21 +28,14 @@ struct CompactView: View {
                     islandLeading
                     if let trailing = signal.island.trailing { islandTrailing(trailing).transition(.opacity) }
                 }
-                .padding(.horizontal, Self.horizontalPadding)
+                .padding(.horizontal, 10)
             }
         }
-        .font(.system(size: 11, weight: .semibold, design: .rounded))
         .foregroundStyle(.white)
         .accessibilityElement(children: .ignore)
         .accessibilityHidden(false)
         .accessibilityLabel(signal.accessibility)
     }
-
-    private static let horizontalPadding: CGFloat = 10
-    /// Largeur utile d'une aile de la bande : la largeur de l'aile moins la marge horizontale.
-    private var wing: CGFloat { NotchPanelController.wingWidth - Self.horizontalPadding }
-
-    // MARK: Île (012)
 
     @ViewBuilder private var islandLeading: some View {
         switch signal.island.leading {
@@ -93,82 +71,9 @@ struct CompactView: View {
         case .unavailable: return "questionmark.circle"
         }
     }
-
-    private func bandLine(_ strip: CompactStrip, glyph: Bool) -> some View {
-        HStack(spacing: 5) {
-            leading(strip, glyph: glyph)
-            if leftText(strip) != nil { Text(verbatim: "·").foregroundStyle(.secondary) }
-            trailing(strip)
-        }
-        .fixedSize()
-    }
-
-    private func pill(_ text: String, tint: Color) -> some View {
-        Text(text).monospacedDigit().fixedSize()
-            .foregroundStyle(.black.opacity(0.85))
-            .padding(.horizontal, 5).padding(.vertical, 1)
-            .background(Capsule().fill(tint))
-    }
-
-    // MARK: Bande complète (003)
-
-    private func leftText(_ strip: CompactStrip) -> String? {
-        switch strip.left {
-        case .holds(let t), .blockIn(let t), .blockedFor(let t), .offline(let t): return t
-        case .locked, .connect, .unsupported, .unavailable: return nil
-        }
-    }
-
-    private func leading(_ strip: CompactStrip, glyph: Bool) -> some View {
-        let (symbol, color): (String, Color) = switch strip.left {
-        case .holds: ("checkmark", .secondary)
-        case .blockIn: ("hourglass", tint(strip.tone))
-        case .blockedFor: ("arrow.clockwise", .red)
-        case .offline: ("wifi.slash", .secondary)
-        case .locked: ("lock", .orange)
-        case .connect: ("person.crop.circle.badge.plus", .secondary)
-        case .unsupported: ("questionmark.circle", .secondary)
-        case .unavailable: ("wifi.exclamationmark", .secondary)
-        }
-        return HStack(spacing: 4) {
-            if glyph || leftText(strip) == nil {
-                Image(systemName: symbol).symbolEffect(.bounce, value: pulse)
-            }
-            if let text = leftText(strip) {
-                Text(text).monospacedDigit().fontWeight(color == .secondary ? .medium : .semibold).fixedSize()
-            }
-        }
-        .foregroundStyle(color)
-    }
-
-    @ViewBuilder private func trailing(_ strip: CompactStrip) -> some View {
-        switch strip.right {
-        case .percent(let t):
-            Text(t).monospacedDigit().fixedSize().foregroundStyle(strip.tone == .muted ? Color.secondary : Color.white)
-        case .pill(let t):
-            pill(t, tint: tint(strip.tone))
-        case .signIn(let t):
-            Button { onReconnect?() } label: { Text(t).foregroundStyle(.orange).fixedSize() }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(.isButton)
-        case .connect(let t):
-            Text(t).foregroundStyle(.secondary).fixedSize()
-        case .dash:
-            Text("—").foregroundStyle(.secondary)
-        }
-    }
-
-    private func tint(_ tone: CompactStrip.Tone) -> Color {
-        switch tone {
-        case .critical: return .red
-        case .warning: return .orange
-        case .muted: return .secondary
-        case .normal: return .white
-        }
-    }
 }
 
-/// Rendu des paliers du liseré (contrat notch-signal.md) : teintes système en apparence sombre.
+/// Teintes des paliers (005), en apparence sombre : jauge de l'île et point plein écran.
 extension NotchSignal.Edge {
     var rgb: (red: Double, green: Double, blue: Double) {
         switch self {

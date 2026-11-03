@@ -12,6 +12,12 @@
 
 **Remplace** : le rendu de l'encoche repliée de la [005](../005-silent-notch/spec.md) (silence et liseré). Restent valables : la règle de la limite portée (008), la prévision (003), les paliers de temps (005 : 60 min, 30 min), le rythme du battement (006), les notifications (008), la reconnexion (011).
 
+## Clarifications
+
+### Session 2026-11-03
+
+- Q (retour sur build) : au survol, la bande à texte de la 003 revenait ; faut-il la garder ? → A: non. L'île reste en haut au survol et quand le panneau est épinglé ; le panneau se déplie dessous. La bande à texte disparaît.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Lire d'un coup d'œil, comme la Dynamic Island (Priority: P1)
@@ -20,7 +26,7 @@ L'utilisateur travaille, l'app tourne. Quand tout va bien, une petite jauge circ
 dans une oreille noire à gauche de l'encoche : elle montre l'usage de la limite la plus menaçante et
 dit, sans texte, que l'app fonctionne. Quand un blocage approche, la jauge prend la couleur de
 l'échéance et une oreille droite apparaît avec une seule donnée : le temps avant le blocage. Au
-survol, la bande puis le panneau se déplient comme aujourd'hui ; un clic épingle.
+survol, l'île reste en haut et le panneau se déplie dessous ; un clic épingle.
 
 **Why this priority**: c'est le changement visible de la feature. Le liseré seul (005) se fondait
 dans certains fonds d'écran, ne montrait pas que l'app tournait et ne portait l'urgence que par la
@@ -38,7 +44,7 @@ encoche, sur fond clair, sombre et orange : contenu, couleur et largeur conforme
 5. **Given** une limite au seuil sans prévision (hebdo à 97 %), **Then** jauge rouge (ambre au seuil d'attention) et à droite le libellé court de la limite (« 7d » / « 7 j », ou le nom du modèle).
 6. **Given** un relevé ancien ou un dernier relevé en échec, **Then** glyphe wifi barré gris à gauche et pourcentage gris à droite.
 7. **Given** une session expirée, **Then** cadenas à gauche, aucune oreille droite ; le survol ouvre l'écran de reconnexion (« Renouveler la session »). **Given** aucun compte, **Then** glyphe compte à gauche.
-8. **Given** n'importe quel état, **When** le pointeur survole l'encoche ou l'utilisateur clique, **Then** bande puis panneau, épinglage, comme avant.
+8. **Given** n'importe quel état, **When** le pointeur survole l'encoche ou l'utilisateur clique, **Then** l'île reste en haut, inchangée, et le panneau se déplie dessous ; le clic épingle comme avant.
 9. **Given** un passage d'un état à un autre, **Then** l'oreille droite apparaît ou disparaît et la largeur change en fondu d'environ 0,3 s ; rien d'autre ne bouge.
 10. **Given** n'importe quel état, **Then** aucun liseré ni cerne autour de l'encoche.
 
@@ -94,7 +100,7 @@ comme aujourd'hui. Le README et ses captures montrent l'île.
 - **FR-004**: Relevé ancien ou en échec, session expirée, aucun compte : un glyphe gris remplace la jauge (wifi barré, cadenas, compte).
 - **FR-005**: Les oreilles MUST faire 52 pt de large, noires, arrondies en bas, collées à l'encoche physique ; la zone de survol suit les oreilles visibles.
 - **FR-006**: Le liseré et le cerne autour de l'encoche MUST être retirés.
-- **FR-007**: Le survol et le clic MUST garder leur comportement (bande, panneau, épinglage).
+- **FR-007**: Au survol et épinglé, l'île MUST rester en haut du panneau, l'encoche physique au centre ; la bande à texte de la 003 n'est plus affichée. Le clic épingle comme avant.
 - **FR-008**: Le battement d'imminence MUST porter sur la jauge, avec le rythme et les exclusions de la 006.
 - **FR-009**: En plein écran, le point MUST garder la couleur de la jauge et battre avec elle.
 - **FR-010**: La pilule MUST montrer la jauge et la même donnée sur une ligne ; au calme, la jauge seule.

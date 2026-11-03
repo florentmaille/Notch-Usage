@@ -25,4 +25,5 @@
 - Captures : calme 544 × 76 px (encoche + oreille gauche), avec donnée 648 × 76 px (+ 2 oreilles = 104 pt) ; pilule « jauge + 8′ ».
 - Mesures sur lancement neuf, 60 s en `imminent` : 0,33 s CPU (0,55 %), empreinte 25,0 Mo (0.4.1 Debug : 24,5 Mo).
 - Ajustements après captures : minute entamée comptée (« 8′ » et non « 7′ ») ; retour d'une limite épuisée au format court « ↻1:02 ».
+- Retour utilisateur : au survol, la bande 003 revenait. L'île reste désormais en haut du panneau déplié (capture `far` au survol : jauge ambre et 2:05 au-dessus du panneau) ; rendu de la bande et compteur `alertPulse` retirés.
 - Non rejoué : fond orange à l'œil, VoiceOver, plein écran.
