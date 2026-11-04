@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import NotchUsageCore
 
-@Suite("PaceForecaster (003)")
+@Suite("PaceForecaster (003, 015)")
 struct PaceForecasterTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
 
@@ -24,6 +24,27 @@ struct PaceForecasterTests {
         let f = forecast([(40, 29), (30, 36), (20, 42), (10, 49), (0, 55)])
         let m = minutes(f)
         #expect(m != nil && m! > 65 && m! < 75)
+    }
+
+    // MARK: 015 - pondération récente
+
+    @Test func burstThenPauseHolds() {
+        // Rafale de 30 à 45 min avant, puis 30 min sans aucune hausse : l'utilisateur a arrêté.
+        let f = forecast([(45, 20), (40, 30), (35, 40), (30, 50), (25, 50), (20, 50), (15, 50), (10, 50), (5, 50), (0, 50)])
+        #expect(f == .holdsUntilReset)
+    }
+
+    @Test func shortPauseAfterSteadyUseStillWarns() {
+        // Moins de 10 min sans hausse : une pause trop courte pour conclure, le rythme de l'heure compte encore.
+        let f = forecast([(40, 20), (30, 32), (20, 44), (10, 56), (5, 60), (0, 60)])
+        #expect(minutes(f) != nil)
+    }
+
+    @Test func recentAccelerationWarnsSooner() {
+        // Lent au début de l'heure, rapide sur les 20 dernières minutes : la prévision suit le rythme récent.
+        let f = forecast([(60, 10), (50, 12), (40, 14), (30, 16), (20, 24), (10, 32), (0, 40)])
+        let m = minutes(f)
+        #expect(m != nil && m! < 100)
     }
 
     @Test func slowPaceHoldsUntilReset() {
