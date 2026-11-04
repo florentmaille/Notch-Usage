@@ -52,7 +52,7 @@ The gauge fill and the number carry the information without colour.
 ## Features
 
 - **Forecast, not just a percentage.** From your pace over the last hour, Notch Usage projects when the 5-hour window reaches 100 %. The panel shows "At this pace (last hour): blocked at 16:40"; the gauge and the time on the right follow the same forecast, and the gauge beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on.
-- **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable; one alert per limit and per reset period.
+- **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable under *Advanced*.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
 - **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
@@ -60,7 +60,7 @@ The gauge fill and the number carry the information without colour.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
 - **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
-- **Accessible.** Every limit is announced by VoiceOver in one sentence, in the silent state too.
+- **Accessible.** VoiceOver announces every limit in one sentence, whatever the notch shows; the gauge fill and the number carry the information without colour, and Reduce Motion stops the beat.
 - **English and French.** Follows your Mac's language, or pick one in Settings.
 
 ## Install
@@ -93,10 +93,12 @@ Hover the notch and pick one:
 
 1. **Use your Claude Code session.** If Claude Code is installed and signed in, Notch Usage reads its access
    token from the macOS Keychain (macOS asks you once). The token stays in memory, is only used to read usage,
-   and is never refreshed, so Claude Code keeps working. When it expires, run any `claude` command:
-   Notch Usage picks up the renewed token within a minute.
+   and is never refreshed, so Claude Code keeps working. When it expires, click **Renew session** in the panel
+   (it asks `claude` for a one-word reply) or run any `claude` command: Notch Usage picks up the renewed token
+   within a minute.
 2. **Sign in with your browser.** A small window opens `claude.ai`. Once you are signed in, the session cookie
-   is stored in the app's own Keychain entry and the window closes. Your active organization is used.
+   is stored in the app's own Keychain entry and the window closes. Your active organization is used. If the
+   window is blocked, paste a `claude.ai` session key instead, under *Other method…*.
 
 Sign out from the panel at any time: credentials and cached data are deleted.
 
@@ -145,20 +147,21 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 
 | Symptom | What to do |
 |---|---|
-| macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Builds from source are not signed with a stable identity, so the prompt returns after each rebuild. |
+| macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Preview releases and builds from source are not signed with a stable identity, so the prompt returns after each update or rebuild. |
 | "Reconnect required" with the Claude Code session | Click **Renew session** in the panel (it asks `claude` for a one-word reply), or run any `claude` command: Notch Usage picks up the renewed token within a minute. |
-| Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key in Settings. |
+| Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key on the sign-in screen, under *Other method…*. |
 | Nothing shows on an external display | The pill appears at the top of the display that holds the menu bar. Check Displays → Arrange. |
 
 ## Development
 
-The logic lives in `NotchUsageCore`, a Swift package with no dependency beyond Foundation and 200+ tests:
+The logic lives in `NotchUsageCore`, a Swift package with no dependency beyond Foundation and 230+ tests:
 
 ```bash
 swift test
 ```
 
-The app (`App/NotchUsage`) is generated with [xcodegen](https://github.com/yonaskolb/XcodeGen) from `project.yml`.
+The app (`App/NotchUsage`) is generated with [xcodegen](https://github.com/yonaskolb/XcodeGen) from `project.yml`;
+its presentation tests run with `xcodebuild -scheme NotchUsage test`.
 Debug builds are signed ad hoc, so macOS asks for Keychain access again after each build. With an Apple Development
 certificate (free with an Apple ID, Xcode → Settings → Accounts), run `scripts/setup-local-signing.sh` once to sign
 Debug builds with it and keep Keychain access across builds.
@@ -167,8 +170,9 @@ Debug builds with it and keep Keychain access across builds.
 `offline`, …) and captures the notch; the README images come from it.
 
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
-[`specs/`](specs): the notch itself (001), the forecast (003), the limit shown (004) and the silent notch with its
-deadline edge (005), now the island (012). `scripts/release.sh <version>` signs, notarizes and packages a DMG (Developer ID required).
+[`specs/`](specs), from the first notch (001) and the forecast (003) to the island (012), the simpler settings (013)
+and the icon (014). `scripts/release.sh <version>` signs, notarizes and packages the zip used by the Homebrew cask
+(Developer ID required).
 
 ## License
 
