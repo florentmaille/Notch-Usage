@@ -35,6 +35,10 @@ final class NotchPanelController {
     private var hoverWork: DispatchWorkItem?
     private var shrinkWork: DispatchWorkItem?
     private var ears: (left: CGFloat, right: CGFloat) = (0, 0)
+    /// Ouvert depuis la barre de menus, pointeur ailleurs : aucune sortie ne referme le panneau avant
+    /// un premier survol ; Échap ou un clic hors de l'app le referme.
+    private var heldOpen = false
+    private var outsideClickMonitor: Any?
 
     init(target: ScreenObserver.Target, rootView: AnyView) {
         self.target = target
@@ -118,6 +122,7 @@ final class NotchPanelController {
         if !panel.isVisible { panel.orderFrontRegardless() }
 
         // Ouvert : le panneau prend le clavier (champ de clé, Échap) ; replié, il le rend.
+        if !display.isExpanded, heldOpen { releaseHold() }
         if display.isExpanded, previous?.isExpanded != true {
             panel.makeKey()
         } else if !display.isExpanded, previous?.isExpanded == true, panel.isKeyWindow {
@@ -139,15 +144,32 @@ final class NotchPanelController {
         menuObservers = []
         if let localKeyMonitor { NSEvent.removeMonitor(localKeyMonitor) }
         localKeyMonitor = nil
+        releaseHold()
         hoverWork?.cancel()
         shrinkWork?.cancel()
         panel.orderOut(nil)
         panel.close()
     }
 
+    func holdOpen() {
+        heldOpen = true
+        hoverWork?.cancel()
+        guard outsideClickMonitor == nil else { return }
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            MainActor.assumeIsolated { self?.onDismiss?() }
+        }
+    }
+
+    private func releaseHold() {
+        heldOpen = false
+        if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor) }
+        outsideClickMonitor = nil
+    }
+
     private func scheduleHover(_ inside: Bool) {
         // Le menu Langue recouvre le pointeur : la sortie n'en est pas une tant qu'il est ouvert.
-        if !inside, menuTracking { return }
+        if !inside, menuTracking || heldOpen { return }
+        if inside, heldOpen { releaseHold() }
         hoverWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.onHoverChange?(inside) }
         hoverWork = work

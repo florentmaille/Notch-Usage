@@ -17,6 +17,14 @@ extension AppModel {
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.tick"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         })
+        // `com.notchusage.debug.menusettings` : rejoue « Réglages » du menu de la barre (menu ouvert, action, menu refermé).
+        demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.menusettings"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                NotificationCenter.default.post(name: NSMenu.didBeginTrackingNotification, object: nil)
+                self?.openSettingsFromMenu()
+                NotificationCenter.default.post(name: NSMenu.didEndTrackingNotification, object: nil)
+            }
+        })
         // `com.notchusage.debug.layout` objet "pill" | "notch" : simule un écran sans encoche pour les captures.
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.layout"), object: nil, queue: .main) { [weak self] note in
             let mode = (note.object as? String) ?? "notch"

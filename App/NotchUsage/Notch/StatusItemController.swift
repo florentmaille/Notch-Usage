@@ -122,11 +122,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func refresh() { model?.refreshNow() }
 
-    /// Ouvre le panneau de l'encoche sur les réglages ; il se referme au premier passage du pointeur ou avec Échap.
-    @objc private func openSettings() {
-        model?.showSettings = true
-        model?.hover = true
-    }
+    @objc private func openSettings() { model?.openSettingsFromMenu() }
 
     @objc private func quit() { NSApp.terminate(nil) }
 }

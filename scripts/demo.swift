@@ -9,7 +9,7 @@
 //   swift scripts/demo.swift <état> panel      # idem, panneau déplié (survol simulé)
 //   swift scripts/demo.swift hover=1 click=225,175 wait=2 snapshot   # commandes brutes, dans l'ordre
 //
-// Commandes brutes : demo=<état>, hover=0|1, click=<x>,<y> (points depuis le coin haut gauche), escape,
+// Commandes brutes : demo=<état>, hover=0|1, click=<x>,<y> (points depuis le coin haut gauche), escape, menusettings,
 // snapshot, tick, wait=<secondes>.
 import Foundation
 
