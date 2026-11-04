@@ -488,6 +488,13 @@ final class AppModel {
 
     // MARK: Interaction
 
+    /// « Réglages » du menu de la barre : le pointeur est loin de l'encoche, le panneau reste ouvert jusqu'à son survol.
+    func openSettingsFromMenu() {
+        showSettings = true
+        hover = true
+        panel?.holdOpen()
+    }
+
     /// Échap : referme le panneau ouvert au survol.
     func dismiss() {
         hover = false
