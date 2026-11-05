@@ -33,6 +33,13 @@ struct HeadlinePickerTests {
         #expect(pick(critical, ["session": .blockAt(now.addingTimeInterval(3 * 3600))]) == "weekly_all")
     }
 
+    @Test func weeklyForecastsDoNotDriveTheNotch() {
+        // 016 : une prévision hebdo « tient » n'éteint pas le seuil critique, un blocage hebdo ne prend pas l'encoche.
+        let critical = makeSnapshot([("session", 30), ("weekly_all", 97)])
+        #expect(pick(critical, ["weekly_all": .holdsUntilReset]) == "weekly_all")
+        #expect(pick(calm, ["weekly_scoped:Fable": .blockAt(now.addingTimeInterval(8 * 60))]) == "session")
+    }
+
     @Test func tiesGoToTheFiveHourWindow() {
         let s = makeSnapshot([("session", 97), ("weekly_all", 97)])
         #expect(pick(s) == "session")

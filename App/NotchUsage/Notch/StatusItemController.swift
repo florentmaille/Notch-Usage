@@ -94,13 +94,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         let untilReset = RelativeTimeFormatter.untilReset(limit.resetsAt, now: now, language: AppLanguage.current)
         var detail = limit.isBlocked ? String(localized: "Blocked, resets \(untilReset)") : String(localized: "Resets \(untilReset)")
-        switch forecast {
-        case .blockAt(let date)?:
-            detail += " · " + String(localized: "At this pace (last hour): blocked at \(date.formatted(date: .omitted, time: .shortened))")
-        case .holdsUntilReset?:
-            detail += " · " + String(localized: "At this pace: holds until reset")
-        default: break
-        }
+        if let pace = PaceText.line(for: limit, forecast: forecast) { detail += " · " + pace }
         let sub = info("")
         sub.attributedTitle = NSAttributedString(string: detail, attributes: [
             .font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize), .foregroundColor: NSColor.secondaryLabelColor])

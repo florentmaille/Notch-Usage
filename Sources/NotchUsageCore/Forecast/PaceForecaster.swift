@@ -46,11 +46,31 @@ public enum PaceForecaster {
         return .blockAt(blockAt)
     }
 
-    /// Une entrée par fenêtre de 5 h de l'instantané ; les limites hebdomadaires n'ont pas de prévision (research R7).
+    /// Durée d'une période hebdomadaire et part écoulée minimale avant d'extrapoler (016).
+    public static let weekPeriod: TimeInterval = 7 * 24 * 3600
+    public static let weeklyMinimumElapsed: TimeInterval = 12 * 3600
+
+    /// Prévision hebdomadaire (016) : rythme moyen depuis le début de la période (nuits et pauses comprises),
+    /// et non la pente de la dernière heure, qui projetée sur des jours supposerait un travail continu (003, R7).
+    public static func weeklyForecast(utilization: Double, resetsAt: Date?, now: Date) -> Forecast {
+        guard let resetsAt, resetsAt > now, utilization < 100 else { return .unavailable }
+        let elapsed = now.timeIntervalSince(resetsAt.addingTimeInterval(-weekPeriod))
+        guard elapsed >= weeklyMinimumElapsed else { return .unavailable }
+        guard utilization > 0 else { return .holdsUntilReset }
+        let blockAt = now.addingTimeInterval((100 - utilization) * elapsed / utilization)
+        return blockAt < resetsAt ? .blockAt(blockAt) : .holdsUntilReset
+    }
+
+    /// Une entrée par limite : pente récente pour la fenêtre de 5 h, rythme de la semaine pour les hebdomadaires (016).
     public static func forecasts(history: UsageHistory, snapshot: UsageSnapshot, now: Date) -> [String: Forecast] {
         var result: [String: Forecast] = [:]
-        for limit in snapshot.limits where limit.kind == .rollingFiveHour {
-            result[limit.id] = forecast(readings: history.readings(for: limit.id), resetsAt: limit.resetsAt, now: now)
+        for limit in snapshot.limits {
+            switch limit.kind {
+            case .rollingFiveHour:
+                result[limit.id] = forecast(readings: history.readings(for: limit.id), resetsAt: limit.resetsAt, now: now)
+            case .weeklyAll, .weeklyModel:
+                result[limit.id] = weeklyForecast(utilization: limit.utilization, resetsAt: limit.resetsAt, now: now)
+            }
         }
         return result
     }

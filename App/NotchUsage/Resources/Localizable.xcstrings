@@ -167,6 +167,16 @@
         }
       }
     },
+    "At this pace (this week): blocked %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À ce rythme (cette semaine) : blocage %@"
+          }
+        }
+      }
+    },
     "At this pace: holds until reset": {
       "localizations": {
         "fr": {
@@ -353,16 +363,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Critique à %lld %%"
-          }
-        }
-      }
-    },
-    "Critical usage alert": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alerte critique de consommation"
           }
         }
       }
@@ -783,16 +783,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les seuils colorent la jauge pour les limites hebdomadaires et avant qu'une prévision existe. Claude limite les requêtes d'usage : 3 minutes est une cadence sûre."
-          }
-        }
-      }
-    },
-    "Usage warning": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avertissement de consommation"
           }
         }
       }

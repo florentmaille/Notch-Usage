@@ -31,16 +31,17 @@ struct DisplayStateReducerTests {
     }
 
     @Test func headlinePrefersTheEarliestPredictedBlock() {
-        let snap = makeSnapshot([("session", 55), ("weekly_all", 60)], fetchedAt: now)
-        let block: [String: Forecast] = ["weekly_all": .blockAt(now.addingTimeInterval(3600))]
+        // Seule la prévision de 5 h pilote l'encoche (016) : imminente, elle passe devant un hebdo au seuil.
+        let snap = makeSnapshot([("session", 55), ("weekly_all", 83)], fetchedAt: now)
+        let block: [String: Forecast] = ["session": .blockAt(now.addingTimeInterval(20 * 60))]
         let d = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
                                            fullscreen: false, hover: false, now: now, forecasts: block)
-        #expect(d.headline?.limit.id == "weekly_all")
+        #expect(d.headline?.limit.id == "session")
         #expect(d.forecasts == block)
-        let holds: [String: Forecast] = ["weekly_all": .holdsUntilReset]
+        let holds: [String: Forecast] = ["session": .holdsUntilReset]
         let h = DisplayStateReducer.reduce(state: .idle(snap), connected: true, settings: settings, alertLevel: .none, layout: notch,
                                            fullscreen: false, hover: false, now: now, forecasts: holds)
-        #expect(h.headline?.limit.id == "session")
+        #expect(h.headline?.limit.id == "weekly_all")
     }
 
     @Test func headlineIsTheMostThreateningLimit() {
@@ -115,12 +116,11 @@ struct DisplayStateReducerTests {
         let hidden = reduce(.idle(snap), fullscreen: true)
         #expect(hidden.fullscreenHidden)
         #expect(hidden.panel == .collapsed)
-        #expect(!hidden.showAlertDot)
         let hovered = reduce(.idle(snap), hover: true, fullscreen: true)
         #expect(!hovered.fullscreenHidden)
         #expect(hovered.panel == .hoverOpen)
         let alerting = reduce(.idle(snap), fullscreen: true, alertLevel: .warning)
-        #expect(alerting.fullscreenHidden && alerting.showAlertDot)
+        #expect(alerting.fullscreenHidden)
         #expect(alerting.alertLevel == .warning)
     }
 
@@ -142,19 +142,14 @@ struct DisplayStateReducerFullscreenTests {
                                           layout: layout, fullscreen: true, hover: hover, now: now)
     }
 
-    @Test func hiddenWithAlertShowsDot() {
+    @Test func hiddenEvenWithACriticalAlert() {
         let d = reduce(hover: false, alertLevel: .critical)
-        #expect(d.fullscreenHidden && d.showAlertDot && d.alertLevel == .critical)
-    }
-
-    @Test func hiddenWithoutAlertShowsNothing() {
-        let d = reduce(hover: false, alertLevel: .none)
-        #expect(d.fullscreenHidden && !d.showAlertDot)
+        #expect(d.fullscreenHidden && d.alertLevel == .critical)
     }
 
     @Test func hoverRevealsPanel() {
         let d = reduce(hover: true, alertLevel: .warning)
-        #expect(!d.fullscreenHidden && !d.showAlertDot && d.panel == .hoverOpen)
+        #expect(!d.fullscreenHidden && d.panel == .hoverOpen)
     }
 
 }

@@ -10,7 +10,7 @@ public enum DisplayStateReducer {
         var d = DisplayState(
             layout: layout, panel: panel, content: .connect, limits: [], headline: nil, banner: nil,
             freshness: nil, fetchedAt: nil, isLoading: false, alertLevel: alertLevel,
-            fullscreenHidden: fullscreenHidden, showAlertDot: fullscreenHidden && alertLevel != .none,
+            fullscreenHidden: fullscreenHidden,
             forecasts: [:], fetchFailed: false
         )
         guard connected else { return d }

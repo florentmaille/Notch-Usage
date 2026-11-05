@@ -24,7 +24,7 @@
 
 Ever been cut off by Claude in the middle of a task? Notch Usage keeps your subscription limits one
 glance away: the **5-hour window**, the **weekly limit** and the **per-model weekly limits**, each
-with its reset time and, for the 5-hour window, a forecast of when you will hit the wall.
+with its reset time and a forecast of when you will hit the wall.
 
 It is native Swift, local-first, free of telemetry, and uses about 25 MB of memory.
 
@@ -51,11 +51,11 @@ The gauge fill and the number carry the information without colour.
 
 ## Features
 
-- **Forecast, not just a percentage.** From your pace over the last hour, weighted toward the last 20 minutes, Notch Usage projects when the 5-hour window reaches 100 %; ten minutes without any increase count as a pause. The panel shows "At this pace (last hour): blocked at 16:40"; the gauge and the time on the right follow the same forecast, and the gauge beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on.
-- **Thresholds as a fallback.** When no forecast is possible (weekly limits, first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable under *Advanced*.
+- **Forecast, not just a percentage.** From your pace over the last hour, weighted toward the last 20 minutes, Notch Usage projects when the 5-hour window reaches 100 %; ten minutes without any increase count as a pause. The panel shows "At this pace (last hour): blocked at 16:40"; the gauge and the time on the right follow the same forecast, and the gauge beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on. Weekly limits (all models, and per model such as Fable) get their own line from the average pace since the week started, nights included: "At this pace (this week): blocked Thu 14:10"; it stays in the panel and the menu, the notch keeps following the 5-hour window.
+- **Thresholds as a fallback.** For weekly limits in the notch, and when no forecast is possible yet (first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable under *Advanced*.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
-- **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
+- **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, where it stays fully hidden until you point at the top of the screen.
 - **Menu bar icon, if you want one.** A small gauge in the menu bar, filled to the usage of the limit most likely to block you; click it for every limit, the forecast, *Refresh now*, *Settings* and *Quit*. Off by default.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.

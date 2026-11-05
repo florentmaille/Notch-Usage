@@ -129,7 +129,7 @@ public struct NotchSignal: Sendable, Equatable {
             return NotchSignal(content: .exhausted(full: strings.full, back: countdown), edge: .exhausted, accessibility: strip.accessibility)
         }
         // Fenêtre de 5 h : la prévision prime sur le seuil (clarification FR-007a).
-        switch display.forecasts[limit.id] {
+        switch display.forecasts.notch(for: limit) {
         case .blockAt(let date)?:
             let label = RelativeTimeFormatter.blockLabel(date, now: now, language: language, locale: locale, timeZone: timeZone)
             return NotchSignal(content: .deadline(label), edge: .tier(blockAt: date, now: now), pulse: .rhythm(blockAt: date, now: now),
@@ -162,7 +162,7 @@ public struct NotchSignal: Sendable, Equatable {
             let back = limit.resetsAt.map { IslandFormat.deadline(remaining: $0.timeIntervalSince(now)) } ?? strings.dash
             return Island(leading: .gauge(value: 100, tint: .exhausted), trailing: .back(back))
         }
-        switch display.forecasts[limit.id] {
+        switch display.forecasts.notch(for: limit) {
         case .blockAt(let date)?:
             return Island(leading: .gauge(value: usage, tint: Island.tint(Edge.tier(blockAt: date, now: now))),
                           trailing: .deadline(IslandFormat.deadline(remaining: date.timeIntervalSince(now))))
