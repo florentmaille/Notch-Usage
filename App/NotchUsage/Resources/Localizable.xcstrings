@@ -167,6 +167,16 @@
         }
       }
     },
+    "At this pace (this week): blocked %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À ce rythme (cette semaine) : blocage %@"
+          }
+        }
+      }
+    },
     "At this pace: holds until reset": {
       "localizations": {
         "fr": {

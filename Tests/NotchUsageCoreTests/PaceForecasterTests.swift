@@ -79,16 +79,29 @@ struct PaceForecasterTests {
         #expect(forecast([(30, 90), (0, 100)]) == .unavailable)
     }
 
-    @Test func onlyTheFiveHourWindowIsForecast() {
+    @Test func weeklyLimitsUseTheWeekPace() {
         var history = UsageHistory()
         for (minutesAgo, pct) in [(40.0, 29.0), (30, 36), (20, 42), (10, 49), (0, 55)] {
-            history = history.appending(makeSnapshot([("session", pct), ("weekly_all", pct)], fetchedAt: now.addingTimeInterval(-minutesAgo * 60),
+            history = history.appending(makeSnapshot([("session", pct)], fetchedAt: now.addingTimeInterval(-minutesAgo * 60),
                                                      resetsAt: now.addingTimeInterval(4 * 3600)))
         }
-        let snapshot = makeSnapshot([("session", 55), ("weekly_all", 55)], fetchedAt: now, resetsAt: now.addingTimeInterval(4 * 3600))
+        // Hebdo : 2 jours écoulés sur 7 (reset dans 5 j). Total à 50 % → 100 % dans 2 j ; Fable à 20 % → tient.
+        let snapshot = UsageSnapshot(limits: [
+            UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: 55, resetsAt: now.addingTimeInterval(4 * 3600)),
+            UsageLimit(id: "weekly_all", kind: .weeklyAll, modelName: nil, utilization: 50, resetsAt: now.addingTimeInterval(5 * 86400)),
+            UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: 20, resetsAt: now.addingTimeInterval(5 * 86400)),
+        ], fetchedAt: now)
         let f = PaceForecaster.forecasts(history: history, snapshot: snapshot, now: now)
-        #expect(f.count == 1)
         #expect(minutes(f["session"] ?? .unavailable) != nil)
-        #expect(f["weekly_all"] == nil)
+        #expect(f["weekly_all"] == .blockAt(now.addingTimeInterval(2 * 86400)))
+        #expect(f["weekly_scoped:Fable"] == .holdsUntilReset)
+    }
+
+    @Test func weeklyForecastNeedsHalfADayAndAReset() {
+        let early = now.addingTimeInterval(7 * 86400 - 6 * 3600)   // 6 h écoulées
+        #expect(PaceForecaster.weeklyForecast(utilization: 30, resetsAt: early, now: now) == .unavailable)
+        #expect(PaceForecaster.weeklyForecast(utilization: 30, resetsAt: nil, now: now) == .unavailable)
+        #expect(PaceForecaster.weeklyForecast(utilization: 100, resetsAt: now.addingTimeInterval(86400), now: now) == .unavailable)
+        #expect(PaceForecaster.weeklyForecast(utilization: 0, resetsAt: now.addingTimeInterval(86400), now: now) == .holdsUntilReset)
     }
 }

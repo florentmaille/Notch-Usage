@@ -145,32 +145,26 @@ struct LimitRow: View {
             }
         }
         .padding(.vertical, 2)
-        .padding(.horizontal, highlighted ? 6 : 0)
+        // Le fond déborde dans la marge du panneau : le texte reste aligné sur les autres lignes.
+        .padding(.horizontal, 6)
         .background(highlighted ? color.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal, -6)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
 
     /// Ligne « À ce rythme » (003, FR-016) ; aucune sans prévision exploitable.
-    private var paceText: String? {
-        switch forecast {
-        case .blockAt(let date)?: return String(localized: "At this pace (last hour): blocked at \(clock(date))")
-        case .holdsUntilReset?: return String(localized: "At this pace: holds until reset")
-        default: return nil
-        }
-    }
+    private var paceText: String? { PaceText.line(for: limit, forecast: forecast) }
 
     private var accessibilityText: String {
         var text = String(localized: "\(LimitLabel.text(for: limit)), \(Int(limit.utilization.rounded())) percent, resets \(untilReset)")
         switch forecast {
-        case .blockAt(let date)?: text += String(localized: ", at this pace blocked at \(clock(date))")
+        case .blockAt(let date)?: text += String(localized: ", at this pace blocked at \(PaceText.when(date, for: limit))")
         case .holdsUntilReset?: text += String(localized: ", at this pace holds until reset")
         default: break
         }
         return text
     }
-
-    private func clock(_ date: Date) -> String { date.formatted(date: .omitted, time: .shortened) }
 
     private var resetText: String {
         // Phrase autonome une fois l'heure passée : sinon « Resets reset pending ».
@@ -189,6 +183,27 @@ struct LimitRow: View {
         case .warning: return .orange
         case .none: return .white
         }
+    }
+}
+
+/// Ligne « À ce rythme » partagée par le panneau et le menu de la barre (003, 016).
+enum PaceText {
+    static func line(for limit: UsageLimit, forecast: Forecast?) -> String? {
+        switch forecast {
+        case .blockAt(let date)? where limit.kind == .rollingFiveHour:
+            return String(localized: "At this pace (last hour): blocked at \(when(date, for: limit))")
+        case .blockAt(let date)?:
+            return String(localized: "At this pace (this week): blocked \(when(date, for: limit))")
+        case .holdsUntilReset?: return String(localized: "At this pace: holds until reset")
+        default: return nil
+        }
+    }
+
+    /// Heure seule pour la fenêtre de 5 h ; jour + heure pour une limite hebdomadaire.
+    static func when(_ date: Date, for limit: UsageLimit) -> String {
+        limit.kind == .rollingFiveHour
+            ? date.formatted(date: .omitted, time: .shortened)
+            : date.formatted(.dateTime.weekday(.abbreviated).hour().minute())
     }
 }
 

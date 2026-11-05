@@ -28,7 +28,7 @@ public enum HeadlinePicker {
     /// La limite la plus grave ; à gravité égale, l'ordre du relevé (fenêtre de 5 h d'abord). Sans menace,
     /// la fenêtre de 5 h, ou la plus utilisée pour un abonnement qui ne l'expose pas.
     public static func pick(in snapshot: UsageSnapshot, forecasts: [String: Forecast], settings: AlertSettings, now: Date) -> UsageLimit? {
-        let ranked = snapshot.limits.map { ($0, severity(of: $0, forecast: forecasts[$0.id], settings: settings, now: now)) }
+        let ranked = snapshot.limits.map { ($0, severity(of: $0, forecast: forecasts.notch(for: $0), settings: settings, now: now)) }
         if let worst = ranked.max(by: { $0.1 < $1.1 }), worst.1 > 0 {
             // `max(by:)` renvoie le dernier des ex æquo : on reprend le premier de même gravité.
             return ranked.first { $0.1 == worst.1 }?.0

@@ -13,6 +13,14 @@ public enum Forecast: Sendable, Equatable {
     }
 }
 
+public extension Dictionary where Key == String, Value == Forecast {
+    /// Prévision qui pilote l'encoche : fenêtre de 5 h seulement. Les prévisions hebdomadaires (016) ne vont
+    /// qu'au panneau et au menu, l'encoche garde les seuils pour ces limites.
+    func notch(for limit: UsageLimit) -> Forecast? {
+        limit.kind == .rollingFiveHour ? self[limit.id] : nil
+    }
+}
+
 /// Hystérésis d'affichage (research R2) : un passage tenable ↔ blocage prévu attend deux relevés concordants ;
 /// `unavailable` et l'heure d'un blocage déjà affiché s'appliquent aussitôt.
 public struct ForecastDebouncer: Sendable, Equatable {

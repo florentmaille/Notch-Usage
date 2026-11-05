@@ -96,7 +96,7 @@ public struct CompactStrip: Sendable, Equatable {
         let muted = display.banner != nil
         var blockLabel: String?
         var blockClock: String?
-        if case .blockAt(let date)? = display.forecasts[limit.id], !limit.isBlocked {
+        if case .blockAt(let date)? = display.forecasts.notch(for: limit), !limit.isBlocked {
             blockLabel = RelativeTimeFormatter.blockLabel(date, now: now, language: language, locale: locale, timeZone: timeZone)
             // L'annonce donne toujours l'heure : « bloqué à 16:40 » se lit, « bloqué à 1 h 10 » non.
             blockClock = date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: locale, timeZone: timeZone))
