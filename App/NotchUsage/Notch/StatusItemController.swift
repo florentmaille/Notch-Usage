@@ -64,6 +64,15 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         guard let model else { return }
         let display = model.display
+        // Sessions Claude en attente (017), avant les limites : clic = amener l'application d'origine devant.
+        let waiting = model.visibleClaudeSessions.waiting
+        if !waiting.isEmpty {
+            menu.addItem(info(String(localized: "Claude Code")))
+            for session in waiting {
+                menu.addItem(claudeLine(session, now: model.now))
+            }
+            menu.addItem(.separator())
+        }
         switch display.content {
         case .limits:
             for limit in display.limits { addLines(for: limit, forecast: display.forecasts[limit.id], now: model.now, to: menu) }
@@ -101,6 +110,26 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(sub)
     }
 
+    private func claudeLine(_ session: ClaudeSession, now: Date) -> NSMenuItem {
+        let strings = CompactStrip.Strings.app.claude
+        let waiting = session.waiting!
+        let name = session.displayName(fallback: strings.sessionFallback)
+        let title = NSMutableAttributedString(string: "● ", attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: waiting.kind.nsColor])
+        title.append(NSAttributedString(string: name + "  ", attributes: [.font: NSFont.menuFont(ofSize: 0)]))
+        title.append(NSAttributedString(string: strings.rowLabel(waiting.kind) + " · " + AttentionFormat.since(waiting.since, now: now, language: AppLanguage.current),
+                                        attributes: [.font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize), .foregroundColor: NSColor.secondaryLabelColor]))
+        let item = NSMenuItem(title: name, action: #selector(activateSession(_:)), keyEquivalent: "")
+        item.attributedTitle = title
+        item.representedObject = session.id
+        item.target = self
+        return item
+    }
+
+    @objc private func activateSession(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String else { return }
+        model?.activateSession(id)
+    }
+
     /// Ligne d'information : active (texte lisible, pas grisé) mais sans action.
     private func info(_ title: String) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
@@ -119,4 +148,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func openSettings() { model?.openSettingsFromMenu() }
 
     @objc private func quit() { NSApp.terminate(nil) }
+}
+
+extension ClaudeWaitingKind {
+    var nsColor: NSColor {
+        switch self {
+        case .approval, .question: return NSColor(red: 0.75, green: 0.35, blue: 0.95, alpha: 1)
+        case .done: return .labelColor
+        }
+    }
 }

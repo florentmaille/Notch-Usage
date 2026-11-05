@@ -25,6 +25,11 @@ extension AppModel {
                 NotificationCenter.default.post(name: NSMenu.didEndTrackingNotification, object: nil)
             }
         })
+        // `com.notchusage.debug.claude` objet "approval" | "question" | "done" | "approval3" | "arrival" | "off" (017).
+        demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.claude"), object: nil, queue: .main) { [weak self] note in
+            let mode = (note.object as? String) ?? "off"
+            MainActor.assumeIsolated { self?.applyDemoClaude(mode) }
+        })
         // `com.notchusage.debug.layout` objet "pill" | "notch" : simule un écran sans encoche pour les captures.
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.layout"), object: nil, queue: .main) { [weak self] note in
             let mode = (note.object as? String) ?? "notch"
@@ -36,6 +41,42 @@ extension AppModel {
                 self.applyScreen(ScreenObserver.Target(screen: current.screen, layout: layout))
             }
         })
+    }
+
+    /// Sessions Claude fictives (017) : « arrival » date l'événement de maintenant pour montrer le mot 4 s.
+    func applyDemoClaude(_ mode: String) {
+        let now = Date()
+        func event(_ kind: ClaudeHookEvent.Kind, _ id: String, cwd: String, title: String? = nil, tool: String? = nil, ago: TimeInterval) -> ClaudeHookEvent {
+            ClaudeHookEvent(kind: kind, sessionID: id, cwd: cwd, sessionTitle: title, toolName: tool, promptID: id, pid: nil, receivedAt: now.addingTimeInterval(-ago))
+        }
+        var tracker = ClaudeSessionTracker()
+        switch mode {
+        case "approval":
+            tracker = tracker.reduce(event(.permissionRequest, "a1", cwd: "/Users/demo/Projects/Notch-Usage", tool: "Bash", ago: 120))
+        case "arrival":
+            tracker = tracker.reduce(event(.permissionRequest, "a1", cwd: "/Users/demo/Projects/Notch-Usage", tool: "Bash", ago: 0))
+        case "question":
+            tracker = tracker.reduce(event(.userPromptSubmit, "q1", cwd: "/Users/demo/Projects/Notch-Usage", title: "Limites Fable en mode replié", ago: 600))
+                .reduce(event(.permissionRequest, "q1", cwd: "/Users/demo/Projects/Notch-Usage", tool: ClaudeHookEvent.questionTool, ago: 45))
+        case "done":
+            tracker = tracker.reduce(event(.stop, "d1", cwd: "/Users/demo/Projects/deck-q4", ago: 360))
+        case "approval3":
+            tracker = tracker.reduce(event(.permissionRequest, "a1", cwd: "/Users/demo/Projects/Notch-Usage", tool: "Bash", ago: 120))
+                .reduce(event(.permissionRequest, "a2", cwd: "/Users/demo/Projects/ontraak-site", tool: "Edit", ago: 45))
+                .reduce(event(.stop, "d1", cwd: "/Users/demo/Projects/deck-q4", ago: 360))
+        default:
+            demoClaude = nil
+            recompute()
+            return
+        }
+        demoClaude = tracker
+        if mode == "arrival" {
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(AttentionFormat.arrivalDuration), tolerance: .milliseconds(50))
+                self?.recompute()
+            }
+        }
+        recompute()
     }
 
     func applyDemo(_ mode: String) {

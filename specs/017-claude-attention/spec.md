@@ -84,7 +84,7 @@ mixtes, plein écran : contenu, couleur et battement conformes à la planche.
 4. **Given** une limite au seuil sans prévision (hebdo à 97 %) et une session en attente, **Then** la jauge garde sa couleur de seuil et la session prend l'oreille droite (le seuil n'est ni imminent ni épuisé).
 5. **Given** deux sessions en attente d'approbation et une terminée, **Then** main levée violette et « 3 » à droite ; quand les deux approbations sont données, coche blanche seule.
 6. **Given** une approbation et une question en attente, **Then** le glyphe est la main levée (approbation > question > terminé) et le compteur « 2 ».
-7. **Given** une app en plein écran et une session en attente, **Then** le point est violet ; une session terminée seule : point blanc ; limite imminente : le point reste rouge et bat, comme en 012.
+7. **Given** une app en plein écran et une session en attente, **Then** rien n'est visible (016) ; au survol du haut de l'écran, l'île réapparaît avec le signal.
 8. **Given** un écran sans encoche, **Then** la pilule montre jauge puis glyphe (et compteur) sur une ligne, mêmes règles.
 
 ---
@@ -142,16 +142,16 @@ puis absentes.
 
 | État | Oreille gauche | Oreille droite | Plein écran |
 |---|---|---|---|
-| Calme, aucune session en attente | jauge 012 | selon 012 | selon 012 |
-| Approbation demandée, arrivée (4 s) | jauge 012 | main levée + « Approbation », violet | violet |
-| Approbation demandée, persistant | jauge 012 | main levée, violet | violet |
-| Question posée | jauge 012 | bulle « ? », violet | violet |
-| Réponse terminée | jauge 012 | coche, blanc | blanc |
-| N sessions en attente | jauge 012 | glyphe du cas le plus pressant + N | couleur du cas le plus pressant |
-| Blocage prévu ≥ 30 min + session en attente | jauge du palier | glyphe Claude (remplace l'échéance) | couleur Claude |
-| Blocage prévu < 30 min ou limite épuisée + session en attente | jauge rouge, bat, point violet au coin | selon 012 (échéance ou retour) | rouge, bat |
-| Seuil sans prévision + session en attente | jauge du seuil | glyphe Claude (remplace le libellé) | couleur Claude |
-| Hors ligne, session expirée, non connecté + session en attente | glyphe 012 | glyphe Claude | couleur Claude |
+| Calme, aucune session en attente | jauge 012 | selon 012 | rien (016) |
+| Approbation demandée, arrivée (4 s) | jauge 012 | main levée + « Approbation », violet | rien (016) |
+| Approbation demandée, persistant | jauge 012 | main levée, violet | rien (016) |
+| Question posée | jauge 012 | bulle « ? », violet | rien (016) |
+| Réponse terminée | jauge 012 | coche, blanc | rien (016) |
+| N sessions en attente | jauge 012 | glyphe du cas le plus pressant + N | rien (016) |
+| Blocage prévu ≥ 30 min + session en attente | jauge du palier | glyphe Claude (remplace l'échéance) | rien (016) |
+| Blocage prévu < 30 min ou limite épuisée + session en attente | jauge rouge, bat, point violet au coin | selon 012 (échéance ou retour) | rien (016) |
+| Seuil sans prévision + session en attente | jauge du seuil | glyphe Claude (remplace le libellé) | rien (016) |
+| Hors ligne, session expirée, non connecté + session en attente | glyphe 012 | glyphe Claude | rien (016) |
 
 Teintes : violet #BF5AF2 pour approbation et question (bloquant), blanc pour terminé (information).
 Jamais ambre, orange ni rouge, réservés aux paliers de limite.
@@ -184,7 +184,7 @@ Jamais ambre, orange ni rouge, réservés aux paliers de limite.
 - **FR-006**: Teintes : violet pour approbation et question, blanc pour terminé ; jamais les teintes des paliers de limite. Glyphes : main levée, bulle avec point d'interrogation, coche.
 - **FR-007**: Plusieurs sessions : un seul glyphe, celui du cas le plus pressant (approbation > question > terminé), suivi du nombre de sessions en attente.
 - **FR-008**: Priorité : si un blocage est prévu sous 30 min ou si la limite portée est épuisée, l'oreille droite et le battement restent ceux de la 012 et la session en attente se signale par un point violet au coin de la jauge ; sinon, la session prend l'oreille droite et la jauge garde sa couleur (palier, seuil ou glyphe 012).
-- **FR-009**: Le point du plein écran MUST prendre la couleur du signal Claude quand une session attend, sauf limite imminente ou épuisée où il reste rouge et bat. La pilule MUST montrer le même contenu sur une ligne.
+- **FR-009**: En plein écran, rien n'est visible (016 : l'encoche reste masquée jusqu'au survol du haut de l'écran) ; le signal Claude attend la sortie du plein écran ou le survol. La pilule MUST montrer le même contenu sur une ligne.
 - **FR-010**: Au survol et dans le menu de la barre, une section « Claude Code » MUST lister les sessions en attente (titre de session, sinon nom du dossier ; ce qu'elle attend ; durée depuis l'événement), triées par cas pressant puis ancienneté ; un clic sur une ligne MUST amener devant l'application d'origine de la session ; la section est absente sans session en attente.
 - **FR-011**: Une notification macOS optionnelle (« Notifier aussi », désactivée par défaut) MUST être envoyée pour une approbation ou une question, une par événement, jamais pour une réponse terminée.
 - **FR-012**: Fiabilité : les événements reçus app fermée MUST être rattrapés au lancement ; une session dont le processus n'existe plus MUST être retirée ; à défaut, expiration 8 h après le dernier événement ; une ligne illisible MUST être ignorée sans bloquer les autres.

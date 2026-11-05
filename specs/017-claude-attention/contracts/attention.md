@@ -28,14 +28,11 @@ contenu (≤ 120 pt), 4 s, puis retour à 52 pt en fondu 0,3 s. Rien ne bat.
 
 Même contenu sur une ligne : jauge, puis glyphe (+ compteur ou mot à l'arrivée).
 
-## Point plein écran
+## Plein écran
 
-| Condition | Point |
-|---|---|
-| limite imminente ou épuisée | rouge, bat (012) |
-| sinon, une session bloquante | violet |
-| sinon, une session terminée | blanc |
-| sinon | couleur du palier (012) |
+Rien n'est visible (016, 0.5.3 : l'encoche reste masquée jusqu'au survol du haut de l'écran). Le signal
+Claude réapparaît avec l'île au survol ou à la sortie du plein écran. Le point plein écran de la 012
+n'existe plus.
 
 ## Panneau déplié et menu de la barre
 

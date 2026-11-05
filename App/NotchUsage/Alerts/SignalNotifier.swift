@@ -25,6 +25,16 @@ final class SignalNotifier {
         }
     }
 
+    /// Session Claude en attente (017, option désactivée par défaut) : approbation ou question, une par demande.
+    func notifyClaude(name: String, kind: ClaudeWaitingKind, id: String) {
+        guard kind.isBlocking else { return }
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Claude is waiting")
+        content.body = kind == .question ? String(localized: "\(name): question pending") : String(localized: "\(name): approval needed")
+        content.sound = .default
+        deliver(UNNotificationRequest(identifier: "claude-\(id)", content: content, trigger: nil), log: "claude \(kind)")
+    }
+
     private func send(reason: NotificationGate.Reason, signal: NotchSignal, limit: UsageLimit, now: Date) {
         let content = UNMutableNotificationContent()
         let name = LimitLabel.text(for: limit)
@@ -44,6 +54,10 @@ final class SignalNotifier {
         content.sound = .default
         let request = UNNotificationRequest(identifier: "\(limit.id)-\(reason.rawValue)-\(Int(now.timeIntervalSince1970))",
                                             content: content, trigger: nil)
+        deliver(request, log: "\(reason.rawValue) for \(limit.id)")
+    }
+
+    private func deliver(_ request: UNNotificationRequest, log: String) {
         let center = UNUserNotificationCenter.current()
         Task {
             if !authorizationRequested {
@@ -52,7 +66,7 @@ final class SignalNotifier {
             }
             do {
                 try await center.add(request)
-                Log.app.notice("notification \(reason.rawValue, privacy: .public) for \(limit.id, privacy: .public)")
+                Log.app.notice("notification \(log, privacy: .public)")
             } catch {
                 Log.app.error("notification failed: \(error.localizedDescription, privacy: .public)")
             }

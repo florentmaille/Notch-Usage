@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@, %@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@, %2$@, %3$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
     "%@, %lld percent, resets %@": {
       "localizations": {
         "en": {
@@ -27,6 +43,16 @@
         }
       }
     },
+    "%@: approval needed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ : attend une approbation"
+          }
+        }
+      }
+    },
     "%@: at this pace, blocked at %@.": {
       "localizations": {
         "fr": {
@@ -43,6 +69,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ : retour dans %2$@."
+          }
+        }
+      }
+    },
+    "%@: question pending": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ : attend une réponse"
+          }
+        }
+      }
+    },
+    "%lld Claude sessions are waiting: ": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sessions Claude attendent : "
           }
         }
       }
@@ -83,6 +129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": ", à ce rythme tient jusqu’à la réinitialisation"
+          }
+        }
+      }
+    },
+    "1 Claude session is waiting: ": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 session Claude attend : "
           }
         }
       }
@@ -157,6 +213,16 @@
         }
       }
     },
+    "Approval": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approbation"
+          }
+        }
+      }
+    },
     "At this pace (last hour): blocked at %@": {
       "localizations": {
         "fr": {
@@ -217,6 +283,16 @@
         }
       }
     },
+    "Claude Code": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code"
+          }
+        }
+      }
+    },
     "Claude Code could not renew its session. Run claude in Terminal, or sign in with your browser.": {
       "localizations": {
         "fr": {
@@ -243,6 +319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Claude Code est déconnecté. Lancez claude dans le Terminal et connectez-vous, ou utilisez votre navigateur."
+          }
+        }
+      }
+    },
+    "Claude Code was not found on this Mac.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code est introuvable sur ce Mac."
           }
         }
       }
@@ -277,6 +363,16 @@
         }
       }
     },
+    "Claude is waiting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude attend"
+          }
+        }
+      }
+    },
     "Claude rejected the credentials. Try signing in again.": {
       "localizations": {
         "fr": {
@@ -293,6 +389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Consommation Claude"
+          }
+        }
+      }
+    },
+    "Click a session to bring it to the front.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cliquez sur une session pour l’amener devant."
           }
         }
       }
@@ -387,12 +493,52 @@
         }
       }
     },
+    "Done": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminé"
+          }
+        }
+      }
+    },
+    "Follow Claude Code": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre Claude Code"
+          }
+        }
+      }
+    },
     "Full": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Bloqué"
+          }
+        }
+      }
+    },
+    "Hooks were changed outside the app.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les hooks ont été modifiés hors de l’app."
+          }
+        }
+      }
+    },
+    "Hooks were removed outside the app.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les hooks ont été retirés hors de l’app."
           }
         }
       }
@@ -517,6 +663,16 @@
         }
       }
     },
+    "Notify me when Claude waits": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me prévenir quand Claude attend"
+          }
+        }
+      }
+    },
     "Open at login": {
       "localizations": {
         "fr": {
@@ -573,6 +729,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Offre non prise en charge"
+          }
+        }
+      }
+    },
+    "Question": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question"
           }
         }
       }
@@ -647,6 +813,16 @@
         }
       }
     },
+    "Repair": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réparer"
+          }
+        }
+      }
+    },
     "Reset pending": {
       "localizations": {
         "fr": {
@@ -677,12 +853,32 @@
         }
       }
     },
+    "Session": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session"
+          }
+        }
+      }
+    },
     "Settings": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Réglages"
+          }
+        }
+      }
+    },
+    "Show in menu bar": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher dans la barre de menus"
           }
         }
       }
@@ -907,6 +1103,36 @@
         }
       }
     },
+    "a question": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "une réponse"
+          }
+        }
+      }
+    },
+    "an approval": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "une approbation"
+          }
+        }
+      }
+    },
+    "approval needed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "attend une approbation"
+          }
+        }
+      }
+    },
     "claude.ai asked for a browser check.": {
       "localizations": {
         "fr": {
@@ -927,6 +1153,26 @@
         }
       }
     },
+    "finished": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a terminé"
+          }
+        }
+      }
+    },
+    "question pending": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "attend une réponse"
+          }
+        }
+      }
+    },
     "sk-ant-sid…": {
       "localizations": {
         "fr": {
@@ -937,12 +1183,32 @@
         }
       }
     },
-    "Show in menu bar": {
+    "~/.claude/settings.json could not be read.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Afficher dans la barre de menus"
+            "value": "~/.claude/settings.json est illisible."
+          }
+        }
+      }
+    },
+    "~/.claude/settings.json could not be read. Fix it, then try again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~/.claude/settings.json est illisible. Corrigez-le, puis réessayez."
+          }
+        }
+      }
+    },
+    "~/.claude/settings.json could not be written.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~/.claude/settings.json n’a pas pu être écrit."
           }
         }
       }

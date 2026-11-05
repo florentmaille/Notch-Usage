@@ -15,7 +15,7 @@ struct NotchRootView: View {
                 Color.clear
                     .frame(height: NotchPanelController.hiddenStripHeight)
             } else {
-                CompactView(display: d, signal: s, beat: model.beat)
+                CompactView(display: d, signal: s, beat: model.beat, now: model.now, onTap: { model.clearDoneSessions() })
                     .frame(height: d.layout.height)
                     // L'île ne bouge pas à l'écran quand le panneau s'ouvre : seul son cadre change (décalé replié,
                     // centré déplié). Animée, elle glissait vers sa nouvelle place puis sautait (retour utilisateur).

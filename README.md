@@ -45,6 +45,7 @@ to block you; on the right, one number says how long before the block.
 | Limit reached | full red gauge | `↻1:02`, time until it comes back |
 | Weekly or model limit over its threshold | amber or red gauge | the limit's short name (`7d`, `Fable`) |
 | Offline or stale reading | grey wifi glyph | last known usage |
+| A Claude Code session waits for you (optional) | gauge, unchanged | violet hand (approval), violet `?` (question) or white check (finished); the word for 4 seconds, then the glyph; a count when several sessions wait |
 | Hover | the island stays, the full panel opens below and closes when the pointer leaves | |
 
 The gauge fill and the number carry the information without colour.
@@ -54,6 +55,7 @@ The gauge fill and the number carry the information without colour.
 - **Forecast, not just a percentage.** From your pace over the last hour, weighted toward the last 20 minutes, Notch Usage projects when the 5-hour window reaches 100 %; ten minutes without any increase count as a pause. The panel shows "At this pace (last hour): blocked at 16:40"; the gauge and the time on the right follow the same forecast, and the gauge beats under 30 minutes so the eye catches it without looking. Nothing moves otherwise, and nothing moves with Reduce Motion on. Weekly limits (all models, and per model such as Fable) get their own line from the average pace since the week started, nights included: "At this pace (this week): blocked Thu 14:10"; it stays in the panel and the menu, the notch keeps following the 5-hour window.
 - **Thresholds as a fallback.** For weekly limits in the notch, and when no forecast is possible yet (first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable under *Advanced*.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
+- **Claude Code waits, the notch tells you.** Turn on *Follow Claude Code* and the island shows when a Claude Code session, in the terminal or in the Claude app, asks for an approval, asks a question or finishes a turn: a violet hand, a violet question bubble or a white check on the right of the notch, until you answer. Several sessions: one glyph and a count. Hover: a *Claude Code* section lists each waiting session (title or project folder, what it waits for, since when); click one to bring its app to the front. When a block is under 30 minutes or a limit is reached, the limit keeps the right side and the session becomes a violet dot on the gauge. Optional macOS notification. Off by default.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
 - **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, where it stays fully hidden until you point at the top of the screen.
 - **Menu bar icon, if you want one.** A small gauge in the menu bar, filled to the usage of the limit most likely to block you; click it for every limit, the forecast, *Refresh now*, *Settings* and *Quit*. Off by default.
@@ -109,6 +111,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 - **Open at login**.
 - **Show in menu bar**: the gauge icon and its menu.
 - **Notify me before a block**: a macOS notification under 30 minutes, at the critical threshold and when a limit is reached.
+- **Follow Claude Code**: adds seven hook entries to `~/.claude/settings.json` (all pointing at a small shell script in the app's container), and removes exactly those when turned off; your own hooks are left untouched. Takes effect at once, even in sessions already open. *Notify me when Claude waits* adds a macOS notification for approvals and questions.
 - **Language**: system, English or French.
 - **Advanced**: refresh interval (1 to 15 minutes, 3 by default) and the fallback thresholds (80 % / 95 %) used when no forecast exists.
 
@@ -122,6 +125,7 @@ If the browser sign-in is blocked, paste a `claude.ai` session key on the sign-i
 - No telemetry, no analytics, no crash reporting.
 - Secrets live in the macOS Keychain only. They never appear in logs. The browser sign-in window keeps its cookies in memory and discards everything once the session key is captured.
 - The last reading and the last two hours of readings (for the forecast) are cached locally, and wiped on sign-out.
+- With *Follow Claude Code* on, Claude Code runs the app's hook script at each event; the script appends the event to `~/Library/Application Support/NotchUsage/claude-events.jsonl` (mode 600). The app keeps only the event type, session id, working folder, session title and tool name, never the prompts or answers, and empties the file as soon as it has read it. Nothing leaves the machine.
 
 ## Rate limits and refresh cadence
 
