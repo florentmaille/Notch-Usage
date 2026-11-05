@@ -367,16 +367,6 @@
         }
       }
     },
-    "Critical usage alert": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alerte critique de consommation"
-          }
-        }
-      }
-    },
     "Data unavailable": {
       "localizations": {
         "fr": {
@@ -793,16 +783,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les seuils colorent la jauge pour les limites hebdomadaires et avant qu'une prévision existe. Claude limite les requêtes d'usage : 3 minutes est une cadence sûre."
-          }
-        }
-      }
-    },
-    "Usage warning": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avertissement de consommation"
           }
         }
       }

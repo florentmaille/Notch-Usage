@@ -55,7 +55,7 @@ The gauge fill and the number carry the information without colour.
 - **Thresholds as a fallback.** For weekly limits in the notch, and when no forecast is possible yet (first readings), crossing 80 % or 95 % colours the gauge amber or red. Thresholds are adjustable under *Advanced*.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
-- **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, with a small dot while an alert is active.
+- **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, where it stays fully hidden until you point at the top of the screen.
 - **Menu bar icon, if you want one.** A small gauge in the menu bar, filled to the usage of the limit most likely to block you; click it for every limit, the forecast, *Refresh now*, *Settings* and *Quit*. Off by default.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.

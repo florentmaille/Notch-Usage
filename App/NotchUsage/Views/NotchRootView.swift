@@ -11,7 +11,8 @@ struct NotchRootView: View {
         let s = model.signal
         VStack(spacing: 0) {
             if d.fullscreenHidden {
-                AlertDotView(level: d.alertLevel, visible: d.showAlertDot, edge: s.edge, beat: model.beat)
+                // Plein écran : rien de visible (016), la bande transparente sert seulement au survol qui rouvre l'encoche.
+                Color.clear
                     .frame(height: NotchPanelController.hiddenStripHeight)
             } else {
                 CompactView(display: d, signal: s, beat: model.beat)

@@ -39,7 +39,6 @@ public struct DisplayState: Sendable, Equatable {
     public var isLoading: Bool
     public var alertLevel: AlertLevel
     public var fullscreenHidden: Bool
-    public var showAlertDot: Bool
     /// Prévision par identifiant de limite (003) ; vide sans historique exploitable.
     public var forecasts: [String: Forecast]
     /// Dernier relevé en échec : glyphe wifi barré dans l'encoche (003).
