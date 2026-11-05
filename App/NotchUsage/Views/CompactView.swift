@@ -7,6 +7,9 @@ struct CompactView: View {
     let display: DisplayState
     let signal: NotchSignal
     var beat: Int = 0
+    var now: Date = Date()
+    /// Clic sur l'île : efface les sessions Claude « terminé » (017).
+    var onTap: (() -> Void)? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -18,7 +21,7 @@ struct CompactView: View {
                     islandLeading.frame(width: NotchPanelController.earWidth)
                     Color.clear.frame(width: display.layout.width)
                     if let trailing = signal.island.trailing {
-                        islandTrailing(trailing).frame(width: NotchPanelController.earWidth).transition(.opacity)
+                        islandTrailing(trailing).frame(width: signal.trailingEarWidth(now: now)).transition(.opacity)
                     } else if display.isExpanded {
                         Color.clear.frame(width: NotchPanelController.earWidth)
                     }
@@ -32,6 +35,8 @@ struct CompactView: View {
             }
         }
         .foregroundStyle(.white)
+        .contentShape(Rectangle())
+        .onTapGesture { onTap?() }
         .accessibilityElement(children: .ignore)
         .accessibilityHidden(false)
         .accessibilityLabel(signal.accessibility)
@@ -41,6 +46,16 @@ struct CompactView: View {
         switch signal.island.leading {
         case .gauge(let value, let tint):
             IslandGauge(value: value, tint: tint, beat: beat, reduceMotion: reduceMotion)
+                // Point au coin de la jauge quand la limite garde l'oreille droite (017, R9).
+                .overlay(alignment: .topTrailing) {
+                    if let badge = signal.island.badge {
+                        Circle().fill(badge.color)
+                            .frame(width: 6, height: 6)
+                            .overlay(Circle().stroke(.black, lineWidth: 1.5))
+                            .offset(x: 3, y: -3)
+                            .transition(.opacity)
+                    }
+                }
         case .glyph(let glyph):
             Image(systemName: Self.symbol(glyph))
                 .font(.system(size: 13, weight: .semibold))
@@ -48,19 +63,25 @@ struct CompactView: View {
         }
     }
 
-    private func islandTrailing(_ trailing: NotchSignal.Island.Trailing) -> some View {
-        let (text, color): (String, Color) = switch trailing {
-        case .deadline(let t): (t, signal.island.tint.color)
-        case .back(let t): ("\u{21BB}" + t, .white)
-        case .label(let t): (t, signal.island.tint.color)
-        case .muted(let t): (t, .secondary)
+    @ViewBuilder private func islandTrailing(_ trailing: NotchSignal.Island.Trailing) -> some View {
+        switch trailing {
+        case .attention(let kind, let count):
+            AttentionEar(kind: kind, count: count, showsWord: signal.showsArrival(now: now))
+        default:
+            let (text, color): (String, Color) = switch trailing {
+            case .deadline(let t): (t, signal.island.tint.color)
+            case .back(let t): ("\u{21BB}" + t, .white)
+            case .label(let t): (t, signal.island.tint.color)
+            case .muted(let t): (t, .secondary)
+            case .attention: ("", .white)
+            }
+            Text(text)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .foregroundStyle(color)
         }
-        return Text(text)
-            .font(.system(size: 13, weight: .semibold, design: .rounded))
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-            .foregroundStyle(color)
     }
 
     private static func symbol(_ glyph: NotchSignal.Island.Glyph) -> String {
@@ -70,6 +91,66 @@ struct CompactView: View {
         case .account: return "person.crop.circle"
         case .unavailable: return "questionmark.circle"
         }
+    }
+}
+
+/// Oreille droite d'une session Claude en attente (017, contrat attention.md) : glyphe, puis le mot pendant 4 s à
+/// l'arrivée, ou le nombre de sessions à partir de 2. Rien ne bat.
+struct AttentionEar: View {
+    let kind: ClaudeWaitingKind
+    let count: Int
+    let showsWord: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: kind.symbol)
+                .font(.system(size: 13, weight: .semibold))
+            if showsWord {
+                Text(CompactStrip.Strings.app.claude.arrival(kind))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .transition(.opacity)
+            } else if !AttentionFormat.count(count).isEmpty {
+                Text(AttentionFormat.count(count))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+            }
+        }
+        .foregroundStyle(kind.color)
+        .padding(.horizontal, 4)
+    }
+}
+
+extension ClaudeWaitingKind {
+    /// Violet pour ce qui bloque, blanc pour ce qui informe ; jamais les teintes des paliers.
+    var color: Color {
+        switch self {
+        case .approval, .question: return Color(red: 0.75, green: 0.35, blue: 0.95)   // #BF5AF2
+        case .done: return .white
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .approval: return "hand.raised.fill"
+        case .question: return "questionmark.bubble.fill"
+        case .done: return "checkmark"
+        }
+    }
+}
+
+@MainActor
+extension NotchSignal {
+    func showsArrival(now: Date) -> Bool {
+        guard let attention, case .attention? = island.trailing else { return false }
+        return AttentionFormat.showsArrival(arrivedAt: attention.arrivedAt, now: now)
+    }
+
+    /// Largeur de l'oreille droite repliée : rien sans donnée, 52 pt, élargie le temps du mot d'arrivée (017).
+    func trailingEarWidth(now: Date) -> CGFloat {
+        guard island.trailing != nil else { return 0 }
+        return showsArrival(now: now) ? NotchPanelController.arrivalEarWidth : NotchPanelController.earWidth
     }
 }
 
@@ -178,7 +259,38 @@ enum LimitLabel {
 
 extension CompactStrip.Strings {
     /// Textes du catalogue de l'app, résolus une fois : la langue ne change qu'au relancement.
-    static let app = CompactStrip.Strings(
+    static let app: CompactStrip.Strings = {
+        var strings = base
+        strings.claude = ClaudeStrings(
+            arrival: { kind in
+                switch kind {
+                case .approval: String(localized: "Approval")
+                case .question: String(localized: "Question")
+                case .done: String(localized: "Done")
+                }
+            },
+            rowLabel: { kind in
+                switch kind {
+                case .approval: String(localized: "approval needed")
+                case .question: String(localized: "question pending")
+                case .done: String(localized: "finished")
+                }
+            },
+            waitingAnnouncement: { count in
+                count == 1 ? String(localized: "1 Claude session is waiting: ") : String(localized: "\(count) Claude sessions are waiting: ")
+            },
+            kindAnnouncement: { kind in
+                switch kind {
+                case .approval: String(localized: "an approval")
+                case .question: String(localized: "a question")
+                case .done: String(localized: "finished")
+                }
+            },
+            sessionFallback: String(localized: "Session"))
+        return strings
+    }()
+
+    private static let base = CompactStrip.Strings(
         full: String(localized: "Full"),
         signIn: String(localized: "Sign in"),
         connect: String(localized: "Connect"),

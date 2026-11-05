@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Claude attend une action</title>
+<style>
+  :root {
+    --bg: #0e0e10; --fg: #f2f2f4; --muted: #a0a0a8; --dim: #6c6c74;
+    --desk: #1e3a8a; --notch: #000;
+    --amber: #FF9F0A; --orange: #FF6A1A; --red: #FF453A;
+    --claude: #BF5AF2; --calm: #8e8e93;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1400px; background: var(--bg); color: var(--fg);
+         font: 15px/1.4 -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; padding: 28px 32px 36px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.3px; }
+  .lead { color: var(--muted); margin: 0 0 26px; font-size: 15px; max-width: 1240px; }
+  h2 { font-size: 19px; margin: 30px 0 10px; }
+  h2 small { font-weight: 400; color: var(--dim); font-size: 14px; margin-left: 6px; }
+  .row { display: grid; grid-template-columns: 250px 760px 1fr; gap: 20px; align-items: center; margin: 0 0 12px; }
+  .row .t { font-weight: 600; font-size: 16px; }
+  .row .s { color: var(--muted); font-size: 13.5px; }
+  .row .n { color: var(--muted); font-size: 13.5px; }
+  .row .n b { color: var(--fg); font-weight: 600; }
+
+  /* --- barre de bureau --- */
+  .desk { position: relative; width: 760px; height: 64px; background: var(--desk); border-radius: 6px; overflow: hidden; }
+  .desk.tall { height: 300px; }
+  .desk .clock { position: absolute; left: 22px; top: 18px; font-weight: 700; font-size: 20px; }
+  .desk .gauge { position: absolute; z-index: 2; right: 22px; top: 20px; font-weight: 600; font-size: 16px; }
+  .island { position: absolute; left: calc(50% - 150px); top: 0; height: 44px;
+            background: var(--notch); border-radius: 0 0 16px 16px; display: flex; align-items: center; }
+  .notchphys { width: 220px; height: 44px; }
+  .ear { width: 40px; height: 44px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .ear.wide { width: auto; padding: 0 12px 0 6px; gap: 6px; }
+  .ear .lbl { font-weight: 600; font-size: 13px; letter-spacing: -0.1px; white-space: nowrap; }
+  .num { font: 700 14px/1 "SF Mono", Menlo, monospace; }
+
+  /* jauge circulaire */
+  .ring { width: 22px; height: 22px; border-radius: 50%; position: relative; }
+  .ring::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--notch); }
+  .ring.beat { box-shadow: 0 0 0 4px rgba(255,69,58,.35), 0 0 14px 4px rgba(255,69,58,.55); }
+  .badge { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--claude);
+           right: 5px; top: 8px; box-shadow: 0 0 0 2px var(--notch); }
+  .badge.beatc { box-shadow: 0 0 0 2px var(--notch), 0 0 8px 2px rgba(191,90,242,.7); }
+  .dotfs { position: absolute; left: 50%; top: 4px; width: 7px; height: 7px; border-radius: 50%; transform: translateX(-50%); }
+
+  .glyph { width: 20px; height: 20px; display: inline-block; }
+  .count { font: 700 13px/1 "SF Mono", Menlo, monospace; margin-left: -2px; }
+
+  /* panneau déplié */
+  .panel { position: absolute; left: calc(50% - 210px); top: 44px; width: 420px; background: var(--notch);
+           border-radius: 0 0 18px 18px; padding: 10px 16px 14px; font-size: 12.5px; }
+  .panel .sec { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; margin: 6px 0 4px; }
+  .panel .li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .panel .li .proj { font-weight: 600; width: 120px; }
+  .panel .li .what { flex: 1; color: var(--muted); }
+  .panel .li .since { color: var(--dim); font-variant-numeric: tabular-nums; }
+  .panel .lim { display: flex; justify-content: space-between; padding: 3px 0; color: var(--muted); }
+  .panel .lim b { color: var(--fg); font-weight: 600; }
+  .panel .bar { height: 3px; background: #2a2a2e; border-radius: 2px; margin: 2px 0 6px; overflow: hidden; }
+  .panel .bar i { display: block; height: 100%; width: 42%; background: var(--calm); }
+  .panel .hint { color: var(--dim); font-size: 11px; margin-top: 6px; }
+  .island.top { height: 44px; }
+
+  /* avatar écarté */
+  .face { width: 20px; height: 20px; border-radius: 50%; background: var(--claude); position: relative; }
+  .face::before, .face::after { content: ""; position: absolute; width: 3px; height: 4px; background: #000; border-radius: 2px; top: 6px; }
+  .face::before { left: 6px; } .face::after { right: 6px; }
+  .face i { position: absolute; left: 7px; right: 7px; bottom: 5px; height: 3px; border: 1.5px solid #000; border-top: 0; border-radius: 0 0 8px 8px; }
+  .face.ask i { border-radius: 8px; height: 4px; left: 8px; right: 8px; border: 1.5px solid #000; }
+
+  /* notification macOS écartée */
+  .notif { position: absolute; right: 14px; top: 10px; width: 300px; background: rgba(40,40,44,.96); border-radius: 12px; padding: 9px 12px;
+           display: flex; gap: 10px; align-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+  .notif .ic { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(#333,#111); display: flex; align-items: center; justify-content: center; }
+  .notif .tt { font-weight: 600; font-size: 12.5px; }
+  .notif .bd { color: var(--muted); font-size: 12px; }
+
+  .legend { display: flex; gap: 26px; margin: 8px 0 0; color: var(--muted); font-size: 13.5px; align-items: center; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+  .sep { height: 1px; background: #222; margin: 22px 0 6px; }
+</style>
+</head>
+<body>
+
+<h1>Claude attend une action</h1>
+<p class="lead">Quand une session Claude Code demande une approbation, pose une question ou finit un tour, l'île le dit, dans la grammaire de la 012 : à gauche « quoi » (la jauge reste), à droite « ce qu'on attend de moi ». Le signal <b>persiste jusqu'à l'action</b> ; seule l'arrivée s'anime. Teinte dédiée, jamais ambre, orange ou rouge, réservés aux limites.</p>
+
+<div class="legend">
+  <span><span class="sw" style="background:var(--claude)"></span>Claude attend (bloquant) : violet #BF5AF2</span>
+  <span><span class="sw" style="background:#fff"></span>Terminé (non bloquant) : blanc</span>
+  <span><span class="sw" style="background:var(--calm)"></span>Calme : gris, inchangé</span>
+  <span><span class="sw" style="background:var(--red)"></span>Paliers de limite : inchangés</span>
+</div>
+
+<h2>Recommandée : glyphe à droite, libellé à l'arrivée <small>· oreilles de 52 pt ; l'oreille droite s'élargit 4 s puis se replie sur le glyphe seul</small></h2>
+
+<!-- 1 calme -->
+<div class="row">
+  <div><div class="t">Calme, Claude travaille</div><div class="s">5 h à 42 %, aucune attente</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div></div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Rien de nouveau : une session qui travaille ne se signale pas. L'île reste celle de la 012.</div>
+</div>
+
+<!-- 2 approbation arrivée -->
+<div class="row">
+  <div><div class="t">Approbation demandée</div><div class="s">arrivée, 4 s</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear wide"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7M17 12V8.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-5.1-2.8L3.3 14a1.6 1.6 0 0 1 2.6-1.8L8 14.5"/></svg><span class="lbl" style="color:var(--claude)">Approbation</span></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">L'oreille droite s'ouvre en fondu 0,3 s avec glyphe + mot, en violet. Un seul mot, pas de phrase : « Approbation », « Question », « Terminé ».</div>
+</div>
+
+<!-- 3 approbation persistante -->
+<div class="row">
+  <div><div class="t">Approbation demandée</div><div class="s">persistant, jusqu'à l'action</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7M17 12V8.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-5.1-2.8L3.3 14a1.6 1.6 0 0 1 2.6-1.8L8 14.5"/></svg></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Après 4 s, le mot disparaît, le glyphe reste tant que la permission n'est pas donnée. Rien ne bat : la couleur suffit, l'œil la retrouve au prochain regard.</div>
+</div>
+
+<!-- 4 question -->
+<div class="row">
+  <div><div class="t">Question posée</div><div class="s">AskUserQuestion, persistant</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/><path d="M9.6 8.2a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .8-1 1.4M12 14.4h.01"/></svg></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Bulle avec point d'interrogation. Même teinte que l'approbation : les deux bloquent la session, la distinction se lit au survol.</div>
+</div>
+
+<!-- 5 terminé -->
+<div class="row">
+  <div><div class="t">Réponse terminée</div><div class="s">sans question, persistant</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Coche blanche : rien ne bloque, c'est une information. S'efface au prompt suivant de la session, à sa fermeture, ou d'un clic.</div>
+</div>
+
+<!-- 6 plusieurs -->
+<div class="row">
+  <div><div class="t">Trois sessions attendent</div><div class="s">2 approbations, 1 terminée</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear" style="width:52px;gap:3px"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7M17 12V8.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-5.1-2.8L3.3 14a1.6 1.6 0 0 1 2.6-1.8L8 14.5"/></svg><span class="count" style="color:var(--claude)">3</span></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Un seul glyphe, celui du cas le plus pressant (approbation > question > terminé), et le nombre de sessions en attente. Le détail est au survol.</div>
+</div>
+
+<!-- 7 conflit -->
+<div class="row">
+  <div><div class="t">Blocage dans 8 min + Claude attend</div><div class="s">la limite garde l'oreille droite</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring beat" style="background:conic-gradient(var(--red) 93%, #3a3a3e 0)"></div><span class="badge beatc"></span></div><div class="notchphys"></div>
+      <div class="ear"><span class="num" style="color:var(--red)">8′</span></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n"><b>Règle de priorité</b> : sous 30 min ou limite épuisée, la limite garde la droite et bat ; Claude se réduit à un point violet au coin de la jauge. Au-dessus de 30 min, Claude prend la droite, la jauge garde la couleur du palier.</div>
+</div>
+
+<!-- 8 blocage 2h + claude -->
+<div class="row">
+  <div><div class="t">Blocage dans 2 h 05 + question</div><div class="s">Claude prend l'oreille droite</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--amber) 70%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/><path d="M9.6 8.2a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .8-1 1.4M12 14.4h.01"/></svg></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">La jauge ambre dit toujours qu'un blocage approche ; le « 2:05 » revient dès que la question est traitée. Le temps lointain se perd moins que la question en cours.</div>
+</div>
+
+<!-- 9 survol -->
+<div class="row">
+  <div><div class="t">Survol</div><div class="s">le panneau liste les sessions</div></div>
+  <div class="desk tall"><span class="clock">23:31</span>
+    <div class="island top"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear" style="width:52px;gap:3px"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7M17 12V8.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-5.1-2.8L3.3 14a1.6 1.6 0 0 1 2.6-1.8L8 14.5"/></svg><span class="count" style="color:var(--claude)">3</span></div>
+    </div>
+    <div class="panel">
+      <div class="sec">Claude Code</div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">Notch-Usage</span><span class="what">attend une approbation</span><span class="since">2 min</span></div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">ontraak-site</span><span class="what">attend une approbation</span><span class="since">45 s</span></div>
+      <div class="li"><span style="color:#fff">●</span><span class="proj">deck-q4</span><span class="what">a terminé</span><span class="since">6 min</span></div>
+      <div class="hint">Clic sur une ligne : amène la session devant.</div>
+      <div class="sec" style="margin-top:10px">Limites</div>
+      <div class="lim"><span>Fenêtre 5 h</span><b>42 %</b></div><div class="bar"><i></i></div>
+      <div class="lim"><span>Semaine</span><b>31 %</b></div><div class="bar"><i style="width:31%"></i></div>
+    </div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Une section au-dessus des limites, une ligne par session : projet (dossier), ce qu'elle attend, depuis combien de temps. Clic : l'app ou le terminal concerné passe devant. Section absente quand rien n'attend.</div>
+</div>
+
+<!-- 10 plein écran -->
+<div class="row">
+  <div><div class="t">Plein écran</div><div class="s">le point prend la teinte</div></div>
+  <div class="desk" style="background:#0b0b0d"><span class="dotfs" style="background:var(--claude)"></span>
+    <span style="position:absolute;left:22px;top:22px;color:var(--dim);font-size:13px">app en plein écran, encoche masquée</span></div>
+  <div class="n">Le point du plein écran (006) devient violet quand une session attend, blanc quand une a terminé ; il reste rouge et bat si la limite est imminente.</div>
+</div>
+
+<div class="sep"></div>
+<h2>Variantes écartées <small>· même état « approbation demandée »</small></h2>
+
+<!-- A avatar -->
+<div class="row">
+  <div><div class="t">A. Avatar</div><div class="s">un visage remplace la jauge</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="face"><i></i></div></div><div class="notchphys"></div></div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">À 18 px, une expression ne se lit pas ; on perd la jauge, donc la limite, pendant l'attente. Et un visage appelle une boucle d'animation que le budget CPU et Reduce Motion interdisent.</div>
+</div>
+
+<!-- B avatar + texte -->
+<div class="row">
+  <div><div class="t">B. Avatar + libellé</div><div class="s">visage à gauche, mot à droite</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="face ask"><i></i></div></div><div class="notchphys"></div>
+      <div class="ear wide"><span class="lbl" style="color:var(--claude)">Approbation</span></div></div>
+    <span class="gauge">◔ 30 %</span></div>
+  <div class="n">Même perte de la jauge ; le visage ne porte aucune donnée que le mot ne porte déjà. Décoration.</div>
+</div>
+
+<!-- C bandeau -->
+<div class="row">
+  <div><div class="t">C. Bandeau texte</div><div class="s">phrase complète, persistante</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div>
+      <div class="ear wide" style="padding-right:14px"><span class="lbl" style="color:var(--claude)">Notch-Usage attend une approbation</span></div></div>
+    <span class="gauge" style="color:var(--dim)">◔ 30 %</span></div>
+  <div class="n">Lisible mais l'île s'élargit de 200 pt en permanence : c'est la bande à texte de la 003, écartée en 012 au premier retour.</div>
+</div>
+
+<!-- D notif -->
+<div class="row">
+  <div><div class="t">D. Notification macOS seule</div><div class="s">rien dans l'île</div></div>
+  <div class="desk"><span class="clock">23:31</span>
+    <div class="island"><div class="ear"><div class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div class="notchphys"></div></div>
+    <div class="notif"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--claude)" stroke-width="2.4" stroke-linecap="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7M17 12V8.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-5.1-2.8L3.3 14a1.6 1.6 0 0 1 2.6-1.8L8 14.5"/></svg></div><div><div class="tt">Notch Usage</div><div class="bd">Notch-Usage attend une approbation</div></div></div>
+  </div>
+  <div class="n">Disparaît en 5 s, s'empile dans le centre de notifications, et l'app Claude en envoie déjà une. Gardée en option, off par défaut, pour ceux qui veulent un son.</div>
+</div>
+
+</body>
+</html>

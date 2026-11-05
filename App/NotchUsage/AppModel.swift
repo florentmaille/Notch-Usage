@@ -52,6 +52,8 @@ final class AppModel {
     var hover = false {
         didSet {
             if !hover { showSettings = false }
+            // Au survol, les sessions dont le processus a disparu sont retirées (017, R7) : jamais sur un timer.
+            if hover { claudeSessions = claudeSessions.expire(now: Date(), alive: ProcessLiveness.isAlive) }
             recompute()
         }
     }
@@ -74,6 +76,16 @@ final class AppModel {
     private(set) var showsMenuBarIcon = UserDefaults.standard.bool(forKey: AppModel.menuBarKey)
     @ObservationIgnored private var statusItem: StatusItemController?
     var now = Date()
+    // Sessions Claude Code en attente (017) : fil d'événements des hooks, réglages, statut des entrées installées.
+    @ObservationIgnored private var claudeWatcher: ClaudeEventsWatcher?
+    @ObservationIgnored private var arrivalTask: Task<Void, Never>?
+    private(set) var claudeSessions = ClaudeSessionTracker()
+    private(set) var followsClaudeCode = UserDefaults.standard.bool(forKey: AppModel.followsClaudeKey)
+    private(set) var notifiesClaudeAttention = UserDefaults.standard.bool(forKey: AppModel.notifiesClaudeKey)
+    private(set) var claudeHooksStatus: ClaudeSettingsFile.Status = .absent
+    var claudeHooksError: String?
+    fileprivate static let followsClaudeKey = "followsClaudeCode"
+    fileprivate static let notifiesClaudeKey = "notifiesClaudeAttention"
 
     private static let accountKey = "account"
     private static let intervalKey = "refreshIntervalSeconds"
@@ -108,6 +120,7 @@ final class AppModel {
     @ObservationIgnored var demoState: FetchState?
     @ObservationIgnored var demoForecasts: [String: Forecast] = [:]
     @ObservationIgnored var demoObservers: [any NSObjectProtocol] = []
+    @ObservationIgnored var demoClaude: ClaudeSessionTracker?
     #endif
 
     func start() {
@@ -119,6 +132,8 @@ final class AppModel {
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
         if showsMenuBarIcon { statusItem = StatusItemController(model: self) }
+        refreshClaudeHooksStatus()
+        if followsClaudeCode { startClaudeWatcher() }
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         screens.onChange = { [weak self] target in self?.applyScreen(target) }
         screens.start()
@@ -153,6 +168,9 @@ final class AppModel {
         tickTask?.cancel()
         stateTask?.cancel()
         alertTask?.cancel()
+        arrivalTask?.cancel()
+        claudeWatcher?.stop()
+        claudeWatcher = nil
         // Appelé à la terminaison : le processus s'arrête, inutile d'attendre l'arrêt du coordinateur.
         coordinator = nil
         #if DEBUG
@@ -486,6 +504,120 @@ final class AppModel {
         if let account, account.status == .connected { startCoordinator(for: account) }
     }
 
+    // MARK: Claude Code (017)
+
+    /// Sessions montrées : celles de la démo en build Debug, sinon les vraies.
+    var visibleClaudeSessions: ClaudeSessionTracker {
+        #if DEBUG
+        if let demoClaude { return demoClaude }
+        #endif
+        return claudeSessions
+    }
+
+    private func startClaudeWatcher() {
+        guard claudeWatcher == nil else { return }
+        do {
+            try ClaudeHookScript.ensure()
+        } catch {
+            Log.app.error("claude hook script: \(error.localizedDescription, privacy: .public)")
+        }
+        let watcher = ClaudeEventsWatcher(url: ClaudeHookScript.eventsURL) { [weak self] events in self?.handleClaudeEvents(events) }
+        claudeWatcher = watcher
+        watcher.start()
+    }
+
+    private func stopClaudeWatcher() {
+        claudeWatcher?.stop()
+        claudeWatcher = nil
+        arrivalTask?.cancel()
+        claudeSessions = ClaudeSessionTracker()
+    }
+
+    /// Réduit les événements reçus, résout l'application d'origine des sessions nouvelles, retire les sessions
+    /// mortes, relance le libellé d'arrivée (4 s) et notifie si demandé.
+    private func handleClaudeEvents(_ events: [ClaudeHookEvent]) {
+        let previous = claudeSessions.attention(now: Date())?.arrivedAt
+        var tracker = claudeSessions
+        for event in events {
+            tracker = tracker.reduce(event)
+            if let session = tracker.sessions[event.sessionID], session.originApp == nil, let pid = event.pid {
+                let origin = ProcessLiveness.originApp(of: pid)?.bundleIdentifier
+                tracker = tracker.settingOrigin(app: origin, for: event.sessionID)
+                // Le hook est lancé par un shell : la vivacité se vérifie sur le processus de la session.
+                tracker = tracker.reduce(ClaudeHookEvent(kind: .other, sessionID: event.sessionID, cwd: "", sessionTitle: nil, toolName: nil,
+                                                         promptID: nil, pid: ProcessLiveness.sessionProcess(from: pid), receivedAt: event.receivedAt))
+            }
+            if notifiesClaudeAttention, event.kind == .permissionRequest, let session = tracker.sessions[event.sessionID] {
+                notifier.notifyClaude(name: session.displayName(fallback: CompactStrip.Strings.app.claude.sessionFallback),
+                                      kind: event.isQuestion ? .question : .approval, id: "\(event.sessionID)-\(event.promptID ?? "")")
+            }
+        }
+        let now = Date()
+        claudeSessions = tracker.expire(now: now, alive: ProcessLiveness.isAlive)
+        if let arrived = claudeSessions.attention(now: now)?.arrivedAt, arrived != previous, AttentionFormat.showsArrival(arrivedAt: arrived, now: now) {
+            arrivalTask?.cancel()
+            arrivalTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(AttentionFormat.arrivalDuration), tolerance: .milliseconds(50))
+                guard !Task.isCancelled else { return }
+                self?.recompute()
+            }
+        }
+        Log.app.notice("claude events: \(events.count, privacy: .public) received, \(self.claudeSessions.waiting.count, privacy: .public) waiting")
+        recompute()
+    }
+
+    /// Clic sur une ligne du panneau ou du menu : l'application d'où vient la session passe devant ; l'attente reste.
+    func activateSession(_ id: String) {
+        guard let session = visibleClaudeSessions.sessions[id] else { return }
+        if let app = session.originApp { ProcessLiveness.activate(bundleID: app) }
+        hover = false
+    }
+
+    /// Clic sur l'île : les « terminé » s'effacent, les attentes bloquantes restent (017, FR-002).
+    func clearDoneSessions() {
+        claudeSessions = claudeSessions.clearDone()
+        #if DEBUG
+        demoClaude = demoClaude?.clearDone()
+        #endif
+        recompute()
+    }
+
+    func setFollowsClaudeCode(_ enabled: Bool) {
+        claudeHooksError = nil
+        do {
+            if enabled {
+                try ClaudeHookScript.ensure()
+                try ClaudeSettingsFile.install(scriptPath: ClaudeHookScript.scriptURL.path)
+            } else {
+                try ClaudeSettingsFile.remove(scriptPath: ClaudeHookScript.scriptURL.path)
+            }
+        } catch {
+            claudeHooksError = error.localizedDescription
+            Log.app.error("claude hooks: \(error.localizedDescription, privacy: .public)")
+            refreshClaudeHooksStatus()
+            recompute()
+            return
+        }
+        followsClaudeCode = enabled
+        defaults.set(enabled, forKey: Self.followsClaudeKey)
+        if enabled { startClaudeWatcher() } else { stopClaudeWatcher() }
+        refreshClaudeHooksStatus()
+        Log.app.notice("claude hooks \(enabled ? "installed" : "removed", privacy: .public)")
+        recompute()
+    }
+
+    func setNotifiesClaudeAttention(_ enabled: Bool) {
+        notifiesClaudeAttention = enabled
+        defaults.set(enabled, forKey: Self.notifiesClaudeKey)
+    }
+
+    /// Entrées modifiées à la main : réinstaller remet les manquantes sans doubler les présentes.
+    func repairClaudeHooks() { setFollowsClaudeCode(true) }
+
+    func refreshClaudeHooksStatus() {
+        claudeHooksStatus = ClaudeSettingsFile.status(scriptPath: ClaudeHookScript.scriptURL.path)
+    }
+
     // MARK: Interaction
 
     /// « Réglages » du menu de la barre : le pointeur est loin de l'encoche, le panneau reste ouvert jusqu'à son survol.
@@ -518,13 +650,13 @@ final class AppModel {
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
         #endif
-        signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app)
+        signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app,
+                                  attention: visibleClaudeSessions.attention(now: now))
         notifier.notifyIfNeeded(signal: signal, display: display, enabled: alertSettings.notifications, now: now)
         panel?.contentHeight = expandedContentHeight
-        // Dans l'encoche, seule la bande élargit le panneau ; le liseré seul reste à la largeur de l'encoche.
-        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée.
-        let ear = NotchPanelController.earWidth
-        panel?.apply(display, ears: (ear, signal.island.trailing == nil ? 0 : ear))
+        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
+        // d'arrivée d'une session Claude (017).
+        panel?.apply(display, ears: (NotchPanelController.earWidth, signal.trailingEarWidth(now: now)))
         statusItem?.update(display: display, accessibility: signal.accessibility)
     }
 

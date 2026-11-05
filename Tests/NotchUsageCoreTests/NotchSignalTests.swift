@@ -232,3 +232,97 @@ struct NotchSignalTests {
     }
 }
 
+
+// MARK: - 017 : sessions Claude en attente
+
+@Suite("NotchSignal attention (017)")
+struct NotchSignalAttentionTests {
+    let now = Date.iso("2026-11-01T10:00:00Z")
+    let utc = TimeZone(identifier: "UTC")!
+    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+    typealias Island = NotchSignal.Island
+
+    func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, hover: Bool = false,
+                 forecasts: [String: Forecast] = [:]) -> DisplayState {
+        DisplayStateReducer.reduce(state: state, connected: connected, settings: RefreshSettings(), alertLevel: level, layout: layout,
+                                   fullscreen: false, hover: hover, now: now, forecasts: forecasts)
+    }
+
+    func signal(_ d: DisplayState, attention: NotchSignal.Attention? = nil) -> NotchSignal {
+        NotchSignal.make(display: d, now: now, language: .english, strings: CompactStripTests.english, locale: Locale(identifier: "en_US"),
+                         timeZone: utc, attention: attention)
+    }
+
+    func snap(_ session: Double, weekly: Double = 20, reset: TimeInterval = 2 * 3600 + 14 * 60, age: TimeInterval = 0) -> UsageSnapshot {
+        makeSnapshot([("session", session), ("weekly_all", weekly)], fetchedAt: now.addingTimeInterval(-age), resetsAt: now.addingTimeInterval(reset))
+    }
+
+    func attention(_ kind: ClaudeWaitingKind, count: Int = 1, entries: [(String, ClaudeWaitingKind)]? = nil) -> NotchSignal.Attention {
+        NotchSignal.Attention(kind: kind, count: count, arrivedAt: now,
+                              entries: (entries ?? [("Notch-Usage", kind)]).map { .init(name: $0.0, kind: $0.1) })
+    }
+
+    // US1
+
+    @Test func withoutAttentionTheIslandIsUnchanged() {
+        let d = display(.idle(snap(42)))
+        #expect(signal(d) == signal(d, attention: nil))
+        #expect(signal(d).island == Island(leading: .gauge(value: 42, tint: .calm)))
+        #expect(signal(d).attention == nil)
+    }
+
+    @Test func calmIslandGivesTheRightEarToTheSession() {
+        let d = display(.idle(snap(42)))
+        for kind in ClaudeWaitingKind.allCases {
+            let s = signal(d, attention: attention(kind))
+            #expect(s.island == Island(leading: .gauge(value: 42, tint: .calm), trailing: .attention(kind: kind, count: 1)))
+            #expect(s.island.badge == nil && s.attention?.kind == kind)
+        }
+    }
+
+    @Test func accessibilityIsPrefixedWithTheWaitingSessions() {
+        let d = display(.idle(snap(42)))
+        let one = signal(d, attention: attention(.approval))
+        #expect(one.accessibility == "1 Claude session is waiting: Notch-Usage, an approval. 5-hour window, 42 percent, resets in 2h 14m")
+        let two = signal(d, attention: attention(.approval, count: 2, entries: [("Notch-Usage", .approval), ("deck-q4", .done)]))
+        #expect(two.accessibility.hasPrefix("2 Claude sessions are waiting: Notch-Usage, an approval; deck-q4, finished. "))
+    }
+
+    // US2 : priorité
+
+    @Test func imminentOrExhaustedLimitKeepsTheEarAndShowsABadge() {
+        let imminent = signal(display(.idle(snap(92)), forecasts: ["session": .blockAt(now.addingTimeInterval(8 * 60))]), attention: attention(.approval))
+        #expect(imminent.island.trailing == .deadline("8\u{2032}") && imminent.island.badge == .approval)
+        #expect(imminent.island.tint == .imminent && imminent.pulse == .everyHalfMinute)
+        let blocked = signal(display(.idle(snap(100))), attention: attention(.done))
+        #expect(blocked.island.trailing == .back("2:14") && blocked.island.badge == .done && blocked.island.tint == .exhausted)
+    }
+
+    @Test func fartherDeadlinesThresholdsAndOfflineGiveTheEarToTheSession() {
+        let far = signal(display(.idle(snap(55)), forecasts: ["session": .blockAt(now.addingTimeInterval(125 * 60))]), attention: attention(.question))
+        #expect(far.island == Island(leading: .gauge(value: 55, tint: .far), trailing: .attention(kind: .question, count: 1)))
+        let near = signal(display(.idle(snap(78)), forecasts: ["session": .blockAt(now.addingTimeInterval(40 * 60))]), attention: attention(.approval))
+        #expect(near.island.trailing == .attention(kind: .approval, count: 1) && near.island.tint == .near)
+        let critical = signal(display(.idle(snap(97)), level: .critical), attention: attention(.approval))
+        #expect(critical.island.trailing == .attention(kind: .approval, count: 1) && critical.island.tint == .imminent && critical.island.badge == nil)
+        let offline = signal(display(.failed(.server(503), previous: snap(42))), attention: attention(.approval))
+        #expect(offline.island == Island(leading: .glyph(.offline), trailing: .attention(kind: .approval, count: 1)))
+        let locked = signal(display(.reauthRequired(previous: nil)), attention: attention(.done))
+        #expect(locked.island == Island(leading: .glyph(.locked), trailing: .attention(kind: .done, count: 1)))
+    }
+
+    @Test func hoverKeepsTheSameIsland() {
+        let a = attention(.approval, count: 3)
+        let collapsed = signal(display(.idle(snap(42))), attention: a)
+        let hovered = signal(display(.idle(snap(42)), hover: true), attention: a)
+        #expect(collapsed.island == hovered.island && hovered.isBand)
+    }
+
+    @Test func badgeAndTrailingTakePartInEquality() {
+        let a = Island(leading: .gauge(value: 1, tint: .calm), trailing: nil, badge: .approval)
+        let b = Island(leading: .gauge(value: 1, tint: .calm), trailing: nil, badge: nil)
+        #expect(a != b)
+        #expect(Island(leading: .gauge(value: 1, tint: .calm), trailing: .attention(kind: .approval, count: 2))
+                != Island(leading: .gauge(value: 1, tint: .calm), trailing: .attention(kind: .approval, count: 3)))
+    }
+}

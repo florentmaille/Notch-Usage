@@ -40,7 +40,10 @@ struct SettingsView: View {
         }
         .controlSize(.small)
         .toggleStyle(.switch)
-        .onAppear { intervalMinutes = (model.refreshSettings.interval.timeIntervalValue / 60).rounded() }
+        .onAppear {
+            intervalMinutes = (model.refreshSettings.interval.timeIntervalValue / 60).rounded()
+            model.refreshClaudeHooksStatus()
+        }
     }
 
     // MARK: Essentiel
@@ -61,6 +64,24 @@ struct SettingsView: View {
                 row("Notify me before a block", isOn: Binding(
                     get: { model.alertSettings.notifications },
                     set: { model.setNotificationsEnabled($0) }))
+                // Sessions Claude Code en attente (017) : abonnement aux hooks, réversible ; notification en option.
+                row("Follow Claude Code", isOn: Binding(
+                    get: { model.followsClaudeCode },
+                    set: { model.setFollowsClaudeCode($0) }))
+                if let note = claudeNote {
+                    HStack {
+                        Text(note.text).font(.caption2).foregroundStyle(note.isError ? .orange : .secondary)
+                        if note.repairable {
+                            Spacer()
+                            Button("Repair") { model.repairClaudeHooks() }
+                        }
+                    }
+                }
+                if model.followsClaudeCode {
+                    row("Notify me when Claude waits", isOn: Binding(
+                        get: { model.notifiesClaudeAttention },
+                        set: { model.setNotifiesClaudeAttention($0) }))
+                }
                 HStack {
                     Text("Language")
                     Spacer()
@@ -82,6 +103,18 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+
+    /// Note sous « Follow Claude Code » : erreur d'écriture, config absente ou modifiée à la main.
+    private var claudeNote: (text: String, isError: Bool, repairable: Bool)? {
+        if let error = model.claudeHooksError { return (error, true, false) }
+        switch model.claudeHooksStatus {
+        case .claudeMissing: return (String(localized: "Claude Code was not found on this Mac."), false, false)
+        case .unreadable: return (String(localized: "~/.claude/settings.json could not be read."), true, false)
+        case .partial: return (String(localized: "Hooks were changed outside the app."), false, true)
+        case .absent where model.followsClaudeCode: return (String(localized: "Hooks were removed outside the app."), false, true)
+        case .absent, .installed: return nil
         }
     }
 

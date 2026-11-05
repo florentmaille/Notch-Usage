@@ -1,0 +1,13 @@
+{
+  "theme": "auto",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "say done", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

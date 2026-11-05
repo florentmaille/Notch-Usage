@@ -41,6 +41,8 @@ public struct CompactStrip: Sendable, Equatable {
         public var paceAnnouncement: @Sendable (String) -> String
         /// Annonce des états sans limite (« not connected », …), par nom de `DisplayState.Content`.
         public var stateAnnouncement: @Sendable (String) -> String
+        /// Textes des sessions Claude en attente (017) ; anglais par défaut, l'app fournit les siens.
+        public var claude: ClaudeStrings = .english
 
         public init(full: String, signIn: String, connect: String, dash: String,
                     percent: @escaping @Sendable (Int) -> String,

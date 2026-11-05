@@ -1,0 +1,2 @@
+{"ppid":9019,"ts":1762360070,"event":{"cwd":"/x","hook_event_name":"Stop"}}
+{"ppid":9019,"ts":1762360080,"event":{"session_id":"abc","cwd":"/x","hook_event_name":"Stop"

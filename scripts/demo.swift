@@ -7,6 +7,8 @@
 //   swift scripts/demo.swift imminent tick tick wait=0.3 snapshot   # `tick` force un tick de 30 s (006), capture à mi-battement
 //   swift scripts/demo.swift <état> snapshot   # capture l'encoche repliée dans $TMPDIR/notchusage-snapshot.png
 //   swift scripts/demo.swift <état> panel      # idem, panneau déplié (survol simulé)
+//   swift scripts/demo.swift normal claude=approval3 snapshot   # sessions Claude en attente (017) :
+//   claude=approval | question | done | approval3 | arrival | off ; `arrival` montre le mot pendant 4 s.
 //   swift scripts/demo.swift hover=1 click=225,175 wait=2 snapshot   # commandes brutes, dans l'ordre
 //
 // Commandes brutes : demo=<état>, hover=0|1, click=<x>,<y> (points depuis le coin haut gauche), escape, menusettings,
@@ -18,6 +20,8 @@ var args = Array(CommandLine.arguments.dropFirst())
 if let first = args.first, states.contains(first) {
     args.removeFirst()
     var expanded = ["demo=\(first)"]
+    if args.first == "snapshot" { expanded += ["wait=1.5", "snapshot", "wait=1"]; args.removeFirst() }
+    if let claude = args.first, claude.hasPrefix("claude=") { expanded.insert(claude, at: 1); args.removeFirst() }
     if args.first == "snapshot" { expanded += ["wait=1.5", "snapshot", "wait=1"]; args.removeFirst() }
     if args.first == "panel" { expanded += ["hover=1", "wait=1.5", "snapshot", "wait=1", "hover=0"]; args.removeFirst() }
     args = expanded + args

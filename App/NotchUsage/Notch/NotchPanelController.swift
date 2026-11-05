@@ -9,6 +9,8 @@ final class NotchPanelController {
     static let wingWidth: CGFloat = 72
     /// Oreille de l'île repliée (012).
     static let earWidth: CGFloat = 52
+    /// Oreille droite le temps du mot d'arrivée d'une session Claude (017) : glyphe + un mot.
+    static let arrivalEarWidth: CGFloat = 116
     static let expandedWidth: CGFloat = 440
     /// Hauteur de départ du contenu déplié, avant la première mesure.
     static let expandedHeight: CGFloat = 320

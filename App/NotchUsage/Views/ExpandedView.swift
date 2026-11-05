@@ -10,6 +10,7 @@ struct ExpandedView: View {
         VStack(alignment: .leading, spacing: 10) {
             header(d)
             if let banner = d.banner { bannerView(banner) }
+            if !model.visibleClaudeSessions.waiting.isEmpty { ClaudeSessionsSection() }
             switch d.content {
             case .limits:
                 ForEach(d.limits) { limit in
@@ -111,6 +112,53 @@ struct ExpandedView: View {
         .controlSize(.small)
         .font(.caption)
         .foregroundStyle(.secondary)
+    }
+}
+
+/// Sessions Claude Code en attente (017, contrat attention.md) : une ligne par session, triées par urgence puis
+/// ancienneté ; clic : l'application d'origine passe devant.
+struct ClaudeSessionsSection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Claude Code")
+                .font(.caption2.weight(.semibold)).textCase(.uppercase).foregroundStyle(.secondary)
+            ForEach(model.visibleClaudeSessions.waiting) { session in
+                ClaudeSessionRow(session: session, now: model.now) { model.activateSession(session.id) }
+            }
+            Text("Click a session to bring it to the front.")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+    }
+}
+
+struct ClaudeSessionRow: View {
+    let session: ClaudeSession
+    let now: Date
+    let activate: () -> Void
+
+    var body: some View {
+        let waiting = session.waiting!
+        let strings = CompactStrip.Strings.app.claude
+        let name = session.displayName(fallback: strings.sessionFallback)
+        let since = AttentionFormat.since(waiting.since, now: now, language: AppLanguage.current)
+        Button(action: activate) {
+            HStack(spacing: 8) {
+                Circle().fill(waiting.kind.color).frame(width: 7, height: 7)
+                Text(name).font(.subheadline).lineLimit(1).truncationMode(.tail)
+                    .frame(maxWidth: 170, alignment: .leading)
+                Text(strings.rowLabel(waiting.kind)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Spacer(minLength: 4)
+                Text(since).font(.caption).monospacedDigit().foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 3)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "\(name), \(strings.rowLabel(waiting.kind)), \(since)"))
+        .accessibilityAddTraits(.isButton)
     }
 }
 
