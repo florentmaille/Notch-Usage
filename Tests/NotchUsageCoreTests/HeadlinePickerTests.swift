@@ -21,8 +21,9 @@ struct HeadlinePickerTests {
         let weekly = makeSnapshot([("session", 30), ("weekly_all", 97), ("weekly_scoped:Fable", 20)])
         #expect(pick(weekly) == "weekly_all")
         #expect(pick(weekly, ["session": .holdsUntilReset]) == "weekly_all")
+        // Une limite de modèle ne bloque pas les requêtes : elle ne prend jamais l'encoche.
         let model = makeSnapshot([("session", 30), ("weekly_all", 40), ("weekly_scoped:Fable", 83)])
-        #expect(pick(model) == "weekly_scoped:Fable")
+        #expect(pick(model) == "session")
     }
 
     @Test func imminentForecastWinsOverAWeeklyWarning() {
@@ -53,11 +54,13 @@ struct HeadlinePickerTests {
         #expect(pick(weekly, ["session": .blockAt(now.addingTimeInterval(1800))]) == "weekly_all")
     }
 
-    @Test func aReachedModelLimitOnlyShowsWhenNothingElseThreatens() {
+    @Test func aReachedModelLimitNeverTakesTheNotch() {
         let fable = makeSnapshot([("session", 30), ("weekly_all", 60), ("weekly_scoped:Fable", 100)])
-        #expect(pick(fable) == "weekly_scoped:Fable")
+        #expect(pick(fable) == "session")
         let warned = makeSnapshot([("session", 30), ("weekly_all", 83), ("weekly_scoped:Fable", 100)])
         #expect(pick(warned) == "weekly_all")
+        let forecast = makeSnapshot([("session", 30), ("weekly_all", 60), ("weekly_scoped:Fable", 90)])
+        #expect(pick(forecast, ["weekly_scoped:Fable": .blockAt(now.addingTimeInterval(600))]) == "session")
     }
 
     @Test func disabledThresholdsOnlyLeaveForecastsAndExhaustion() {
@@ -67,8 +70,11 @@ struct HeadlinePickerTests {
         #expect(pick(weekly, ["session": .blockAt(now.addingTimeInterval(600))], settings: off) == "session")
     }
 
-    @Test func withoutAFiveHourWindowTheMostUsedIsShown() {
+    @Test func withoutAFiveHourWindowTheMostUsedNonModelLimitIsShown() {
         let weekly = makeSnapshot([("weekly_all", 30), ("weekly_scoped:Fable", 50)])
-        #expect(pick(weekly) == "weekly_scoped:Fable")
+        #expect(pick(weekly) == "weekly_all")
+        // Relevé réduit aux modèles : on affiche quand même quelque chose.
+        let onlyModels = makeSnapshot([("weekly_scoped:Fable", 50)])
+        #expect(pick(onlyModels) == "weekly_scoped:Fable")
     }
 }
