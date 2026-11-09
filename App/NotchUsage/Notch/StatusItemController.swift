@@ -191,6 +191,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(action(String(localized: "Refresh now"), #selector(refresh)))
         menu.addItem(action(String(localized: "Settings"), #selector(openSettings)))
+        menu.addItem(action(String(localized: "Check for Updates…"), #selector(checkForUpdates)))
         menu.addItem(.separator())
         menu.addItem(action(String(localized: "Quit"), #selector(quit), key: "q"))
     }
@@ -249,6 +250,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func refresh() { model?.refreshNow() }
 
     @objc private func openSettings() { model?.openSettingsFromMenu() }
+
+    @objc private func checkForUpdates() { UpdateLauncher.launch() }
 
     @objc private func quit() { NSApp.terminate(nil) }
 }

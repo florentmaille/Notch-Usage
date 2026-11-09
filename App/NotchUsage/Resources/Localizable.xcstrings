@@ -303,6 +303,26 @@
         }
       }
     },
+    "Check for Updates…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher les mises à jour…"
+          }
+        }
+      }
+    },
+    "Check for updates": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher les mises à jour"
+          }
+        }
+      }
+    },
     "Checking your usage…": {
       "localizations": {
         "fr": {
@@ -569,6 +589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les hooks ont été retirés hors de l’app."
+          }
+        }
+      }
+    },
+    "Installed without Homebrew: download the latest version from the releases page.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installée sans Homebrew : télécharge la dernière version sur la page des releases."
           }
         }
       }
@@ -1069,6 +1099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Utilise des points d’accès Claude non documentés. Rien ne quitte votre Mac, mais Anthropic peut les modifier ou les bloquer. À utiliser à vos risques."
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
           }
         }
       }
