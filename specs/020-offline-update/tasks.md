@@ -19,7 +19,7 @@
   - sans Homebrew, une note : « Installed without Homebrew: download the latest version from the releases page ».
 - [x] T005 Modifier `App/NotchUsage/Notch/StatusItemController.swift` : ajouter « Check for Updates… » entre « Settings » et « Quit ».
 - [x] T006 Ajouter les textes en anglais et en français dans `Localizable.xcstrings` ; `scripts/check-localizations.sh` doit rendre 0.
-- [ ] T007 Validation :
+- [x] T007 Validation :
   - `swift test` et `xcodebuild test` passent ;
   - essai réel : le clic ouvre le Terminal, le script tourne, l'app est relancée ;
   - aucune demande de permission ;
@@ -38,3 +38,9 @@ T002 dépend de T001 ; T003 de T002 ; T004 et T005 de T003 ; T006 se fait à la 
 - T007, reste à faire en réel :
   - le chemin Homebrew ne s'exerce qu'avec l'app installée dans `/Applications` par le cask, donc à partir de la release qui le contiendra ;
   - la build Debug, qui tourne depuis DerivedData, prend le chemin « page des releases ».
+- **T007, validé en réel par Florent avec la 0.5.8 installée par Homebrew** :
+  - les Réglages affichent « Version 0.5.8 », sans la note « sans Homebrew » ;
+  - le clic ouvre le Terminal, avec le journal « update: homebrew script opened » ;
+  - le script en droits 700 n'a pas d'attribut de quarantaine ;
+  - Homebrew rafraîchit le tap et l'app revient au premier plan ;
+  - aucune demande de permission.
