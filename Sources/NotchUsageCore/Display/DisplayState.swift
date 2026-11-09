@@ -44,6 +44,5 @@ public struct DisplayState: Sendable, Equatable {
     /// Dernier relevé en échec : glyphe wifi barré dans l'encoche (003).
     public var fetchFailed: Bool
 
-    public var mode: DisplayMode { layout.mode }
     public var isExpanded: Bool { panel != .collapsed }
 }

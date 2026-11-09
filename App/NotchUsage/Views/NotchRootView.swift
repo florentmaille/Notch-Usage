@@ -21,7 +21,7 @@ struct NotchRootView: View {
                     // centré déplié). Animée, elle glissait vers sa nouvelle place puis sautait (retour utilisateur).
                     .transaction(value: d.isExpanded) { $0.animation = nil }
                 if d.isExpanded {
-                    ExpandedContainer()
+                    PanelContentView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
@@ -35,47 +35,20 @@ struct NotchRootView: View {
     }
 }
 
-/// Fond noir qui prolonge l'encoche en île (ou dessine la pilule), arrondi en bas : il remplit le panneau.
+/// Fond noir qui prolonge l'encoche en île, arrondi en bas : il remplit le panneau.
 private struct NotchShape: View {
     let display: DisplayState
 
     var body: some View {
-        let notch = display.mode == .notch
-        let radius: CGFloat = notch ? (display.isExpanded ? 18 : 12) : 14
-        UnevenRoundedRectangle(topLeadingRadius: notch ? 0 : radius, bottomLeadingRadius: radius,
-                               bottomTrailingRadius: radius, topTrailingRadius: notch ? 0 : radius, style: .continuous)
+        let radius: CGFloat = display.isExpanded ? 18 : 12
+        UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius,
+                               bottomTrailingRadius: radius, topTrailingRadius: 0, style: .continuous)
             .fill(.black)
             .opacity(display.fullscreenHidden ? 0 : 1)
     }
 }
 
-/// Contenu déplié : connexion, limites ou réglages.
-private struct ExpandedContainer: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        // Hauteur idéale mesurée sur chaque vue, réglages compris : le panneau colle à son contenu (013).
-        Group {
-            if model.showSettings && model.display.content != .connect {
-                SettingsView()
-            } else if model.display.content == .connect {
-                ConnectView()
-            } else {
-                ExpandedView()
-            }
-        }
-        .padded()
-        .fixedSize(horizontal: false, vertical: true)
-        // Fermeture isolée au main actor : ni clé de préférence ni `assumeIsolated` (010).
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-            model.setExpandedContentHeight(height)
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .foregroundStyle(.white)
-    }
-}
-
-private extension View {
+extension View {
     func padded() -> some View {
         padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 6)
     }

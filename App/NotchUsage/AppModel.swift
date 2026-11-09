@@ -54,6 +54,7 @@ final class AppModel {
             if !hover { showSettings = false }
             // Au survol, les sessions dont le processus a disparu sont retirées (017, R7) : jamais sur un timer.
             if hover { claudeSessions = claudeSessions.expire(now: Date(), alive: ProcessLiveness.isAlive) }
+            if hover { statusItem?.closePopover(); capsules.values.forEach { $0.dismissCard() } }
             recompute()
         }
     }
@@ -72,9 +73,18 @@ final class AppModel {
     @ObservationIgnored private var lastRecordedAt: Date?
     var claudeCodeAvailable = false
     var launchAtLoginStatus: LaunchAtLogin.Status = .disabled
-    /// Icône facultative de la barre de menus (014), désactivée par défaut.
-    private(set) var showsMenuBarIcon = UserDefaults.standard.bool(forKey: AppModel.menuBarKey)
+    /// Item de barre de menus (014, 018) : automatique (écran sans encoche connecté), toujours ou jamais.
+    private(set) var menuBarIconMode: MenuBarIconMode = AppModel.loadMenuBarIconMode()
     @ObservationIgnored private var statusItem: StatusItemController?
+    /// Rôle des écrans connectés (018) : île sur l'écran à encoche, item enrichi sur les autres.
+    @ObservationIgnored private(set) var screenRoles: ScreenRoles = .empty
+    /// Écran de la barre de menus active, lu sur la fenêtre de l'item (R4) : compact sur l'écran de l'île.
+    @ObservationIgnored private var activeBarScreenID: String?
+    private(set) var barContent: BarContent?
+    /// Pastille centrée sur les écrans sans encoche d'au moins 1700 pt (018, C′), désactivée par défaut (FR-011).
+    private(set) var showsCenterCapsule = UserDefaults.standard.bool(forKey: AppModel.capsuleKey)
+    @ObservationIgnored private var capsules: [String: CapsulePanelController] = [:]
+    @ObservationIgnored private var screensByID: [String: NSScreen] = [:]
     var now = Date()
     // Sessions Claude Code en attente (017) : fil d'événements des hooks, réglages, statut des entrées installées.
     @ObservationIgnored private var claudeWatcher: ClaudeEventsWatcher?
@@ -90,7 +100,20 @@ final class AppModel {
     private static let accountKey = "account"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
-    fileprivate static let menuBarKey = "showsMenuBarIcon"
+    fileprivate static let legacyMenuBarKey = "showsMenuBarIcon"
+    fileprivate static let menuBarModeKey = "menuBarIconMode"
+    fileprivate static let capsuleKey = "showsCenterCapsule"
+
+    /// Lu une fois : l'ancien booléen de la 014 devient un mode, puis disparaît (R8).
+    private static func loadMenuBarIconMode() -> MenuBarIconMode {
+        let defaults = UserDefaults.standard
+        if let raw = defaults.string(forKey: menuBarModeKey), let mode = MenuBarIconMode(rawValue: raw) { return mode }
+        let legacy = defaults.object(forKey: legacyMenuBarKey) == nil ? nil : defaults.bool(forKey: legacyMenuBarKey)
+        let mode = MenuBarIconMode.migrate(legacy: legacy)
+        defaults.set(mode.rawValue, forKey: menuBarModeKey)
+        defaults.removeObject(forKey: legacyMenuBarKey)
+        return mode
+    }
 
     init() {
         let defaults = UserDefaults.standard
@@ -105,7 +128,7 @@ final class AppModel {
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
-        let initialLayout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 0, auxLeftWidth: nil, auxRightWidth: nil)
+        let initialLayout = NotchLayout.fallback
         layout = initialLayout
         let initialDisplay = DisplayStateReducer.reduce(state: .idle(nil), connected: false, settings: settings, alertLevel: .none,
                                                         layout: initialLayout, fullscreen: false, hover: false, now: Date())
@@ -121,6 +144,8 @@ final class AppModel {
     @ObservationIgnored var demoForecasts: [String: Forecast] = [:]
     @ObservationIgnored var demoObservers: [any NSObjectProtocol] = []
     @ObservationIgnored var demoClaude: ClaudeSessionTracker?
+    @ObservationIgnored var demoNoNotch = false
+    @ObservationIgnored var demoActiveBar: String?
     #endif
 
     func start() {
@@ -131,11 +156,10 @@ final class AppModel {
         Task { await BrowserLoginWindow.purgeBrowserData() }
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
-        if showsMenuBarIcon { statusItem = StatusItemController(model: self) }
         refreshClaudeHooksStatus()
         if followsClaudeCode { startClaudeWatcher() }
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
-        screens.onChange = { [weak self] target in self?.applyScreen(target) }
+        screens.onChange = { [weak self] snapshot in self?.applyScreens(snapshot) }
         screens.start()
         fullscreenObserver.onChange = { [weak self] isFullscreen in self?.fullscreen = isFullscreen }
         fullscreenObserver.start()
@@ -165,6 +189,8 @@ final class AppModel {
     func stop() {
         statusItem?.remove()
         statusItem = nil
+        capsules.values.forEach { $0.close() }
+        capsules = [:]
         tickTask?.cancel()
         stateTask?.cancel()
         alertTask?.cancel()
@@ -184,18 +210,110 @@ final class AppModel {
         panel = nil
     }
 
-    func applyScreen(_ target: ScreenObserver.Target) {
-        layout = target.layout
-        fullscreenObserver.screen = target.screen
-        if let panel {
-            panel.update(target: target)
+    /// Configuration d'écrans (018, R1) : l'île sur l'écran à encoche seulement, fermée sans lui ; l'item selon le réglage.
+    func applyScreens(_ snapshot: ScreenObserver.Snapshot) {
+        var snapshot = snapshot
+        #if DEBUG
+        if demoNoNotch { snapshot = Self.withoutNotch(snapshot) }
+        #endif
+        screenRoles = snapshot.roles
+        screensByID = snapshot.screens
+        statusItem?.closePopover()
+        if let target = snapshot.island {
+            layout = target.layout
+            fullscreenObserver.screen = target.screen
+            if let panel {
+                panel.update(target: target)
+            } else {
+                let controller = NotchPanelController(target: target, rootView: AnyView(NotchRootView().environment(self)))
+                controller.onHoverChange = { [weak self] inside in self?.hover = inside }
+                controller.onDismiss = { [weak self] in self?.dismiss() }
+                panel = controller
+            }
         } else {
-            let controller = NotchPanelController(target: target, rootView: AnyView(NotchRootView().environment(self)))
-            controller.onHoverChange = { [weak self] inside in self?.hover = inside }
-            controller.onDismiss = { [weak self] in self?.dismiss() }
-            panel = controller
+            // Capot fermé, Mac sans encoche : pas d'île, et plus de pilule (FR-002).
+            hover = false
+            panel?.close()
+            panel = nil
+            fullscreenObserver.screen = nil
         }
+        syncStatusItem()
+        syncCapsules()
         recompute()
+    }
+
+    /// Une pastille par écran sans encoche assez large, si l'option est active (FR-012, FR-016).
+    private func syncCapsules() {
+        let wanted = showsCenterCapsule ? screenRoles.plain.filter(\.capsuleEligible).map(\.id) : []
+        for (id, capsule) in capsules where !wanted.contains(id) {
+            capsule.close()
+            capsules[id] = nil
+        }
+        for id in wanted {
+            guard let screen = screensByID[id] else { continue }
+            if let capsule = capsules[id] {
+                capsule.update(screen: screen)
+            } else {
+                let capsule = CapsulePanelController(screenID: id, screen: screen, model: self)
+                capsule.onCardOpen = { [weak self] in
+                    guard let self else { return }
+                    self.hover = false
+                    self.statusItem?.closePopover()
+                    for (other, c) in self.capsules where other != id { c.dismissCard() }
+                }
+                capsules[id] = capsule
+            }
+        }
+    }
+
+    func setShowsCenterCapsule(_ shown: Bool) {
+        showsCenterCapsule = shown
+        defaults.set(shown, forKey: Self.capsuleKey)
+        syncCapsules()
+        recompute()
+    }
+
+    /// Apparence de la barre de menus, lue sur l'item quand il existe (R6) ; sinon celle du système.
+    private var menuBarIsDark: Bool {
+        let appearance = statusItem?.buttonAppearance ?? NSApp.effectiveAppearance
+        return appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+
+    #if DEBUG
+    /// Mode démo `nonotch` : tous les écrans passent sans encoche.
+    static func withoutNotch(_ snapshot: ScreenObserver.Snapshot) -> ScreenObserver.Snapshot {
+        let descriptors = NSScreen.screens.enumerated().map { ScreenObserver.descriptor($1, isMain: $0 == 0, forceNoNotch: true) }
+        return ScreenObserver.Snapshot(roles: ScreenRoles.assign(descriptors), screens: snapshot.screens)
+    }
+    #endif
+
+    /// Crée ou retire l'item selon le réglage et les écrans (FR-018).
+    private func syncStatusItem() {
+        let visible = menuBarIconMode.isVisible(roles: screenRoles)
+        if visible, statusItem == nil {
+            let item = StatusItemController(model: self)
+            item.onActiveScreenChange = { [weak self] id in
+                guard let self else { return }
+                self.activeBarScreenID = id
+                self.recompute()
+            }
+            statusItem = item
+        } else if !visible, let item = statusItem {
+            item.remove()
+            statusItem = nil
+            activeBarScreenID = nil
+        }
+    }
+
+    #if DEBUG
+    func debugOpenPopover() { statusItem?.openPopover() }
+    func debugItemSnapshot() { statusItem?.debugSnapshot() }
+    #endif
+
+    /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).
+    func popoverWillOpen() {
+        hover = false
+        capsules.values.forEach { $0.dismissCard() }
     }
 
     // MARK: Relevés
@@ -484,15 +602,10 @@ final class AppModel {
         recompute()
     }
 
-    func setMenuBarIcon(_ shown: Bool) {
-        showsMenuBarIcon = shown
-        defaults.set(shown, forKey: Self.menuBarKey)
-        if shown, statusItem == nil {
-            statusItem = StatusItemController(model: self)
-        } else if !shown {
-            statusItem?.remove()
-            statusItem = nil
-        }
+    func setMenuBarIconMode(_ mode: MenuBarIconMode) {
+        menuBarIconMode = mode
+        defaults.set(mode.rawValue, forKey: Self.menuBarModeKey)
+        syncStatusItem()
         recompute()
     }
 
@@ -622,9 +735,15 @@ final class AppModel {
 
     /// « Réglages » du menu de la barre : le pointeur est loin de l'encoche, le panneau reste ouvert jusqu'à son survol.
     func openSettingsFromMenu() {
+        // Sans île (capot fermé, Mac sans encoche), les réglages s'ouvrent dans le popover de l'item.
+        guard let panel else {
+            showSettings = true
+            statusItem?.openPopover()
+            return
+        }
         showSettings = true
         hover = true
-        panel?.holdOpen()
+        panel.holdOpen()
     }
 
     /// Échap : referme le panneau ouvert au survol.
@@ -657,7 +776,22 @@ final class AppModel {
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
         // d'arrivée d'une session Claude (017).
         panel?.apply(display, ears: (NotchPanelController.earWidth, signal.trailingEarWidth(now: now)))
-        statusItem?.update(display: display, accessibility: signal.accessibility)
+        // Item (018) : compact quand la barre active est celle de l'écran de l'île (FR-022).
+        var activeBar = activeBarScreenID
+        #if DEBUG
+        if let forced = demoActiveBar { activeBar = forced == "notch" ? screenRoles.island?.id : "external" }
+        #endif
+        let bar = BarContent.make(signal: signal, now: now, strings: .app)
+        barContent = bar
+        statusItem?.update(content: screenRoles.isIsland(activeBar) ? bar.compact : bar.menuBarItem, beat: beat,
+                           reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+        if !capsules.isEmpty {
+            let dark = menuBarIsDark
+            for capsule in capsules.values {
+                capsule.apply(content: bar, dark: dark, beat: beat, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+                capsule.refreshCard()
+            }
+        }
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {

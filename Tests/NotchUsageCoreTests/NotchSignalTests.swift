@@ -6,7 +6,7 @@ import Testing
 struct NotchSignalTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
     let utc = TimeZone(identifier: "UTC")!
-    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
 
     func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, hover: Bool = false,
                  forecasts: [String: Forecast] = [:]) -> DisplayState {
@@ -239,7 +239,7 @@ struct NotchSignalTests {
 struct NotchSignalAttentionTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
     let utc = TimeZone(identifier: "UTC")!
-    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
     typealias Island = NotchSignal.Island
 
     func display(_ state: FetchState, connected: Bool = true, level: AlertLevel = .none, hover: Bool = false,

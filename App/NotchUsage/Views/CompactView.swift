@@ -2,7 +2,7 @@ import NotchUsageCore
 import SwiftUI
 
 /// Haut du panneau (012) : l'île, repliée comme dépliée (retour utilisateur : la bande à texte de la 003 au
-/// survol cassait l'effet Dynamic Island). Jauge ou glyphe à gauche, une donnée à droite ; la pilule l'aligne.
+/// survol cassait l'effet Dynamic Island). Jauge ou glyphe à gauche, une donnée à droite.
 struct CompactView: View {
     let display: DisplayState
     let signal: NotchSignal
@@ -13,25 +13,15 @@ struct CompactView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Group {
-            if display.mode == .notch {
-                // L'encoche physique au centre. Repliée, l'oreille droite n'existe qu'avec une donnée ; dépliée, elle
-                // garde sa place pour que l'encoche reste au centre du panneau.
-                HStack(spacing: 0) {
-                    islandLeading.frame(width: NotchPanelController.earWidth)
-                    Color.clear.frame(width: display.layout.width)
-                    if let trailing = signal.island.trailing {
-                        islandTrailing(trailing).frame(width: signal.trailingEarWidth(now: now)).transition(.opacity)
-                    } else if display.isExpanded {
-                        Color.clear.frame(width: NotchPanelController.earWidth)
-                    }
-                }
-            } else {
-                HStack(spacing: 6) {
-                    islandLeading
-                    if let trailing = signal.island.trailing { islandTrailing(trailing).transition(.opacity) }
-                }
-                .padding(.horizontal, 10)
+        // L'encoche physique au centre. Repliée, l'oreille droite n'existe qu'avec une donnée ; dépliée, elle
+        // garde sa place pour que l'encoche reste au centre du panneau.
+        HStack(spacing: 0) {
+            islandLeading.frame(width: NotchPanelController.earWidth)
+            Color.clear.frame(width: display.layout.width)
+            if let trailing = signal.island.trailing {
+                islandTrailing(trailing).frame(width: signal.trailingEarWidth(now: now)).transition(.opacity)
+            } else if display.isExpanded {
+                Color.clear.frame(width: NotchPanelController.earWidth)
             }
         }
         .foregroundStyle(.white)

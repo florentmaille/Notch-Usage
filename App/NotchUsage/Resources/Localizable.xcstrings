@@ -203,6 +203,16 @@
         }
       }
     },
+    "Always": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toujours"
+          }
+        }
+      }
+    },
     "Applies after a restart.": {
       "localizations": {
         "fr": {
@@ -253,6 +263,16 @@
         }
       }
     },
+    "Automatic": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatique"
+          }
+        }
+      }
+    },
     "Back": {
       "localizations": {
         "fr": {
@@ -269,6 +289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bloqué, réinitialisation %@"
+          }
+        }
+      }
+    },
+    "Centered capsule on wide screens": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastille centrée sur les grands écrans"
           }
         }
       }
@@ -583,6 +613,26 @@
         }
       }
     },
+    "Menu bar icon": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icône de barre de menus"
+          }
+        }
+      }
+    },
+    "Never": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jamais"
+          }
+        }
+      }
+    },
     "No Claude Code session found. Sign in to Claude Code first, or use the browser.": {
       "localizations": {
         "fr": {
@@ -873,12 +923,12 @@
         }
       }
     },
-    "Show in menu bar": {
+    "Shown when a screen without a notch is connected": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Afficher dans la barre de menus"
+            "value": "Affichée quand un écran sans encoche est branché"
           }
         }
       }

@@ -6,7 +6,7 @@ import Testing
 struct CompactStripTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
     let utc = TimeZone(identifier: "UTC")!
-    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
 
     static let english = CompactStrip.Strings(
         full: "Full", signIn: "Sign in", connect: "Connect", dash: "—",
