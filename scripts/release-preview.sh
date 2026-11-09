@@ -4,7 +4,7 @@
 # Prérequis : sur main, propre et à jour ; gh connecté ; xcodegen ; notes rédigées dans
 # docs/release-notes/<version>-preview.md avec le marqueur __SHA256__ à la place du checksum.
 # Étapes : branche release/<version>-preview, version et build (+1), archive, zip, checksum dans les notes,
-# une PR mergée après confirmation, release GitHub en préversion, zip téléchargé vérifié, cask du tap mis à jour.
+# une PR mergée après la CI verte et confirmation, release GitHub en préversion, zip téléchargé vérifié, cask du tap mis à jour.
 # DRY_RUN=1 : essai à blanc depuis n'importe quelle branche ; construit le zip et affiche le checksum, puis
 # remet les fichiers et la branche d'origine, sans rien committer ni pousser.
 set -euo pipefail
@@ -74,11 +74,15 @@ git push -q -u origin "$BRANCH"
 PR_URL=$(gh pr create --base main --head "$BRANCH" --title "Release $NAME" \
   --body "Version $VERSION (build $BUILD). Release notes: \`$NOTES\`, SHA-256 of the zip included.")
 echo "$PR_URL"
+PR_NUMBER="${PR_URL##*/}"
+# La constitution exige une CI verte avant le merge : on attend les vérifications de la PR.
+step "CI de la PR"
+sleep 10
+gh pr checks "$PR_NUMBER" --watch --fail-fast || fail "CI en échec : la PR reste ouverte"
 if [[ "$YES" != "--yes" ]]; then
   read -r -p "Merger $PR_URL et publier $TAG ? [y/N] " answer
   [[ "$answer" == "y" || "$answer" == "Y" ]] || fail "arrêt avant le merge : la PR reste ouverte"
 fi
-PR_NUMBER="${PR_URL##*/}"
 gh pr merge "$PR_NUMBER" --merge --subject "Merge #$PR_NUMBER: release $NAME"
 git checkout -q main
 git pull -q
