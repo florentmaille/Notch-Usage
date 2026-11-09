@@ -77,7 +77,7 @@ struct AppPresentationTests {
         let now = Date()
         let snapshot = UsageSnapshot(limits: [UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: 42,
                                                          resetsAt: now.addingTimeInterval(7200))], fetchedAt: now)
-        let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+        let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
         let display = DisplayStateReducer.reduce(state: .idle(snapshot), connected: true, settings: RefreshSettings(), alertLevel: .none,
                                                  layout: layout, fullscreen: false, hover: false, now: now)
         let attention = NotchSignal.Attention(kind: .approval, count: 1, arrivedAt: now, entries: [])
@@ -88,11 +88,49 @@ struct AppPresentationTests {
         #expect(none.trailingEarWidth(now: now) == 0)
     }
 
-    @Test func menuBarGaugeIsATemplateImage() {
-        for usage in [nil, 0, 42, 100] as [Int?] {
-            let image = StatusItemController.gauge(usage)
-            #expect(image.isTemplate && image.size == NSSize(width: 18, height: 18))
-            #expect(image.cgImage(forProposedRect: nil, context: nil, hints: nil) != nil)
-        }
+    // MARK: 018 - item de barre de menus
+
+    static func bar(_ text: String?, attention: BarContent.Attention? = nil, badge: Bool = false, tint: NotchSignal.Island.Tint = .calm) -> BarContent {
+        BarContent(gauge: .init(fraction: 0.42, tint: tint, beats: false), text: text, attention: attention, attentionAsBadge: badge, accessibility: "a")
+    }
+
+    @Test func compactItemKeepsThe014Size() {
+        let c = Self.bar("42%").compact
+        #expect(BarContentImage.size(for: c) == NSSize(width: 18, height: 18))
+        #expect(BarContentImage.image(c).cgImage(forProposedRect: nil, context: nil, hints: nil) != nil)
+    }
+
+    @Test func richItemGrowsWithItsContent() {
+        let ring = BarContentImage.size(for: Self.bar(nil)).width
+        let text = BarContentImage.size(for: Self.bar("42%")).width
+        let claude = BarContentImage.size(for: Self.bar("42%", attention: .init(kind: .approval, count: "2", arrivalWord: nil))).width
+        #expect(ring == 14)
+        #expect(text > ring + 5 && claude > text + 15)
+        // Point violet sur la jauge : rien à droite.
+        #expect(BarContentImage.size(for: Self.bar("8\u{2032}", attention: .init(kind: .approval, count: "", arrivalWord: nil), badge: true)).width
+                == BarContentImage.size(for: Self.bar("8\u{2032}")).width)
+    }
+
+    @Test func widestSteadyItemStaysNarrow() {
+        let widest = Self.bar("2:05", attention: .init(kind: .approval, count: "9+", arrivalWord: nil), tint: .far)
+        #expect(BarContentImage.size(for: widest).width <= 90)
+        let image = BarContentImage.image(widest)
+        #expect(!image.isTemplate && image.cgImage(forProposedRect: nil, context: nil, hints: nil) != nil)
+    }
+
+    @Test func paletteFollowsTheMenuBar() {
+        let dark = BarContentImage.palette(dark: true), light = BarContentImage.palette(dark: false)
+        #expect(dark.mono == .white && light.mono == .black)
+        #expect(dark.claude.hex == "BF5AF2" && light.claude.hex == "A43BD6")
+        #expect(dark.far == light.far && dark.near == light.near && dark.red == light.red)
+        #expect(dark.far.hex == "FF9F0A" && dark.near.hex == "FF6A1A" && dark.red.hex == "FF453A")
+        #expect(dark.kind(.done) == .white && light.kind(.done) == .black)
+    }
+}
+
+private extension NSColor {
+    var hex: String {
+        let c = usingColorSpace(.sRGB)!
+        return String(format: "%02X%02X%02X", Int((c.redComponent * 255).rounded()), Int((c.greenComponent * 255).rounded()), Int((c.blueComponent * 255).rounded()))
     }
 }

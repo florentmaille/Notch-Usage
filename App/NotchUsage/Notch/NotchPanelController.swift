@@ -96,19 +96,17 @@ final class NotchPanelController {
         self.ears = ears
         let layout = display.layout
         let screen = target.screen.frame
-        let wideWidth = layout.mode == .notch ? layout.width + 2 * Self.wingWidth : layout.width
+        let wideWidth = layout.width + 2 * Self.wingWidth
         let rect: NSRect
         if display.fullscreenHidden {
             rect = Self.centered(CGSize(width: wideWidth, height: Self.hiddenStripHeight), in: screen)
         } else if display.isExpanded {
             let height = layout.height + contentHeight
             rect = Self.centered(CGSize(width: max(wideWidth, Self.expandedWidth), height: height), in: screen)
-        } else if layout.mode == .notch {
+        } else {
             let width = layout.width + ears.left + ears.right
             let x = (screen.midX - layout.width / 2 - ears.left).rounded()
             rect = NSRect(x: x, y: screen.maxY - layout.height, width: width, height: layout.height)
-        } else {
-            rect = Self.centered(CGSize(width: layout.width, height: layout.height), in: screen)
         }
         shrinkWork?.cancel()
         shrinkWork = nil

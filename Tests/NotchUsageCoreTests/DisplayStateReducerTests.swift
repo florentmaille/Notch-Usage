@@ -5,7 +5,7 @@ import Testing
 @Suite("DisplayStateReducer")
 struct DisplayStateReducerTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
-    let notch = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+    let notch = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
     let settings = RefreshSettings()
 
     func reduce(_ state: FetchState, connected: Bool = true, hover: Bool = false, fullscreen: Bool = false, alertLevel: AlertLevel = .none, now: Date? = nil) -> DisplayState {
@@ -127,14 +127,13 @@ struct DisplayStateReducerTests {
     @Test func layoutIsPassedThrough() {
         let d = reduce(.idle(nil), connected: false)
         #expect(d.layout == notch)
-        #expect(d.mode == .notch)
     }
 }
 
 @Suite("DisplayStateReducer - plein écran (US3)")
 struct DisplayStateReducerFullscreenTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
-    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)
+    let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
 
     func reduce(hover: Bool, alertLevel: AlertLevel) -> DisplayState {
         let snap = makeSnapshot([("session", 85)], fetchedAt: now)

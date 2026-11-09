@@ -122,21 +122,25 @@ public struct NotchSignal: Sendable, Equatable {
     public let pulse: Pulse
     public let island: Island
     public let attention: Attention?
+    /// Oreille droite de la limite avant que Claude ne la prenne (018 : la barre de menus montre les deux).
+    public let limitTrailing: Island.Trailing?
     /// Toujours l'annonce de la bande complète, silence compris (FR-015).
     public let accessibility: String
 
     init(content: Content, edge: Edge?, pulse: Pulse = .none, island: Island = Island(leading: .glyph(.unavailable)),
-         attention: Attention? = nil, accessibility: String) {
+         attention: Attention? = nil, limitTrailing: Island.Trailing? = nil, accessibility: String) {
         self.content = content
         self.edge = edge
         self.pulse = pulse
         self.island = island
         self.attention = attention
+        self.limitTrailing = limitTrailing
         self.accessibility = accessibility
     }
 
-    func with(island: Island, attention: Attention? = nil, accessibility: String? = nil) -> NotchSignal {
-        NotchSignal(content: content, edge: edge, pulse: pulse, island: island, attention: attention, accessibility: accessibility ?? self.accessibility)
+    func with(island: Island, attention: Attention? = nil, limitTrailing: Island.Trailing? = nil, accessibility: String? = nil) -> NotchSignal {
+        NotchSignal(content: content, edge: edge, pulse: pulse, island: island, attention: attention, limitTrailing: limitTrailing,
+                    accessibility: accessibility ?? self.accessibility)
     }
 
     public var isSilent: Bool { content == .silent }
@@ -151,14 +155,14 @@ public struct NotchSignal: Sendable, Equatable {
                             locale: Locale = .current, timeZone: TimeZone = .current, attention: Attention? = nil) -> NotchSignal {
         let signal = core(display: display, now: now, language: language, strings: strings, locale: locale, timeZone: timeZone)
         let base = island(display: display, now: now, language: language, strings: strings)
-        guard let attention else { return signal.with(island: base) }
+        guard let attention else { return signal.with(island: base, limitTrailing: base.trailing) }
         // 017, R9 : la limite garde l'oreille droite si elle est imminente ou épuisée ; sinon la session la prend.
         let island = base.limitKeepsTrailing
             ? Island(leading: base.leading, trailing: base.trailing, badge: attention.kind)
             : Island(leading: base.leading, trailing: .attention(kind: attention.kind, count: attention.count))
         let list = attention.entries.map { "\($0.name), \(strings.claude.kindAnnouncement($0.kind))" }.joined(separator: "; ")
         let prefix = strings.claude.waitingAnnouncement(attention.count) + list + ". "
-        return signal.with(island: island, attention: attention, accessibility: prefix + signal.accessibility)
+        return signal.with(island: island, attention: attention, limitTrailing: base.trailing, accessibility: prefix + signal.accessibility)
     }
 
     /// Contenu, palier et rythme (005, 006, 008) : servent aux notifications, au plein écran et au battement.

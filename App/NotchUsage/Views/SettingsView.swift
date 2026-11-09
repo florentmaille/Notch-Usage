@@ -58,9 +58,26 @@ struct SettingsView: View {
                     Text("Waiting for approval in System Settings → General → Login Items.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-                row("Show in menu bar", isOn: Binding(
-                    get: { model.showsMenuBarIcon },
-                    set: { model.setMenuBarIcon($0) }))
+                // 018 : trois valeurs, Automatique par défaut (FR-018).
+                HStack {
+                    Text("Menu bar icon")
+                    Spacer()
+                    Picker("Menu bar icon", selection: Binding(get: { model.menuBarIconMode }, set: { model.setMenuBarIconMode($0) })) {
+                        Text("Automatic").tag(MenuBarIconMode.automatic)
+                        Text("Always").tag(MenuBarIconMode.always)
+                        Text("Never").tag(MenuBarIconMode.never)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .fixedSize()
+                }
+                if model.menuBarIconMode == .automatic {
+                    Text("Shown when a screen without a notch is connected")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                row("Centered capsule on wide screens", isOn: Binding(
+                    get: { model.showsCenterCapsule },
+                    set: { model.setShowsCenterCapsule($0) }))
                 row("Notify me before a block", isOn: Binding(
                     get: { model.alertSettings.notifications },
                     set: { model.setNotificationsEnabled($0) }))

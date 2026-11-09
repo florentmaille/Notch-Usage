@@ -57,8 +57,9 @@ The gauge fill and the number carry the information without colour.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Claude Code waits, the notch tells you.** Turn on *Follow Claude Code* and the island shows when a Claude Code session, in the terminal or in the Claude app, asks for an approval, asks a question or finishes a turn: a violet hand, a violet question bubble or a white check on the right of the notch, until you answer. Several sessions: one glyph and a count. Hover: a *Claude Code* section lists each waiting session (title or project folder, what it waits for, since when); click one to bring its app to the front. When a block is under 30 minutes or a limit is reached, the limit keeps the right side and the session becomes a violet dot on the gauge. Optional macOS notification. Off by default.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
-- **Works everywhere.** A pill at the top of displays without a notch, out of the way in full-screen apps, where it stays fully hidden until you point at the top of the screen.
-- **Menu bar icon, if you want one.** A small gauge in the menu bar, filled to the usage of the limit most likely to block you; click it for every limit, the forecast, *Refresh now*, *Settings* and *Quit*. Off by default.
+- **Screens without a notch, without a fake notch.** The island stays on the built-in display, even when an external display is the main one. On a display without a notch (an external display, or with the lid closed), the menu bar takes over:
+  - **Menu bar item**: a gauge, plus the time left once a block is forecast (`2:05`, `8′` in red) and the Claude Code glyph with a count. When you work on the notched display, the island already carries the detail and the item shrinks to the gauge. Click it for the same panel as the island; right-click for *Refresh now*, *Settings* and *Quit*.
+  - **Centered capsule (optional)**: on displays 1700 pt wide or more, a small dark capsule in the middle of the menu bar shows the same thing. Point at the top of the screen above it to open the panel just below the bar. It shrinks to the gauge while you work on the notched display. It hides in full-screen apps, like the island.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
 - **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
@@ -109,7 +110,8 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 <img src="docs/images/settings.png" alt="Settings: open at login, menu bar icon, notifications, language" width="440" align="right">
 
 - **Open at login**.
-- **Show in menu bar**: the gauge icon and its menu.
+- **Menu bar icon**: *Automatic* (default: shown while a display without a notch is connected), *Always* or *Never*.
+- **Centered capsule on wide screens**: the capsule in the middle of the menu bar on displays without a notch, 1700 pt wide or more. Off by default.
 - **Notify me before a block**: a macOS notification under 30 minutes, at the critical threshold and when a limit is reached.
 - **Follow Claude Code**: adds seven hook entries to `~/.claude/settings.json` (all pointing at a small shell script in the app's container), and removes exactly those when turned off; your own hooks are left untouched. Takes effect at once, even in sessions already open. *Notify me when Claude waits* adds a macOS notification for approvals and questions.
 - **Language**: system, English or French.
@@ -154,7 +156,7 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 | macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Preview releases and builds from source are not signed with a stable identity, so the prompt returns after each update or rebuild. |
 | "Reconnect required" with the Claude Code session | Click **Renew session** in the panel (it asks `claude` for a one-word reply), or run any `claude` command: Notch Usage picks up the renewed token within a minute. |
 | Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key on the sign-in screen, under *Other method…*. |
-| Nothing shows on an external display | The pill appears at the top of the display that holds the menu bar. Check Displays → Arrange. |
+| Nothing shows on an external display | Displays without a notch use the menu bar: check *Menu bar icon* in Settings (not *Never*), or turn on *Centered capsule on wide screens* (displays 1700 pt wide or more). If the menu bar is full, macOS may hide the icon: the capsule still shows. |
 
 ## Development
 

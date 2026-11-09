@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écran sans encoche</title>
+<style>
+  :root {
+    --bg: #0e0e10; --fg: #f2f2f4; --muted: #a0a0a8; --dim: #6c6c74;
+    --desk: #1e3a8a; --notch: #000;
+    --amber: #FF9F0A; --orange: #FF6A1A; --red: #FF453A;
+    --claude: #BF5AF2; --calm: #8e8e93;
+    --mat: rgba(30,30,33,.9);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1400px; background: var(--bg); color: var(--fg);
+         font: 15px/1.4 -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; padding: 28px 32px 36px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.3px; }
+  .lead { color: var(--muted); margin: 0 0 22px; font-size: 15px; max-width: 1240px; }
+  h2 { font-size: 19px; margin: 30px 0 10px; }
+  h2 small { font-weight: 400; color: var(--dim); font-size: 14px; margin-left: 6px; }
+  .row { display: grid; grid-template-columns: 250px 760px 1fr; gap: 20px; align-items: center; margin: 0 0 12px; }
+  .row .t { font-weight: 600; font-size: 16px; }
+  .row .s { color: var(--muted); font-size: 13.5px; }
+  .row .n { color: var(--muted); font-size: 13.5px; }
+  .row .n b { color: var(--fg); font-weight: 600; }
+  .legend { display: flex; gap: 26px; margin: 8px 0 0; color: var(--muted); font-size: 13.5px; align-items: center; flex-wrap: wrap; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+  .sep { height: 1px; background: #222; margin: 22px 0 6px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+         padding: 2px 7px; border-radius: 5px; margin-right: 8px; vertical-align: 2px; }
+  .tag.a { background: #2b2b31; color: #d6d6dc; }
+  .tag.c { background: #2a2140; color: #d8b6f5; }
+
+  /* --- écran externe : bureau + barre de menus --- */
+  .desk { position: relative; width: 760px; height: 64px; background: linear-gradient(160deg, #22409a, #1a3277); border-radius: 6px; overflow: hidden; }
+  .desk.h96 { height: 96px; } .desk.h280 { height: 280px; } .desk.h300 { height: 300px; }
+  .mb { position: absolute; left: 0; right: 0; top: 0; height: 24px; display: flex; align-items: center; padding: 0 10px;
+        background: rgba(10,14,32,.55); font-size: 13px; color: #fff; }
+  .mb.light { background: rgba(236,238,244,.82); color: #111; }
+  .mb .apps { display: flex; gap: 16px; align-items: center; }
+  .mb .apps b { font-weight: 700; }
+  .mb .right { margin-left: auto; display: flex; gap: 13px; align-items: center; font-variant-numeric: tabular-nums; }
+  .sys { width: 15px; height: 11px; border-radius: 3px; border: 1.5px solid currentColor; opacity: .85; }
+  .sys.w { border-radius: 8px 8px 2px 2px; width: 15px; }
+
+  /* item de barre de menus (A) */
+  .mi { display: flex; white-space: nowrap; align-items: center; gap: 5px; height: 20px; padding: 0 6px; border-radius: 5px; font-weight: 600; font-size: 12.5px; }
+  .mi.on { background: rgba(255,255,255,.2); }
+  .mb.light .mi.on { background: rgba(0,0,0,.12); }
+  .mi .v { font: 600 12.5px/1 -apple-system, "SF Pro Text", sans-serif; font-variant-numeric: tabular-nums; }
+  .mring { width: 14px; height: 14px; border-radius: 50%;
+           -webkit-mask: radial-gradient(circle, transparent 4.2px, #000 4.7px); mask: radial-gradient(circle, transparent 4.2px, #000 4.7px); }
+  .mi .g { width: 15px; height: 15px; }
+  .mi .cnt { font: 700 12px/1 "SF Mono", Menlo, monospace; color: var(--claude); margin-left: -3px; }
+
+  /* popover natif (A) */
+  .pop { position: absolute; top: 30px; width: 360px; background: var(--mat); border: 1px solid rgba(255,255,255,.09);
+         border-radius: 12px; padding: 10px 14px 12px; font-size: 12.5px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .pop::before { content: ""; position: absolute; top: -7px; right: var(--arrow, 40px); width: 12px; height: 12px; background: var(--mat);
+                 border-left: 1px solid rgba(255,255,255,.09); border-top: 1px solid rgba(255,255,255,.09); transform: rotate(45deg); }
+
+  /* languette de coin (C) */
+  .tab { position: absolute; right: 0; top: 24px; height: 30px; display: flex; align-items: center; gap: 6px; padding: 0 10px 0 9px;
+         background: var(--mat); border: 1px solid rgba(255,255,255,.08); border-right: 0; border-top: 0;
+         border-radius: 0 0 0 11px; box-shadow: 0 4px 14px rgba(0,0,0,.35); font-size: 12.5px; font-weight: 600; }
+  .tab .num { font: 700 13px/1 "SF Mono", Menlo, monospace; }
+  .tab .pct { font-variant-numeric: tabular-nums; }
+  .tab .g { width: 17px; height: 17px; }
+  .tab .cnt { font: 700 12px/1 "SF Mono", Menlo, monospace; color: var(--claude); margin-left: -3px; }
+  .tab .sepv { width: 1px; height: 14px; background: rgba(255,255,255,.14); }
+  .ring { width: 17px; height: 17px; border-radius: 50%;
+          -webkit-mask: radial-gradient(circle, transparent 5px, #000 5.6px); mask: radial-gradient(circle, transparent 5px, #000 5.6px); }
+  .ring.beat { filter: drop-shadow(0 0 4px rgba(255,69,58,.9)); }
+  .sliver { position: absolute; right: 0; top: 24px; width: 4px; height: 30px; border-radius: 3px 0 0 3px; }
+  .card { position: absolute; right: 0; top: 24px; width: 340px; background: var(--mat); border: 1px solid rgba(255,255,255,.08);
+          border-right: 0; border-top: 0; border-radius: 0 0 0 14px; padding: 0 14px 12px; font-size: 12.5px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .card .head { display: flex; align-items: center; gap: 6px; height: 30px; justify-content: flex-end; font-weight: 600;
+                border-bottom: 1px solid rgba(255,255,255,.07); margin: 0 -14px 4px; padding: 0 10px; }
+
+  /* contenu commun (= ExpandedView) */
+  .sec { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; margin: 6px 0 4px; }
+  .li { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+  .li .proj { font-weight: 600; width: 104px; }
+  .li .what { flex: 1; color: var(--muted); }
+  .li .since { color: var(--dim); font-variant-numeric: tabular-nums; }
+  .lim { display: flex; justify-content: space-between; padding: 3px 0; color: var(--muted); }
+  .lim b { color: var(--fg); font-weight: 600; }
+  .bar { height: 3px; background: #2a2a2e; border-radius: 2px; margin: 2px 0 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--calm); }
+  .hint { color: var(--dim); font-size: 11px; margin-top: 4px; }
+
+  /* fenêtre d'app */
+  .win { position: absolute; background: #ececef; border-radius: 9px 9px 0 0; box-shadow: 0 8px 26px rgba(0,0,0,.4); overflow: hidden; }
+  .win .tb { height: 30px; background: #dcdce0; display: flex; align-items: center; gap: 7px; padding: 0 10px; }
+  .win .tb i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .win .tb .tools { margin-left: auto; display: flex; gap: 10px; }
+  .win .tb .tools span { width: 16px; height: 12px; border-radius: 3px; background: #a9a9b0; display: block; }
+
+  /* schéma deux écrans */
+  .duo { position: relative; width: 760px; height: 190px; }
+  .scr { position: absolute; background: linear-gradient(160deg, #22409a, #1a3277); border: 6px solid #2a2a2e; border-radius: 10px; overflow: hidden; }
+  .scr .mb { height: 14px; font-size: 8px; padding: 0 6px; }
+  .base { position: absolute; background: #3a3a3e; border-radius: 0 0 8px 8px; }
+  .lbl2 { position: absolute; color: var(--muted); font-size: 12.5px; }
+  .island { position: absolute; left: 50%; transform: translateX(-50%); top: 0; height: 14px; background: #000; border-radius: 0 0 7px 7px; display: flex; align-items: center; }
+
+  /* pastille centrée dans la barre (C′) */
+  .tag.cp { background: #1f3340; color: #9fd3f0; }
+  .pz { position: absolute; left: 50%; transform: translateX(-50%); top: 3px; height: 18px; display: flex; align-items: center; gap: 6px;
+        padding: 0 9px; border-radius: 9px; background: rgba(255,255,255,.13); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1);
+        font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; }
+  .pz.on { background: rgba(255,255,255,.24); }
+  .mb.light .pz { background: rgba(0,0,0,.07); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); color: #111; }
+  .pz .r { width: 12px; height: 12px; border-radius: 50%;
+           -webkit-mask: radial-gradient(circle, transparent 3.5px, #000 4px); mask: radial-gradient(circle, transparent 3.5px, #000 4px); }
+  .pz .num { font: 700 12px/1 "SF Mono", Menlo, monospace; }
+  .pz .g { width: 14px; height: 14px; }
+  .pz .cnt { font: 700 11.5px/1 "SF Mono", Menlo, monospace; color: var(--claude); margin-left: -3px; }
+  .pz .sepv { width: 1px; height: 11px; background: rgba(255,255,255,.2); }
+  .pz .word { color: var(--claude); font-weight: 600; }
+  .ccard { position: absolute; left: 50%; transform: translateX(-50%); top: 30px; width: 380px; background: var(--mat);
+           border: 1px solid rgba(255,255,255,.09); border-radius: 12px; padding: 8px 14px 12px; font-size: 12.5px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="hand" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7M17 12V8.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6 6 0 0 1-5.1-2.8L3.3 14a1.6 1.6 0 0 1 2.6-1.8L8 14.5"/></symbol>
+  <symbol id="ask" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/><path d="M9.6 8.2a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .8-1 1.4M12 14.4h.01"/></g></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<h1>Écran sans encoche</h1>
+<p class="lead">Sur un écran externe, ou quand le capot est fermé, il n'y a pas d'encoche à habiller. On ne la simule pas : on se pose sur ce que l'écran offre déjà, <b>la barre de menus (A)</b> et <b>le bord de l'écran (C)</b>. La grammaire reste celle de la 012 et de la 017 : la jauge dit « où j'en suis », le chiffre ou le glyphe dit « ce qui arrive », et les teintes ne changent pas.</p>
+
+<div class="legend">
+  <span><span class="sw" style="background:var(--calm)"></span>Calme : monochrome, suit la barre</span>
+  <span><span class="sw" style="background:var(--amber)"></span>Paliers : ambre, orange, rouge</span>
+  <span><span class="sw" style="background:var(--claude)"></span>Claude attend : violet #BF5AF2</span>
+  <span><span class="sw" style="background:#fff"></span>Terminé : blanc</span>
+</div>
+
+<h2>Quel écran porte quoi <small>· chaque écran garde sa forme naturelle</small></h2>
+<div class="row">
+  <div><div class="t">MacBook + écran externe</div><div class="s">les deux ouverts</div></div>
+  <div class="duo">
+    <!-- MacBook -->
+    <div class="scr" style="left:20px; top:40px; width:220px; height:132px">
+      <div class="mb"><span class="apps"><b></b></span></div>
+      <div class="island" style="width:96px"><div style="width:18px;display:flex;justify-content:center"><div class="mring" style="width:9px;height:9px;-webkit-mask:radial-gradient(circle,transparent 2.6px,#000 3px);background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></div></div><div style="width:60px"></div><div style="width:18px"></div></div>
+    </div>
+    <div class="base" style="left:4px; top:172px; width:252px; height:8px"></div>
+    <div class="lbl2" style="left:20px; top:12px">MacBook : l'île (012), inchangée</div>
+    <!-- externe -->
+    <div class="scr" style="left:300px; top:6px; width:440px; height:166px">
+      <div class="mb"><span class="apps"><b></b><b>Finder</b><span>Fichier</span><span>Édition</span></span>
+        <span class="right"><span class="mi" style="height:11px;padding:0 3px;gap:3px;font-size:8px"><span class="mring" style="width:8px;height:8px;-webkit-mask:radial-gradient(circle,transparent 2.3px,#000 2.7px);background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span>42 %</span><span>23:31</span></span></div>
+      <div style="position:absolute;right:0;top:14px;height:17px;padding:0 6px;display:flex;align-items:center;gap:4px;background:var(--mat);border-radius:0 0 0 7px;font-size:8.5px;font-weight:600"><span class="ring" style="width:9px;height:9px;-webkit-mask:radial-gradient(circle,transparent 2.6px,#000 3px);background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></span>42 %</div>
+    </div>
+    <div class="base" style="left:490px; top:172px; width:60px; height:14px; border-radius:0"></div>
+    <div class="lbl2" style="left:300px; top:-14px; display:none"></div>
+  </div>
+  <div class="n"><b>Règle</b> : l'encoche s'affiche là où il y a une encoche, et nulle part ailleurs. Les autres écrans reçoivent A (toujours, puisque la barre de menus est sur chaque écran) et C s'il est activé. Capot fermé : seul l'externe reste, avec A et C. La pilule actuelle disparaît.</div>
+</div>
+
+<!-- ================= A ================= -->
+<div class="sep"></div>
+<h2><span class="tag a">A</span>Barre de menus enrichie <small>· le socle, natif, présent sur chaque barre de menus</small></h2>
+
+<div class="row">
+  <div><div class="t">Calme</div><div class="s">5 h à 42 %</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Historique</span></span>
+    <span class="right"><span class="mi"><span class="mring" style="background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span><span class="v">42 %</span></span><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">L'anneau de la 014, suivi du pourcentage. <b>Monochrome</b> (image modèle) : il suit la barre claire ou sombre comme les icônes système. Environ 52 pt de large.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Palier ambre</div><div class="s">blocage prévu dans 2 h 05</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Historique</span></span>
+    <span class="right"><span class="mi"><span class="mring" style="background:conic-gradient(var(--amber) 70%, rgba(255,255,255,.3) 0)"></span><span class="v">2:05</span></span><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">À partir d'un palier, l'anneau prend la couleur, comme la batterie qui passe au rouge. Le texte bascule du pourcentage vers le <b>temps restant avant blocage</b> (003), et lui reste blanc.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Blocage imminent</div><div class="s">8 min</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Historique</span></span>
+    <span class="right"><span class="mi"><span class="mring" style="background:conic-gradient(var(--red) 93%, rgba(255,255,255,.3) 0);filter:drop-shadow(0 0 3px rgba(255,69,58,.9))"></span><span class="v" style="color:var(--red)">8′</span></span><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">Rouge, et la pulsation de la 006 sur l'anneau seulement (désactivée avec Réduire les animations). C'est la seule fois où le texte passe en couleur.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Claude attend</div><div class="s">2 approbations</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Historique</span></span>
+    <span class="right"><span class="mi"><span class="mring" style="background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span><span class="v">42 %</span><svg class="g" style="color:var(--claude)"><use href="#hand"/></svg><span class="cnt">2</span></span><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">Le glyphe de la 017 s'ajoute à droite de la jauge, sans la remplacer. Mêmes règles : le cas le plus pressant + un nombre, persistant jusqu'à l'action, le mot à l'arrivée pendant 4 s.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Barre claire</div><div class="s">fond d'écran clair</div></div>
+  <div class="desk" style="background:linear-gradient(160deg,#c9d6ee,#9fb4dc)"><div class="mb light"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Historique</span></span>
+    <span class="right"><span class="mi"><span class="mring" style="background:conic-gradient(#111 42%, rgba(0,0,0,.25) 0)"></span><span class="v">42 %</span><svg class="g" style="color:#A43BD6"><use href="#ask"/></svg></span><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">Le monochrome passe au noir tout seul. Le violet est assombri (#A43BD6) pour garder le contraste sur une barre claire ; l'ambre et le rouge restent tels quels.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Clic</div><div class="s">popover natif</div></div>
+  <div class="desk h300"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Historique</span></span>
+    <span class="right"><span class="mi on"><span class="mring" style="background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span><span class="v">42 %</span><svg class="g" style="color:var(--claude)"><use href="#hand"/></svg><span class="cnt">2</span></span><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="pop" style="right:150px; --arrow:52px">
+      <div class="sec">Claude Code</div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">Notch-Usage</span><span class="what">attend une approbation</span><span class="since">2 min</span></div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">ontraak-site</span><span class="what">attend une approbation</span><span class="since">45 s</span></div>
+      <div class="sec" style="margin-top:10px">Limites</div>
+      <div class="lim"><span>Fenêtre 5 h</span><b>42 %</b></div><div class="bar"><i style="width:42%"></i></div>
+      <div class="lim"><span>Semaine</span><b>31 %</b></div><div class="bar"><i style="width:31%"></i></div>
+      <div class="hint">Prévision : pas de blocage avant la réinitialisation, 1 h 48.</div>
+    </div></div>
+  <div class="n">Au clic (pas au survol : une barre de menus ne s'ouvre pas au passage), un popover sous l'item. Il héberge <b>la même <code>ExpandedView</code></b> que l'île : pas de deuxième interface à maintenir. Le menu actuel (Actualiser, Réglages, Quitter) passe en bas du popover, ou au clic droit.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Limite de A</div><div class="s">plein écran, barre pleine</div></div>
+  <div class="desk" style="background:#0b0b0d"><span style="position:absolute;left:22px;top:22px;color:var(--dim);font-size:13px">app en plein écran : barre de menus masquée, A invisible</span></div>
+  <div class="n">En plein écran, ou quand la barre est trop pleine (macOS masque alors les items en trop), A disparaît. C'est la raison d'être de C. La notification macOS optionnelle (017) reste le filet.</div>
+</div>
+
+<!-- ================= C ================= -->
+<div class="sep"></div>
+<h2><span class="tag c">C</span>Languette de coin <small>· en option, collée au bord droit sous la barre de menus</small></h2>
+
+<div class="row">
+  <div><div class="t">Calme</div><div class="s">5 h à 42 %</div></div>
+  <div class="desk h96"><div class="mb"><span class="apps"><b></b><b>Finder</b><span>Fichier</span><span>Édition</span><span>Présentation</span></span><span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="tab"><span class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></span><span class="pct">42 %</span></div></div>
+  <div class="n">Une languette de matériau sombre translucide, <b>attachée au bord de l'écran</b> : un seul coin arrondi, côté intérieur. Elle se lit comme un onglet qui dépasse, pas comme un îlot posé au milieu de l'écran.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Palier + Claude attend</div><div class="s">2 h 05, une question</div></div>
+  <div class="desk h96"><div class="mb"><span class="apps"><b></b><b>Finder</b><span>Fichier</span><span>Édition</span><span>Présentation</span></span><span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="tab"><svg class="g" style="color:var(--claude)"><use href="#ask"/></svg><span class="sepv"></span><span class="ring" style="background:conic-gradient(var(--amber) 70%, #3a3a3e 0)"></span><span class="num" style="color:var(--amber)">2:05</span></div></div>
+  <div class="n">La languette s'allonge <b>vers l'intérieur</b> : la jauge et son chiffre restent collés au bord, le glyphe Claude s'ajoute à gauche, séparé par un filet. Même logique que les oreilles de la 012, couchée sur un bord.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Blocage imminent</div><div class="s">8 min</div></div>
+  <div class="desk h96"><div class="mb"><span class="apps"><b></b><b>Finder</b><span>Fichier</span><span>Édition</span><span>Présentation</span></span><span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="tab"><span class="ring beat" style="background:conic-gradient(var(--red) 93%, #3a3a3e 0)"></span><span class="num" style="color:var(--red)">8′</span></div></div>
+  <div class="n">Règle de priorité de la 017 inchangée : sous 30 min, la limite garde la languette et Claude se réduit à un point violet sur la jauge.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Survol</div><div class="s">la languette devient carte</div></div>
+  <div class="desk h280"><div class="mb"><span class="apps"><b></b><b>Finder</b><span>Fichier</span><span>Édition</span><span>Présentation</span></span><span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="card">
+      <div class="head"><svg class="g" style="color:var(--claude);width:16px;height:16px"><use href="#ask"/></svg><span class="sepv" style="width:1px;height:14px;background:rgba(255,255,255,.14)"></span><span class="ring" style="background:conic-gradient(var(--amber) 70%, #3a3a3e 0)"></span><span style="font:700 13px/1 'SF Mono',Menlo,monospace;color:var(--amber)">2:05</span></div>
+      <div class="sec">Claude Code</div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">deck-q4</span><span class="what">pose une question</span><span class="since">1 min</span></div>
+      <div class="sec" style="margin-top:10px">Limites</div>
+      <div class="lim"><span>Fenêtre 5 h</span><b style="color:var(--amber)">70 %</b></div><div class="bar"><i style="width:70%;background:var(--amber)"></i></div>
+      <div class="lim"><span>Semaine</span><b>31 %</b></div><div class="bar"><i style="width:31%"></i></div>
+      <div class="hint">Blocage prévu à 01:36, réinitialisation à 02:10.</div>
+    </div></div>
+  <div class="n">Au survol (délai de 0,15 s, comme l'île), la carte se déroule vers le bas depuis la languette, toujours collée au coin. Contenu : <b>la même <code>ExpandedView</code></b>. Elle se referme à la sortie du pointeur.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Fenêtre agrandie</div><div class="s">la languette se retire</div></div>
+  <div class="desk h96"><div class="mb"><span class="apps"><b></b><b>Xcode</b><span>Fichier</span><span>Édition</span><span>Présentation</span></span><span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="win" style="left:0; top:24px; width:760px; height:72px; border-radius:0"><div class="tb"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="tools"><span></span><span></span><span></span></span></div></div>
+    <div class="sliver" style="background:var(--amber)"></div></div>
+  <div class="n">Si une fenêtre occupe le coin, la languette se réduit à <b>un liseré de 4 pt</b> de la couleur du palier (gris, ambre, rouge, violet) et ne cache aucun bouton de barre d'outils. Le survol du bord la ressort.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Plein écran</div><div class="s">le liseré reste</div></div>
+  <div class="desk h96" style="background:#0b0b0d"><span style="position:absolute;left:22px;top:36px;color:var(--dim);font-size:13px">app en plein écran, barre de menus masquée</span>
+    <div class="sliver" style="top:10px; background:var(--claude)"></div></div>
+  <div class="n">Équivalent du point de la 006 : le liseré reste visible en plein écran, violet si Claude attend, rouge et pulsant si la limite est imminente, masqué si tout est calme.</div>
+</div>
+
+<!-- ================= C′ pastille centrée ================= -->
+<div class="sep"></div>
+<h2><span class="tag cp">C′</span>Pastille centrée <small>· variante de C : au centre de la barre, mais dans sa hauteur, jamais dessous</small></h2>
+
+<div class="row">
+  <div><div class="t">Calme</div><div class="s">5 h à 42 %</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span>
+    <span class="pz"><span class="r" style="background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span>42 %</span>
+    <span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">Une capsule de 18 pt <b>contenue dans les 24 pt de la barre</b>, dans le matériau de la barre, un cran plus marqué. Elle ne pend pas, n'est pas noire et n'a pas de bas arrondi : c'est un contrôle, pas du matériel.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Arrivée Claude</div><div class="s">approbation, 4 s</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span>
+    <span class="pz"><span class="r" style="background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span>42 %<span class="sepv"></span><svg class="g" style="color:var(--claude)"><use href="#hand"/></svg><span class="word">Approbation</span></span>
+    <span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">Grammaire de l'île : à gauche la jauge, à droite ce qu'on attend de moi. La capsule s'élargit <b>symétriquement</b> autour du centre, le mot reste 4 s puis se replie sur le glyphe.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Palier + Claude attend</div><div class="s">2 h 05, 2 approbations</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span>
+    <span class="pz"><span class="r" style="background:conic-gradient(var(--amber) 70%, rgba(255,255,255,.3) 0)"></span><span class="num" style="color:var(--amber)">2:05</span><span class="sepv"></span><svg class="g" style="color:var(--claude)"><use href="#hand"/></svg><span class="cnt">2</span></span>
+    <span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">État persistant : glyphe + nombre. Au-dessus de 30 min, les deux cohabitent, puisqu'il y a la place qu'une oreille de 52 pt n'avait pas.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Blocage imminent</div><div class="s">8 min</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span>
+    <span class="pz" style="background:rgba(255,69,58,.18);box-shadow:inset 0 0 0 1px rgba(255,69,58,.45)"><span class="r" style="background:conic-gradient(var(--red) 93%, rgba(255,255,255,.3) 0);filter:drop-shadow(0 0 3px rgba(255,69,58,.9))"></span><span class="num" style="color:var(--red)">8′</span></span>
+    <span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">Seul cas où le fond de la capsule se teinte, en rouge léger, avec la pulsation de la 006. Claude se réduit à un point violet sur la jauge (règle de la 017).</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Barre claire</div><div class="s">fond d'écran clair</div></div>
+  <div class="desk" style="background:linear-gradient(160deg,#c9d6ee,#9fb4dc)"><div class="mb light"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span>
+    <span class="pz"><span class="r" style="background:conic-gradient(#111 42%, rgba(0,0,0,.25) 0)"></span>42 %<span class="sepv" style="background:rgba(0,0,0,.18)"></span><svg class="g" style="color:#A43BD6"><use href="#ask"/></svg></span>
+    <span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div></div>
+  <div class="n">La capsule suit la barre : voile sombre sur barre claire. Une encoche noire au même endroit trouerait la barre.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Survol</div><div class="s">une carte se détache</div></div>
+  <div class="desk h280"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span>
+    <span class="pz on"><span class="r" style="background:conic-gradient(var(--amber) 70%, rgba(255,255,255,.3) 0)"></span><span class="num" style="color:var(--amber)">2:05</span><span class="sepv"></span><svg class="g" style="color:var(--claude)"><use href="#hand"/></svg><span class="cnt">2</span></span>
+    <span class="right"><span class="sys w"></span><span class="sys"></span><span>lun. 9 nov. 23:31</span></span></div>
+    <div class="ccard">
+      <div class="sec">Claude Code</div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">Notch-Usage</span><span class="what">attend une approbation</span><span class="since">2 min</span></div>
+      <div class="li"><span style="color:var(--claude)">●</span><span class="proj">ontraak-site</span><span class="what">attend une approbation</span><span class="since">45 s</span></div>
+      <div class="sec" style="margin-top:10px">Limites</div>
+      <div class="lim"><span>Fenêtre 5 h</span><b style="color:var(--amber)">70 %</b></div><div class="bar"><i style="width:70%;background:var(--amber)"></i></div>
+      <div class="lim"><span>Semaine</span><b>31 %</b></div><div class="bar"><i style="width:31%"></i></div>
+      <div class="hint">Blocage prévu à 01:36, réinitialisation à 02:10.</div>
+    </div></div>
+  <div class="n">Au survol, la capsule s'éclaire et une carte <b>flotte 6 pt sous la barre</b>, arrondie sur ses quatre coins. Elle ne fusionne pas avec la capsule : c'est ce qui la distingue de l'île. Contenu : la même <code>ExpandedView</code>.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Menus jusqu'au centre</div><div class="s">écran 1440 pt, Xcode</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Xcode</b><span>Fichier</span><span>Édition</span><span>Présentation</span><span>Rechercher</span><span>Navigation</span><span>Éditeur</span><span>Produit</span></span>
+    <span class="right"><span class="mi"><span class="mring" style="background:conic-gradient(#fff 42%, rgba(255,255,255,.3) 0)"></span><span class="v">42 %</span></span><span class="sys w"></span><span>23:31</span></span></div></div>
+  <div class="n"><b>Collision</b> : sur un écran de moins de 1700 pt, ou dès que la capsule chevaucherait des menus, elle s'efface et l'item A à droite prend le relais. Sans permission Accessibilité, on ne connaît pas l'étendue exacte des menus : la règle se fonde sur la largeur de l'écran.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Plein écran</div><div class="s">barre masquée</div></div>
+  <div class="desk h96" style="background:#0b0b0d"><span style="position:absolute;left:22px;top:36px;color:var(--dim);font-size:13px">app en plein écran, barre de menus masquée</span>
+    <span style="position:absolute;left:50%;top:4px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:var(--claude)"></span></div>
+  <div class="n">La capsule part avec la barre. Il reste le point centré de la 006 (violet, rouge et pulsant, ou masqué), au même endroit que sur l'écran à encoche.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">C′ face à C</div><div class="s">verdict</div></div>
+  <div class="n" style="grid-column: span 2; font-size:14px">
+    <b>C′ gagne sur la lecture</b> : le regard va au centre, la capsule tient dans la barre, et le dépli reproduit le geste de l'île sans en copier la forme. <b>C gagne sur la robustesse</b> : il ne bute jamais sur les menus. Proposition : C′ est l'option « coup d'œil » sur les écrans larges, avec A en repli automatique, et C sort de la planche.
+  </div>
+</div>
+
+<!-- ================= écartées ================= -->
+<div class="sep"></div>
+<h2>Écartées</h2>
+
+<div class="row">
+  <div><div class="t">Pilule (actuelle)</div><div class="s">fausse encoche centrée</div></div>
+  <div class="desk"><div class="mb"><span class="apps"><b></b><b>Safari</b><span>Fichier</span><span>Édition</span></span><span class="right"><span>lun. 9 nov. 23:31</span></span></div>
+    <div style="position:absolute;left:305px;top:0;width:150px;height:28px;background:#000;border-radius:0 0 12px 12px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600"><span class="ring" style="background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></span>42 %</div></div>
+  <div class="n">Elle mime un matériel absent et mord sur la barre de menus, au milieu de l'écran. Retirée.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Languette latérale</div><div class="s">milieu du bord droit</div></div>
+  <div class="desk h96"><div class="mb"><span class="apps"><b></b><b>Finder</b></span><span class="right"><span>23:31</span></span></div>
+    <div style="position:absolute;right:0;top:44px;width:30px;height:46px;background:var(--mat);border-radius:10px 0 0 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:600"><span class="ring" style="width:14px;height:14px;background:conic-gradient(var(--calm) 42%, #3a3a3e 0)"></span>42</div></div>
+  <div class="n">Ne gêne jamais le haut de l'écran, mais le regard n'y passe pas, et le texte n'a pas la place de s'étendre. C couvre le même besoin, là où l'œil va déjà.</div>
+</div>
+
+<div class="row">
+  <div><div class="t">Widget de bureau</div><div class="s">WidgetKit</div></div>
+  <div class="desk h96"><div class="mb"><span class="apps"><b></b><b>Finder</b></span><span class="right"><span>23:31</span></span></div>
+    <div style="position:absolute;left:24px;top:34px;width:150px;height:56px;border-radius:14px;background:rgba(255,255,255,.18);padding:8px 12px;font-size:12px"><div style="color:#dfe6ff">Fenêtre 5 h</div><b style="font-size:18px">42 %</b></div>
+    <div class="win" style="left:120px; top:40px; width:420px; height:60px"><div class="tb"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div></div></div>
+  <div class="n">Caché dès qu'une fenêtre passe dessus, rafraîchi par lots, sans pulsation ni signal Claude. Et il faut une extension plus un App Group. Peut venir plus tard, en complément.</div>
+</div>
+
+</body>
+</html>
