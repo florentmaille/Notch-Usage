@@ -52,6 +52,11 @@ extension AppModel {
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.itemsnapshot"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.debugItemSnapshot() }
         })
+        // `com.notchusage.debug.capsulehover` objet "1" | "0" : ouvre ou ferme la carte de la pastille (captures).
+        demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.capsulehover"), object: nil, queue: .main) { [weak self] note in
+            let inside = (note.object as? String) == "1"
+            MainActor.assumeIsolated { self?.debugCapsuleHover(inside) }
+        })
         // `com.notchusage.debug.popover` : ouvre le popover de l'item (captures).
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.popover"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.debugOpenPopover() }

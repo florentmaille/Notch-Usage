@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;width:1400px;background:linear-gradient(110deg,#1b1530 0%,#3b2466 45%,#b4566e 85%,#e2795a 100%);font-family:system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;font-family:system-ui,"Helvetica Neue",Helvetica,Arial,"SF Pro Text",sans-serif;color:#fff}
+.row{display:grid;grid-template-columns:430px 1fr;align-items:start;padding:34px 48px;gap:24px}
+.row+.row{border-top:1px solid rgba(255,255,255,.12)}
+h2{font:700 30px system-ui,"Helvetica Neue",Helvetica,Arial;margin:4px 0 10px}
+p{margin:0;font:400 19px/1.45 system-ui,"Helvetica Neue",Helvetica,Arial;color:rgba(255,255,255,.78)}
+.screen{position:relative;height:120px;border-radius:14px;background:rgba(0,0,0,.18);overflow:hidden}
+.bar{position:absolute;left:0;right:0;top:0;height:30px;background:#292929;display:flex;align-items:center;font:600 14px system-ui,"Helvetica Neue",Helvetica,Arial;padding:0 14px;gap:20px;color:rgba(255,255,255,.92)}
+.bar .apple{font-size:16px}
+.bar .clock{margin-left:auto;font-weight:500}
+.island{position:absolute;top:0;left:50%;transform:translateX(-50%);width:324px;height:38px}
+.capsule{position:absolute;top:4px;left:50%;transform:translateX(-50%)}
+.item{position:absolute;top:3px;height:24px}
+.card{position:absolute;top:36px;left:50%;transform:translateX(-50%);width:380px;border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.tall{height:420px}
+.tag{position:absolute;bottom:10px;right:14px;font:500 13px system-ui,"Helvetica Neue",Helvetica,Arial;color:rgba(255,255,255,.55)}
+</style></head><body>
+<div class="row">
+ <div><h2>Working on the Mac</h2><p>The island shows your usage right of the notch. On the external display, the capsule shrinks to its ring.</p></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+  <div class="screen"><img class="island" src="island-normal.png"><span class="tag">MacBook</span></div>
+  <div class="screen"><div class="bar"><span class="apple"></span><span>Safari</span><span>File</span><span>Edit</span><span class="clock">Mon 16:42</span></div><img class="capsule" src="capsule-ring@2x.png" style="width:34px"><span class="tag">External display</span></div>
+ </div>
+</div>
+<div class="row">
+ <div><h2>Working on the external display</h2><p>The island fades away. A capsule in the middle of the menu bar and the menu bar icon show the time left and waiting Claude Code sessions. Point at the top of the screen to open the panel just below the bar.</p></div>
+ <div class="screen tall"><div class="bar"><span class="apple"></span><span>Safari</span><span>File</span><span>Edit</span><span>View</span><span class="clock">Mon 16:42</span></div>
+  <img class="capsule" src="capsule-far@2x.png" style="width:112.5px">
+  <img class="item" src="item-far.png" style="right:118px;width:85px">
+  <img class="card" src="card@2x.png">
+  <span class="tag">External display</span></div>
+</div>
+</body></html>

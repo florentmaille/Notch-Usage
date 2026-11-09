@@ -313,7 +313,11 @@ final class AppModel {
 
     #if DEBUG
     func debugOpenPopover() { statusItem?.openPopover() }
-    func debugItemSnapshot() { statusItem?.debugSnapshot() }
+    func debugItemSnapshot() {
+        statusItem?.debugSnapshot()
+        capsules.values.forEach { $0.debugSnapshot() }
+    }
+    func debugCapsuleHover(_ inside: Bool) { capsules.values.forEach { $0.debugHover(inside) } }
     #endif
 
     /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).

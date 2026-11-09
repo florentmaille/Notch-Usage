@@ -61,6 +61,11 @@ The gauge fill and the number carry the information without colour.
   - **Menu bar item**: a gauge, plus the time left once a block is forecast (`2:05`, `8′` in red) and the Claude Code glyph with a count. When you work on the notched display, the island already carries the detail and the item shrinks to the gauge. Click it for the same panel as the island; right-click for *Refresh now*, *Settings* and *Quit*.
   - **Centered capsule (optional)**: on displays 1700 pt wide or more, a small dark capsule in the middle of the menu bar shows the same thing. Point at the top of the screen above it to open the panel just below the bar. It shrinks to the gauge while you work on the notched display. It hides in full-screen apps, like the island.
   - **The detail follows you**: with a display without a notch connected, the island shows your usage right of the notch while you work on the Mac, and fades away while you work on the other display, where the menu bar carries the detail.
+
+<p align="center">
+  <img src="docs/images/external-display.png" alt="Working on the Mac: the island shows 42 % right of the notch and the external display's capsule shrinks to its ring. Working on the external display: the capsule and the menu bar icon show 2:05 and three waiting Claude Code sessions, and the panel opens in a card below the bar." width="820">
+</p>
+
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
 - **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
