@@ -1,5 +1,10 @@
 <!--
 Sync Impact Report
+- Version : 1.2.0 → 1.2.1 (PATCH : correction factuelle)
+- Workflow : une CI existe (`.github/workflows/ci.yml` : swift test, build et tests de l'app, traductions) ;
+  la 1.2.0 la disait absente. La règle redevient « la CI doit passer avant le merge ».
+
+Précédent :
 - Version : 1.1.1 → 1.2.0 (MINOR : règles alignées sur les features 006 à 020)
 - Principe I : une action explicite de l'utilisateur peut confier une tâche réseau à un outil local
   (Homebrew, navigateur) ; l'app elle-même ne se connecte toujours qu'à Anthropic (020).
@@ -112,8 +117,8 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 - Le plan MUST contenir une section « Constitution Check » qui confronte la feature
   aux principes I à IV.
 - Le travail se fait sur une branche par feature, avec une PR obligatoire vers `main`.
-  Le build et les tests (`swift test`, `xcodebuild test`) MUST passer avant le merge : en local
-  tant qu'aucune CI n'est configurée, dans la CI ensuite.
+  La CI (`.github/workflows/ci.yml` : `swift test`, build et tests de l'app, traductions) MUST
+  être verte avant le merge.
 - Les commits suivent Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`…).
 - Toute régression des budgets du principe II bloque la release.
 
@@ -130,4 +135,4 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 - Chaque revue de PR vérifie la conformité aux principes. Toute dérogation est justifiée
   dans la PR et tracée dans le plan.
 
-**Version**: 1.2.0 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-09
+**Version**: 1.2.1 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-09
