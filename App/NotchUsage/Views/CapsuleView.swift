@@ -28,12 +28,14 @@ struct CapsuleView: View {
                     .lineLimit(1)
                     .fixedSize()
                     .foregroundStyle(textColor)
+                    .transition(.opacity)
             }
             if let attention = content.attention, !content.attentionAsBadge {
                 Rectangle()
                     .fill(Color(nsColor: palette.mono).opacity(0.25))
                     .frame(width: 1, height: 13)
                     .padding(.horizontal, 1)
+                    .transition(.opacity)
                 HStack(spacing: 2) {
                     Image(systemName: attention.kind.symbol)
                         .font(.system(size: 13, weight: .semibold))
@@ -45,6 +47,7 @@ struct CapsuleView: View {
                     }
                 }
                 .foregroundStyle(Color(nsColor: palette.kind(attention.kind)))
+                .transition(.opacity)
             }
         }
         .padding(.horizontal, 10)

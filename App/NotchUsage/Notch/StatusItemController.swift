@@ -22,9 +22,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// Durée de la phase éclairée d'un battement (006 : double battement de l'île en ~0,8 s).
     static let litDuration: TimeInterval = 0.4
 
-    init(model: AppModel) {
+    /// Sonde : item sans largeur ni clic, qui ne sert qu'à suivre la barre active pour la pastille quand
+    /// l'icône est réglée sur « Jamais » (retour utilisateur : pastille réduite à l'anneau côté Mac).
+    let isProbe: Bool
+
+    init(model: AppModel, probe: Bool = false) {
         self.model = model
-        item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        isProbe = probe
+        item = NSStatusBar.system.statusItem(withLength: probe ? 0 : NSStatusItem.variableLength)
         super.init()
         menu.autoenablesItems = false
         menu.delegate = self
@@ -41,8 +46,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         DispatchQueue.main.async { [weak self] in self?.observeButtonWindow() }
     }
 
+    /// Fenêtre de l'item observée : elle n'existe qu'une fois l'item dessiné dans la barre, parfois après l'init.
+    private weak var observedWindow: NSWindow?
+
     private func observeButtonWindow() {
-        guard let window = item.button?.window else { return }
+        guard let window = item.button?.window, window !== observedWindow else {
+            Log.notch.debug("menu bar item window: \(self.item.button?.window == nil ? "none" : "already observed", privacy: .public)")
+            return
+        }
+        observedWindow = window
+        Log.notch.notice("menu bar item window observed")
         let center = NotificationCenter.default
         observers.append((center, center.addObserver(forName: NSWindow.didChangeScreenNotification, object: window, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.readActiveScreen() }
@@ -60,12 +73,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Redessine seulement si le contenu change (FR-021) ; un nouveau battement éclaire l'anneau un instant (006).
     func update(content: BarContent, beat: Int, reduceMotion: Bool) {
+        if observedWindow == nil { observeButtonWindow() }
         let beatChanged = lastBeat != nil && lastBeat != beat
         lastBeat = beat
+        if isProbe { return }
         if content != drawn {
             drawn = content
             item.button?.image = BarContentImage.image(content)
             item.button?.setAccessibilityLabel(content.accessibility)
+            // La fenêtre peut n'apparaître qu'après ce premier dessin : nouvelle tentative au tour suivant.
+            if observedWindow == nil { DispatchQueue.main.async { [weak self] in self?.observeButtonWindow() } }
         }
         guard beatChanged, content.gauge?.beats == true, !reduceMotion else { return }
         item.button?.image = BarContentImage.image(content, lit: true)
@@ -89,6 +106,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: Clic
 
     @objc private func clicked(_ sender: NSStatusBarButton) {
+        guard !isProbe else { return }
         if NSApp.currentEvent?.type == .rightMouseUp {
             closePopover()
             // Menu attaché le temps du clic : sinon il prendrait aussi le clic gauche.
@@ -125,7 +143,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Réglages depuis le menu sans île, ou capture : ouvre le popover s'il ne l'est pas.
     func openPopover() {
-        guard popover?.isShown != true, let button = item.button else { return }
+        guard !isProbe, popover?.isShown != true, let button = item.button else { return }
         showPopover(from: button)
     }
 

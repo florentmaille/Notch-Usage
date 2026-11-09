@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 import NotchUsageCore
 import SwiftUI
 
@@ -84,17 +85,41 @@ final class CapsulePanelController {
     /// Largeur naturelle de la capsule : `fittingSize` vaut 0 quand l'hôte n'expose pas sa taille (`sizingOptions = []`).
     private var capsuleWidth: CGFloat = 0
 
+    /// État observé par la vue : la racine SwiftUI reste la même, les changements s'animent (fermeture fluide).
+    private let state = CapsuleState()
+    private var hostsState = false
+    private var shrinkWork: DispatchWorkItem?
+
     private func render(animated: Bool) {
         guard let content else { return }
         let view = CapsuleView(content: content, dark: dark, hovered: hovered, lit: lit)
         capsuleWidth = NSHostingController(rootView: view).sizeThatFits(in: CGSize(width: 600, height: CapsuleView.height)).width.rounded(.up)
-        // La fenêtre couvre toute la hauteur de la barre (survol dès le bord de l'écran) ; un fond quasi transparent
-        // capte le pointeur autour de la capsule, qui reste dessinée au centre.
-        capsuleHost.rootView = AnyView(ZStack {
-            Color.black.opacity(0.001)
-            view
-        })
-        layout(animated: animated)
+        if !hostsState {
+            hostsState = true
+            capsuleHost.rootView = AnyView(CapsuleRoot(state: state))
+        }
+        let update = { [state, dark, hovered, lit] in
+            state.content = content
+            state.dark = dark
+            state.hovered = hovered
+            state.lit = lit
+        }
+        let grows = capsulePanel.isVisible && capsuleWidth > capsulePanel.frame.width
+        guard animated, capsulePanel.isVisible else {
+            update()
+            layout(animated: false)
+            return
+        }
+        if grows {
+            // La fenêtre s'ouvre d'abord avec l'ancien contenu ; au tour suivant, la capsule s'étire d'un seul tenant.
+            layout(animated: true)
+            DispatchQueue.main.async {
+                withAnimation(.easeInOut(duration: Self.widenDuration)) { update() }
+            }
+        } else {
+            withAnimation(.easeInOut(duration: Self.widenDuration)) { update() }
+            layout(animated: true)
+        }
     }
 
     /// Centrée sur l'écran, élargie des deux côtés à la fois (FR-014).
@@ -109,12 +134,15 @@ final class CapsulePanelController {
         // Centrée dans la hauteur de la barre (retour utilisateur : pastille agrandie à 22 pt).
         // Toute la hauteur de la barre, largeur de la capsule : le pointeur l'atteint en butée en haut de l'écran.
         let frame = NSRect(x: (screen.frame.midX - width / 2).rounded(), y: screen.frame.maxY - bar, width: width, height: bar)
-        if animated, capsulePanel.isVisible, frame != capsulePanel.frame {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = Self.widenDuration
-                capsulePanel.animator().setFrame(frame, display: true)
-            }
-        } else {
+        // Comme l'île : en s'élargissant, la fenêtre s'ouvre d'abord et la capsule s'anime dedans ; en se resserrant,
+        // la capsule s'anime dans l'ancienne fenêtre, qui ne rétrécit qu'à la fin du fondu.
+        shrinkWork?.cancel()
+        shrinkWork = nil
+        if animated, capsulePanel.isVisible, frame.width < capsulePanel.frame.width {
+            let work = DispatchWorkItem { [weak self] in self?.capsulePanel.setFrame(frame, display: true) }
+            shrinkWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.widenDuration, execute: work)
+        } else if frame != capsulePanel.frame {
             capsulePanel.setFrame(frame, display: true)
         }
         if !capsulePanel.isVisible {
@@ -125,6 +153,7 @@ final class CapsulePanelController {
     }
 
     func close() {
+        shrinkWork?.cancel()
         unlightWork?.cancel()
         hoverWork?.cancel()
         closeCard()
@@ -216,5 +245,30 @@ final class CapsulePanelController {
         cardPanel?.close()
         cardPanel = nil
         cardHover = nil
+    }
+}
+
+@MainActor
+@Observable
+final class CapsuleState {
+    var content: BarContent?
+    var dark = true
+    var hovered = false
+    var lit = false
+}
+
+/// Racine stable de la fenêtre : toute la hauteur de la barre (survol dès le bord de l'écran), un fond quasi
+/// transparent qui capte le pointeur, la capsule au centre.
+private struct CapsuleRoot: View {
+    let state: CapsuleState
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.001)
+            if let content = state.content {
+                CapsuleView(content: content, dark: state.dark, hovered: state.hovered, lit: state.lit)
+            }
+        }
+        .animation(.easeOut(duration: 0.12), value: state.hovered)
     }
 }

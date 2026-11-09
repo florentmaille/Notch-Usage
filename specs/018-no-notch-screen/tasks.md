@@ -257,3 +257,12 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
 - La fenêtre épouse la capsule, pour ne pas prendre les clics des menus voisins. L'élargissement est animé sur 0,3 s.
 - Plein écran (T025) : la pastille n'apparaît pas dans les espaces plein écran (pas de `fullScreenAuxiliary`). Le point centré de la 006 reste à faire.
 - À valider en réel sur le Dell : position verticale dans la barre, contraste en barre claire et sombre, survol, carte.
+
+## Essai réel, build Release locale (2026-11-09)
+
+- Retours de Florent, intégrés :
+  - **Pastille réduite à l'anneau quand la barre active est celle du MacBook**, comme l'item compact (FR-022 étendu à la pastille).
+  - Si l'icône est réglée sur « Jamais », un item sonde de largeur nulle suit quand même la barre active.
+  - **Animation d'un seul tenant.** À l'ouverture, la fenêtre s'élargit d'abord, puis la capsule s'étire au tour suivant. À la fermeture, la capsule se resserre dans l'ancienne fenêtre, qui ne rétrécit qu'après le fondu de 0,3 s.
+- Correctif : l'observation de la fenêtre de l'item est retentée à chaque mise à jour, car la fenêtre n'existe parfois pas encore au démarrage.
+- Validé par Florent : vrais chiffres, pastille sur le Dell, bascule MacBook / Dell en moins d'une seconde, animations.

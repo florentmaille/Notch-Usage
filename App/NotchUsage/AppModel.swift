@@ -237,8 +237,8 @@ final class AppModel {
             panel = nil
             fullscreenObserver.screen = nil
         }
-        syncStatusItem()
         syncCapsules()
+        syncStatusItem()
         recompute()
     }
 
@@ -270,6 +270,7 @@ final class AppModel {
         showsCenterCapsule = shown
         defaults.set(shown, forKey: Self.capsuleKey)
         syncCapsules()
+        syncStatusItem()
         recompute()
     }
 
@@ -287,21 +288,24 @@ final class AppModel {
     }
     #endif
 
-    /// Crée ou retire l'item selon le réglage et les écrans (FR-018).
+    /// Crée ou retire l'item selon le réglage et les écrans (FR-018). Icône sur « Jamais » mais pastille affichée :
+    /// une sonde invisible suit quand même la barre active (pastille réduite à l'anneau côté écran à encoche).
     private func syncStatusItem() {
         let visible = menuBarIconMode.isVisible(roles: screenRoles)
-        if visible, statusItem == nil {
-            let item = StatusItemController(model: self)
+        let wantsProbe = !visible && !capsules.isEmpty
+        if let item = statusItem, item.isProbe == visible || (!visible && !wantsProbe) {
+            item.remove()
+            statusItem = nil
+            activeBarScreenID = nil
+        }
+        if (visible || wantsProbe), statusItem == nil {
+            let item = StatusItemController(model: self, probe: !visible)
             item.onActiveScreenChange = { [weak self] id in
                 guard let self else { return }
                 self.activeBarScreenID = id
                 self.recompute()
             }
             statusItem = item
-        } else if !visible, let item = statusItem {
-            item.remove()
-            statusItem = nil
-            activeBarScreenID = nil
         }
     }
 
@@ -788,7 +792,8 @@ final class AppModel {
         if !capsules.isEmpty {
             let dark = menuBarIsDark
             for capsule in capsules.values {
-                capsule.apply(content: bar, dark: dark, beat: beat, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+                // Comme l'item : anneau seul quand la barre active est celle de l'écran à encoche (retour utilisateur).
+                capsule.apply(content: screenRoles.isIsland(activeBar) ? bar.compact : bar, dark: dark, beat: beat, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
                 capsule.refreshCard()
             }
         }
