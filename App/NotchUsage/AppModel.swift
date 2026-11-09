@@ -147,6 +147,7 @@ final class AppModel {
     @ObservationIgnored var demoObservers: [any NSObjectProtocol] = []
     @ObservationIgnored var demoClaude: ClaudeSessionTracker?
     @ObservationIgnored var demoNoNotch = false
+    @ObservationIgnored var demoNotchOnly = false
     @ObservationIgnored var demoActiveBar: String?
     #endif
 
@@ -218,6 +219,8 @@ final class AppModel {
         var snapshot = snapshot
         #if DEBUG
         if demoNoNotch { snapshot = Self.withoutNotch(snapshot) }
+        // Démo `notchonly` : comme un MacBook seul, les écrans sans encoche sont ignorés (captures du README).
+        if demoNotchOnly { snapshot = ScreenObserver.Snapshot(roles: ScreenRoles(island: snapshot.roles.island, plain: []), screens: snapshot.screens) }
         #endif
         screenRoles = snapshot.roles
         screensByID = snapshot.screens

@@ -6,7 +6,8 @@ import NotchUsageCore
 /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
 /// `com.notchusage.debug.demo` objet "normal" | "far" | "near" | "imminent25" | "imminent" | "pace" | "warning" | "critical"
 /// | "blocked" | "offline" | "reauth" | "off" ; `com.notchusage.debug.tick` force un tick de 30 s (006) ;
-/// `com.notchusage.debug.layout` objet "nonotch" | "notch" simule l'absence d'écran à encoche (018) ;
+/// `com.notchusage.debug.layout` objet "nonotch" | "notchonly" | "notch" simule l'absence d'écran à encoche (018),
+/// ou un MacBook seul (écrans sans encoche ignorés) ;
 /// `com.notchusage.debug.menubar` objet "notch" | "external" | "off" force la barre active (018).
 extension AppModel {
     func installDemoHook() {
@@ -37,6 +38,7 @@ extension AppModel {
             MainActor.assumeIsolated {
                 guard let self else { return }
                 self.demoNoNotch = mode == "nonotch"
+                self.demoNotchOnly = mode == "notchonly"
                 self.applyScreens(self.screens.current)
             }
         })
