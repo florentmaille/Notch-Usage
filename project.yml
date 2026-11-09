@@ -67,6 +67,9 @@ targets:
       - target: NotchUsage
       - package: NotchUsageCore
         product: NotchUsageCore
+    # Même signature que l'app en Debug : sinon le bundle de test, signé ad hoc, a un autre Team ID et ne se charge pas.
+    configFiles:
+      Debug: Config/Signing.xcconfig
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.notchusage.app.tests

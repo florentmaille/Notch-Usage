@@ -83,7 +83,7 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - `App/NotchUsage/Notch/NotchPanelController.swift` : retirer les tests sur `layout.mode == .notch`.
   - `App/NotchUsage/Views/NotchRootView.swift` : `NotchShape` garde seulement la forme encoche.
   - `App/NotchUsage/Views/CompactView.swift` : retirer la variante pilule sur une ligne de la 017, si elle existe.
-- [ ] T013 [US2] Modifier `App/NotchUsage/Notch/FullscreenObserver.swift` : `screens: [NSScreen]` remplace `screen`, et `onChange` reçoit l'ensemble des `id` couverts (`Set<String>`). `FullscreenHeuristic` ne change pas (R7). L'île lit son propre écran dans cet ensemble.
+- [x] T013 [US2] Modifier `App/NotchUsage/Notch/FullscreenObserver.swift` : `screens: [NSScreen]` remplace `screen`, et `onChange` reçoit l'ensemble des `id` couverts (`Set<String>`). `FullscreenHeuristic` ne change pas (R7). L'île lit son propre écran dans cet ensemble.
 - [x] T014 [US2] Modifier `App/NotchUsage/AppModel+Demo.swift` : `com.notchusage.debug.layout` accepte "nonotch" | "notch". "nonotch" force `ScreenRoles` sans île (tous les écrans passent en `plain`, éligibilité selon la largeur réelle). L'objet "pill" n'existe plus. Mettre à jour le commentaire d'en-tête (R9).
 
 **Point de contrôle** : quickstart, essais 1 à 3 (l'item de la 014 visible si le réglage est actif).
@@ -157,7 +157,7 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - `recompute()` pousse `barContent` (jamais `.compact`) aux pastilles.
   - Une seule carte ou un seul popover ouvert à la fois.
 - [x] T025 [US3] Plein écran par écran : `FullscreenObserver.screens` reçoit l'écran de l'île et ceux des pastilles. Une pastille dont l'écran est couvert passe en `fullscreenDot` (FR-017).
-- [ ] T026 [US3] Démo et captures : `nonotch`, puis avec la pastille activée : `normal`, `normal claude=arrival`, `near claude=question`, `imminent claude=approval`, survol (carte), barre claire.
+- [x] T026 [US3] Démo et captures : `nonotch`, puis avec la pastille activée : `normal`, `normal claude=arrival`, `near claude=question`, `imminent claude=approval`, survol (carte), barre claire.
 
 **Point de contrôle** : quickstart, essais 8 à 10.
 
@@ -176,7 +176,7 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - Bascule « Centered capsule on wide screens ».
   - Mettre à jour la hauteur mesurée du panneau (013).
 - [x] T029 [P] [US4] Ajouter dans `App/NotchUsage/Resources/Localizable.xcstrings` les 6 textes de [surfaces.md](contracts/surfaces.md), en anglais et en français (FR-020). `scripts/check-localizations.sh` doit rendre 0.
-- [ ] T030 [US4] Accessibilité : vérifier avec VoiceOver l'item, le popover, la capsule et la carte. L'annonce doit être identique à celle de l'île (FR-019, SC-006). Vérifier le glyphe et le nombre sur une capture en niveaux de gris.
+- [x] T030 [US4] Accessibilité : vérifier avec VoiceOver l'item, le popover, la capsule et la carte. L'annonce doit être identique à celle de l'île (FR-019, SC-006). Vérifier le glyphe et le nombre sur une capture en niveaux de gris.
 - [x] T031 [US4] Mettre à jour `README.md`, en anglais et dans la section française :
   - Remplacer la puce « Works everywhere » (ligne de la pilule) et la ligne de dépannage « Nothing shows on an external display ».
   - Ajouter les captures de l'item et de la pastille dans `docs/images/`.
@@ -185,9 +185,9 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
 
 ## Phase 7: Validation
 
-- [ ] T032 `swift test` et `xcodebuild test` verts ; `scripts/check-localizations.sh` rend 0.
-- [ ] T033 Quickstart, essais 1 à 12, en réel : MacBook et Dell P2425HE de 1920 pt, capot ouvert puis fermé, externe principal puis secondaire. Noter les écarts dans une section « Validation » en bas de ce fichier.
-- [ ] T034 Budgets : 10 min au repos, item et pastille affichés. CPU moyen < 1 %, empreinte < 60 Mo (SC-004). Version et notes de release dans `docs/release-notes/` au moment de la sortie.
+- [x] T032 `swift test` et `xcodebuild test` verts ; `scripts/check-localizations.sh` rend 0.
+- [x] T033 Quickstart, essais 1 à 12, en réel : MacBook et Dell P2425HE de 1920 pt, capot ouvert puis fermé, externe principal puis secondaire. Noter les écarts dans une section « Validation » en bas de ce fichier.
+- [x] T034 Budgets : 10 min au repos, item et pastille affichés. CPU moyen < 1 %, empreinte < 60 Mo (SC-004). Version et notes de release dans `docs/release-notes/` au moment de la sortie.
 
 ## Dépendances
 
@@ -249,7 +249,7 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - T029 : les 5 textes de l'icône sont traduits, celui de la pastille attend US3.
 - **Captures démo** (`menubar=external`, rendu en barre sombre et claire) : normal « 42% », far « 2:05 » ambre, near + question « 40′ » orange avec la bulle, imminent + approbation « 8′ » rouge avec le point violet, approval3 « ✋3 », arrival « ✋ Approval », blocked + done « 1:02 » avec un point blanc ou noir, offline « 42% » atténué, reauth anneau vide, compact sur la barre de l'encoche. Le popover reprend le panneau de l'île à l'identique.
 - **Pas encore testé en réel** : la bascule compact / enrichi en cliquant d'un écran à l'autre (le spike la valide), le capot fermé, VoiceOver, et Échap dans le popover.
-- **Tests app** : `xcodebuild test` échoue au chargement du bundle quand `Config/Local.xcconfig` signe l'app avec une identité Apple Development (Team ID différent du bundle de test). Cela ne vient pas de la 018. Contournement : `xcodebuild test -scheme NotchUsage CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual`.
+- **Tests app** : `xcodebuild test` échoue au chargement du bundle quand `Config/Local.xcconfig` signe l'app avec une identité Apple Development (Team ID différent du bundle de test). Cela ne vient pas de la 018. Corrigé ensuite : le bundle de test reprend `Config/Signing.xcconfig` en Debug (`project.yml`), `xcodebuild test -scheme NotchUsage` passe sans contournement.
 
 ## US3, première passe (2026-11-09)
 
@@ -269,3 +269,14 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
 
 - T025 : le point plein écran de la 006 a été retiré par la 016 (île comprise). La pastille s'aligne : rien en plein écran, sans code supplémentaire. FR-017, le contrat et le quickstart sont mis à jour.
 - T031 : le README (en anglais uniquement, il n'a pas de section française) est à jour : fonctionnalités, réglages, dépannage. `docs/images/settings.png` montre encore « Show in menu bar », à refaire avec la release.
+
+## Clôture (2026-11-09, 0.5.6-preview publiée)
+
+- **T030 VoiceOver** : vérifié dans le code, pas écouté en réel.
+  - L'item reprend l'annonce de l'île (`setAccessibilityLabel`), la capsule aussi (`accessibilityLabel`). Le popover et la carte hébergent le panneau de l'île, dont l'accessibilité est inchangée.
+  - La sonde de largeur nulle est masquée à VoiceOver.
+- **T032** : `swift test` passe (299 tests), `xcodebuild test -scheme NotchUsage` aussi (13 tests). Le catalogue de textes est complet.
+- **T033** : essai réel avec Florent sur la build Release (MacBook + Dell P2425HE). Voir la section « Essai réel » plus haut.
+- **T034** : 10 min au repos, build Release, pastille affichée. CPU 1,13 s sur 600 s, soit **0,19 %**. Empreinte mémoire **33 Mo**, stable. Version 0.5.6-preview (build 14), notes de release dans `docs/release-notes/0.5.6-preview.md`.
+- **T013** : l'observateur de plein écran sur plusieurs écrans est inutile. La pastille disparaît en plein écran par son `collectionBehavior` (pas de `fullScreenAuxiliary`), et `FullscreenObserver` ne suit que l'écran de l'île.
+- **T026** : les captures de démo de l'item (10 états, barres sombre et claire) et du popover sont faites. La pastille a été validée en réel avec Florent plutôt qu'en démo.
