@@ -84,6 +84,10 @@ Or **download the [latest preview](https://github.com/florentmaille/Notch-Usage/
 **NotchUsage.app** to Applications. The preview is not notarized yet: the first time, open it, then click
 **Open Anyway** in System Settings → Privacy & Security. Step-by-step instructions are in the release notes.
 
+**Updating**: *Settings → Check for updates* (also in the menu bar icon's right-click menu). Installed with
+Homebrew, it opens Terminal and runs `brew update && brew upgrade --cask notch-usage`, then reopens the app;
+otherwise it opens the releases page. The app itself never checks for updates over the network.
+
 Requirements: macOS 14 (Sonoma) or later, Apple Silicon or Intel, and a Claude **Pro**, **Max** or **Team**
 subscription.
 

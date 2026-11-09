@@ -28,6 +28,20 @@ struct SettingsView: View {
                 }
             }
 
+            // 020 : version et mise à jour sans réseau (Homebrew dans le Terminal, sinon page des releases).
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Version \(UpdateLauncher.version)").font(.caption2).foregroundStyle(.secondary)
+                    Spacer()
+                    Button { UpdateLauncher.launch() } label: { Label("Check for updates", systemImage: "arrow.down.circle").contentShape(Rectangle()) }
+                        .buttonStyle(.borderless).controlSize(.small)
+                }
+                if !UpdateLauncher.isHomebrew {
+                    Text("Installed without Homebrew: download the latest version from the releases page.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+
             HStack {
                 if let account = model.account {
                     Text(account.connectionMethod == .claudeCode ? "Connected via Claude Code" : "Connected via browser")
