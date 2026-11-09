@@ -107,7 +107,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 
 ## Settings
 
-<img src="docs/images/settings.png" alt="Settings: open at login, menu bar icon, notifications, language" width="440" align="right">
+<img src="docs/images/settings.png" alt="Settings: open at login, menu bar icon, centered capsule, notifications, Claude Code, language" width="440" align="right">
 
 - **Open at login**.
 - **Menu bar icon**: *Automatic* (default: shown while a display without a notch is connected), *Always* or *Never*.
