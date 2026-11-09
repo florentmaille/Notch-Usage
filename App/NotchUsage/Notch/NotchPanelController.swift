@@ -12,6 +12,9 @@ final class NotchPanelController {
     /// Oreille droite le temps du mot d'arrivée d'une session Claude (017) : glyphe + un mot.
     static let arrivalEarWidth: CGFloat = 116
     static let expandedWidth: CGFloat = 440
+    /// Carte du survol (019) : détachée de l'île, 6 pt sous l'encoche, comme la carte de la pastille (018).
+    static let cardWidth: CGFloat = 380
+    static let cardGap: CGFloat = 6
     /// Hauteur de départ du contenu déplié, avant la première mesure.
     static let expandedHeight: CGFloat = 320
     /// Hauteur du contenu déplié mesurée par SwiftUI (hors réglages).
@@ -42,8 +45,13 @@ final class NotchPanelController {
     private var heldOpen = false
     private var outsideClickMonitor: Any?
 
-    init(target: ScreenObserver.Target, rootView: AnyView) {
+    /// Contenu de la carte (panneau de l'île) et sa fenêtre, créée au premier survol.
+    private let cardView: AnyView
+    private var cardPanel: NotchPanel?
+
+    init(target: ScreenObserver.Target, rootView: AnyView, cardView: AnyView) {
         self.target = target
+        self.cardView = cardView
         panel = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: 10))
         hoverView = HoverView(frame: panel.contentLayoutRect)
         hosting = FirstMouseHostingView(rootView: rootView)
@@ -100,9 +108,6 @@ final class NotchPanelController {
         let rect: NSRect
         if display.fullscreenHidden {
             rect = Self.centered(CGSize(width: wideWidth, height: Self.hiddenStripHeight), in: screen)
-        } else if display.isExpanded {
-            let height = layout.height + contentHeight
-            rect = Self.centered(CGSize(width: max(wideWidth, Self.expandedWidth), height: height), in: screen)
         } else {
             let width = layout.width + ears.left + ears.right
             let x = (screen.midX - layout.width / 2 - ears.left).rounded()
@@ -110,7 +115,8 @@ final class NotchPanelController {
         }
         shrinkWork?.cancel()
         shrinkWork = nil
-        let shrinking = rect.width < panel.frame.width && !display.isExpanded && !display.fullscreenHidden && previous?.isExpanded == false
+        // 019 : l'île ne s'agrandit plus au survol, la carte flotte dessous ; seules les oreilles changent le cadre.
+        let shrinking = rect.width < panel.frame.width && !display.fullscreenHidden
         if shrinking {
             // L'oreille qui disparaît joue son fondu dans l'ancien cadre ; le cadre rétrécit ensuite.
             let work = DispatchWorkItem { [weak self] in self?.setFrame(rect) }
@@ -121,13 +127,52 @@ final class NotchPanelController {
         }
         if !panel.isVisible { panel.orderFrontRegardless() }
 
-        // Ouvert : le panneau prend le clavier (champ de clé, Échap) ; replié, il le rend.
+        // Ouvert : la carte prend le clavier (champ de clé, Échap) ; fermée, elle disparaît.
         if !display.isExpanded, heldOpen { releaseHold() }
-        if display.isExpanded, previous?.isExpanded != true {
-            panel.makeKey()
-        } else if !display.isExpanded, previous?.isExpanded == true, panel.isKeyWindow {
-            panel.resignKey()
+        if display.isExpanded, !display.fullscreenHidden {
+            showCard(layout: layout, screen: screen, takeKey: previous?.isExpanded != true)
+        } else {
+            hideCard()
         }
+    }
+
+    private func showCard(layout: NotchLayout, screen: NSRect, takeKey: Bool) {
+        let card: NotchPanel
+        if let cardPanel {
+            card = cardPanel
+        } else {
+            card = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: Self.cardWidth, height: 100))
+            let hover = HoverView(frame: .zero)
+            let host = FirstMouseHostingView(rootView: cardView)
+            host.sizingOptions = []
+            host.translatesAutoresizingMaskIntoConstraints = false
+            hover.addSubview(host)
+            NSLayoutConstraint.activate([
+                host.leadingAnchor.constraint(equalTo: hover.leadingAnchor),
+                host.trailingAnchor.constraint(equalTo: hover.trailingAnchor),
+                host.topAnchor.constraint(equalTo: hover.topAnchor),
+                host.bottomAnchor.constraint(equalTo: hover.bottomAnchor),
+            ])
+            card.contentView = hover
+            // L'île et la carte forment une seule zone : passer de l'une à l'autre en 0,10 s ne ferme rien.
+            hover.onEnter = { [weak self] in self?.scheduleHover(true) }
+            hover.onExit = { [weak self] in self?.scheduleHover(false) }
+            cardPanel = card
+        }
+        let top = screen.maxY - layout.height - Self.cardGap
+        let frame = NSRect(x: (screen.midX - Self.cardWidth / 2).rounded(), y: top - contentHeight,
+                           width: Self.cardWidth, height: contentHeight)
+        if card.frame != frame { card.setFrame(frame, display: true) }
+        if !card.isVisible { card.orderFrontRegardless() }
+        if takeKey { card.makeKey() }
+    }
+
+    private func hideCard() {
+        guard let cardPanel else { return }
+        if cardPanel.isKeyWindow { cardPanel.resignKey() }
+        cardPanel.orderOut(nil)
+        cardPanel.close()
+        self.cardPanel = nil
     }
 
     private func setFrame(_ rect: NSRect) {
@@ -147,6 +192,7 @@ final class NotchPanelController {
         releaseHold()
         hoverWork?.cancel()
         shrinkWork?.cancel()
+        hideCard()
         panel.orderOut(nil)
         panel.close()
     }
@@ -179,7 +225,8 @@ final class NotchPanelController {
     /// Menu refermé : si le pointeur a quitté le panneau entre-temps, on referme.
     private func menuDidEnd() {
         menuTracking = false
-        if !panel.frame.contains(NSEvent.mouseLocation) { scheduleHover(false) }
+        let mouse = NSEvent.mouseLocation
+        if !panel.frame.contains(mouse), cardPanel?.frame.contains(mouse) != true { scheduleHover(false) }
     }
 }
 
@@ -219,6 +266,8 @@ extension NotchPanelController {
     }
 
     private func debugClick(x: Double, y: Double) {
+        // Les clics de démo visent la carte quand elle est ouverte (019).
+        let panel: NSWindow = cardPanel ?? self.panel
         let point = NSPoint(x: x, y: panel.frame.height - y)
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
@@ -229,7 +278,7 @@ extension NotchPanelController {
     }
 
     private func debugSnapshot() {
-        let view = hoverView
+        let view: NSView = cardPanel?.contentView ?? hoverView
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("notchusage-snapshot.png")

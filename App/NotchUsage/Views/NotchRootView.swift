@@ -7,7 +7,9 @@ struct NotchRootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let d = model.display
+        // 019 : l'île reste repliée au survol, le panneau s'ouvre dans une carte détachée dessous (NotchCardView).
+        var d = model.display
+        let _ = (d.panel = .collapsed)
         let s = model.signal
         VStack(spacing: 0) {
             if d.fullscreenHidden {
@@ -17,21 +19,30 @@ struct NotchRootView: View {
             } else {
                 CompactView(display: d, signal: s, beat: model.beat, now: model.now, onTap: { model.clearDoneSessions() })
                     .frame(height: d.layout.height)
-                    // L'île ne bouge pas à l'écran quand le panneau s'ouvre : seul son cadre change (décalé replié,
-                    // centré déplié). Animée, elle glissait vers sa nouvelle place puis sautait (retour utilisateur).
-                    .transaction(value: d.isExpanded) { $0.animation = nil }
-                if d.isExpanded {
-                    PanelContentView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                    // Le fond noir épouse l'île et non la fenêtre : la fenêtre s'élargit d'abord, invisible, puis
+                    // l'oreille s'étire (019).
+                    .background { NotchShape(display: d).opacity(s.island.folded ? 0 : 1) }
+                    // L'encoche reste à sa place quand l'oreille gauche se resserre (fenêtre inchangée à gauche).
+                    .padding(.leading, NotchPanelController.earWidth - CompactView.leadingWidth(display: d, signal: s))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // Forme et arrondi suivent la fenêtre sans délai : animés, ils arrivaient après le cadre (coins carrés).
-        .background(alignment: .top) { NotchShape(display: d).transaction(value: d.isExpanded) { $0.animation = nil } }
-        // Oreille droite et largeur en fondu (012, FR-011) ; le battement a sa propre animation.
+        // L'île part du bord gauche de la fenêtre, posée sur l'encoche par le contrôleur.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // Oreilles et largeur en fondu (012, FR-011) ; le battement a sa propre animation.
         .animation(reduceMotion ? nil : .easeOut(duration: NotchPanelController.islandFade), value: s.island)
-        .animation(.easeOut(duration: d.isExpanded ? 0.18 : 0.12), value: d.isExpanded)
+    }
+}
+
+/// Carte du survol de l'île (019) : le contenu du panneau, détaché de l'encoche, quatre coins arrondis.
+struct NotchCardView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        PanelContentView()
+            .frame(width: NotchPanelController.cardWidth)
+            .background(Color.black)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(maxHeight: .infinity, alignment: .top)
     }
 }
 
@@ -40,7 +51,7 @@ private struct NotchShape: View {
     let display: DisplayState
 
     var body: some View {
-        let radius: CGFloat = display.isExpanded ? 18 : 12
+        let radius: CGFloat = 12
         UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: radius,
                                bottomTrailingRadius: radius, topTrailingRadius: 0, style: .continuous)
             .fill(.black)

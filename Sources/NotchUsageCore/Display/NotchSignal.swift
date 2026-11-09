@@ -57,6 +57,7 @@ public struct NotchSignal: Sendable, Equatable {
             case back(String)       // temps avant retour d'une limite épuisée
             case label(String)      // libellé court d'une limite au seuil sans prévision
             case muted(String)      // pourcentage d'un relevé ancien
+            case percent(String)    // usage au calme quand on travaille sur l'écran de l'île (019)
             case attention(kind: ClaudeWaitingKind, count: Int)   // session Claude en attente (017)
         }
 
@@ -64,11 +65,14 @@ public struct NotchSignal: Sendable, Equatable {
         public let trailing: Trailing?
         /// Point au coin de la jauge quand la limite garde l'oreille droite (017, R9).
         public let badge: ClaudeWaitingKind?
+        /// 019 : on travaille sur un écran sans encoche, l'île s'efface (ni jauge ni oreille) ; la pastille porte le suivi.
+        public let folded: Bool
 
-        public init(leading: Leading, trailing: Trailing? = nil, badge: ClaudeWaitingKind? = nil) {
+        public init(leading: Leading, trailing: Trailing? = nil, badge: ClaudeWaitingKind? = nil, folded: Bool = false) {
             self.leading = leading
             self.trailing = trailing
             self.badge = badge
+            self.folded = folded
         }
 
         /// La limite garde l'oreille droite quand elle est imminente (échéance rouge) ou épuisée.
@@ -141,6 +145,29 @@ public struct NotchSignal: Sendable, Equatable {
     func with(island: Island, attention: Attention? = nil, limitTrailing: Island.Trailing? = nil, accessibility: String? = nil) -> NotchSignal {
         NotchSignal(content: content, edge: edge, pulse: pulse, island: island, attention: attention, limitTrailing: limitTrailing,
                     accessibility: accessibility ?? self.accessibility)
+    }
+
+    /// Barre de menus active, quand un écran sans encoche est branché (019).
+    public enum ActiveBar: Sendable, Equatable {
+        case island      // on travaille sur l'écran à encoche
+        case elsewhere   // on travaille sur un écran sans encoche
+    }
+
+    /// 019 : comme la pastille, l'île montre le chiffre là où l'on travaille et s'efface ailleurs. Sur l'écran de
+    /// l'île, une oreille droite vide reçoit le pourcentage ; ailleurs, l'île se replie entièrement (`folded`), jauge
+    /// comprise (retour utilisateur). L'annonce VoiceOver, le palier et le battement ne changent pas.
+    public func adapted(to activeBar: ActiveBar?, strings: CompactStrip.Strings) -> NotchSignal {
+        switch activeBar {
+        case nil:
+            return self
+        case .island?:
+            guard island.trailing == nil, case .gauge(let value, _) = island.leading else { return self }
+            let percent = strings.percent(Int(min(100, max(0, value)).rounded()))
+            return with(island: Island(leading: island.leading, trailing: .percent(percent), badge: island.badge),
+                        attention: attention, limitTrailing: limitTrailing)
+        case .elsewhere?:
+            return with(island: Island(leading: island.leading, folded: true), attention: attention, limitTrailing: limitTrailing)
+        }
     }
 
     public var isSilent: Bool { content == .silent }
