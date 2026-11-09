@@ -1,5 +1,16 @@
 <!--
 Sync Impact Report
+- Version : 1.1.1 → 1.2.0 (MINOR : règles alignées sur les features 006 à 020)
+- Principe I : une action explicite de l'utilisateur peut confier une tâche réseau à un outil local
+  (Homebrew, navigateur) ; l'app elle-même ne se connecte toujours qu'à Anthropic (020).
+- Principe II : animations décrites telles qu'elles sont (battement de la 006, transitions d'état,
+  019), aucune animation continue ; budgets mesurés avec Instruments ou un outil équivalent.
+- Contraintes : écrans sans encoche (018, 019) ; distribution réelle (zip + cask, préversions non
+  notarisées tant que le certificat Developer ID manque).
+- Workflow : build et tests verts avant merge, en local tant qu'aucune CI n'existe.
+- Artefacts : aucun template à modifier.
+
+Précédent :
 - Version : 1.1.0 → 1.1.1 (PATCH : plancher de l'intervalle aligné sur le code)
 - Principe modifié : II. Sobriété des ressources. Le plancher de l'intervalle de rafraîchissement
   est 60 s (`RefreshSettings.minimumInterval`), pas 30 s : l'endpoint est partagé avec Claude Code.
@@ -29,6 +40,9 @@ Précédent :
 - L'historique de consommation est stocké en local, dans le conteneur de l'app,
   et l'utilisateur peut l'effacer depuis l'app.
 - Toute nouvelle connexion réseau MUST être justifiée dans la spec et le plan de la feature.
+- Une action explicite de l'utilisateur MAY confier une tâche réseau à un outil local qu'il a
+  choisi (Homebrew, navigateur par défaut), à condition que l'app elle-même n'ouvre aucune
+  connexion et ne lui transmette aucune donnée d'usage ni secret (020).
 
 **Rationale** : l'app manipule des identifiants Anthropic et des données d'usage. La
 confiance des utilisateurs d'un outil open source repose sur cette garantie, qu'on peut
@@ -43,8 +57,11 @@ vérifier dans le code.
   avec un plancher de 60 s, et un backoff s'applique en cas d'erreur ou de rate limit.
 - Le rafraîchissement est suspendu pendant la veille, l'écran verrouillé ou le mode
   économie d'énergie.
-- Les animations de l'encoche MUST s'arrêter dès que la vue est repliée.
-- Les budgets ci-dessus sont vérifiés avec Instruments avant chaque release.
+- Aucune animation continue : l'encoche, l'île, l'item de barre de menus et la pastille ne
+  s'animent que sur un changement d'état (transitions de 0,3 s au plus) et pour le battement
+  rythmé d'une limite imminente (006), désactivé avec « Réduire les animations ».
+- Les budgets ci-dessus sont vérifiés avant chaque release, avec Instruments ou une mesure
+  équivalente (temps CPU de `ps` et empreinte de `footprint` sur 10 minutes au repos).
 
 **Rationale** : une app qui reste dans l'encoche en permanence ne doit jamais se faire
 remarquer par son coût sur la batterie.
@@ -77,10 +94,13 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 
 - **Stack** : Swift 6 en concurrence stricte, SwiftUI avec AppKit là où l'encoche l'exige
   (fenêtres de type NSPanel). Gestion des paquets uniquement via Swift Package Manager.
-- **Cible** : macOS 14 (Sonoma) minimum, Apple Silicon et Intel. Le comportement sur les
-  écrans sans encoche est défini dans la spec.
-- **Distribution** : open source sur GitHub. Les releases sont signées avec un Developer ID,
-  notarisées par Apple, et publiées sous forme de DMG et de cask Homebrew.
+- **Cible** : macOS 14 (Sonoma) minimum, Apple Silicon et Intel. L'île ne s'affiche que sur
+  un écran à encoche ; aucun écran ne doit afficher de forme imitant une encoche. Les écrans
+  sans encoche passent par la barre de menus (018, 019).
+- **Distribution** : open source sur GitHub, releases publiées sous forme de zip et de cask
+  Homebrew. Les releases stables MUST être signées avec un Developer ID et notarisées par Apple ;
+  tant que le certificat manque, seules des préversions (`-preview`) non notarisées sont
+  publiées, avec leur checksum SHA-256 dans les notes.
 - **Licence** : MIT (fichier `LICENSE` à la racine).
 - **Sécurité** : Hardened Runtime activé. Les entitlements sont réduits au strict minimum
   et justifiés dans le plan.
@@ -92,7 +112,8 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 - Le plan MUST contenir une section « Constitution Check » qui confronte la feature
   aux principes I à IV.
 - Le travail se fait sur une branche par feature, avec une PR obligatoire vers `main`.
-  La CI (build et tests) doit passer avant le merge.
+  Le build et les tests (`swift test`, `xcodebuild test`) MUST passer avant le merge : en local
+  tant qu'aucune CI n'est configurée, dans la CI ensuite.
 - Les commits suivent Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`…).
 - Toute régression des budgets du principe II bloque la release.
 
@@ -109,4 +130,4 @@ simple est la condition pour qu'un contributeur occasionnel puisse s'y retrouver
 - Chaque revue de PR vérifie la conformité aux principes. Toute dérogation est justifiée
   dans la PR et tracée dans le plan.
 
-**Version**: 1.1.1 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-03
+**Version**: 1.2.0 | **Ratified**: 2026-11-01 | **Last Amended**: 2026-11-09
