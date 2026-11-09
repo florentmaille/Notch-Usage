@@ -91,7 +91,7 @@ public struct BarContent: Sendable, Equatable {
             text = s
             emphasis = .muted
             isPercent = true
-        case .attention?, nil:
+        case .attention?, .percent?, nil:
             // Au calme l'île se tait : la barre montre le pourcentage.
             text = gauge.map { strings.percent(Int(($0.fraction * 100).rounded())) }
             isPercent = text != nil

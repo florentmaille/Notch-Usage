@@ -16,13 +16,18 @@ struct CompactView: View {
         // L'encoche physique au centre. Repliée, l'oreille droite n'existe qu'avec une donnée ; dépliée, elle
         // garde sa place pour que l'encoche reste au centre du panneau.
         HStack(spacing: 0) {
-            islandLeading.frame(width: NotchPanelController.earWidth)
+            // Repliée (019), l'oreille gauche se resserre vers l'encoche ; la racine compense par une marge à gauche.
+            islandLeading.opacity(isFolded ? 0 : 1).frame(width: Self.leadingWidth(display: display, signal: signal)).clipped()
             Color.clear.frame(width: display.layout.width)
-            if let trailing = signal.island.trailing {
-                islandTrailing(trailing).frame(width: signal.trailingEarWidth(now: now)).transition(.opacity)
-            } else if display.isExpanded {
-                Color.clear.frame(width: NotchPanelController.earWidth)
+            // Oreille droite toujours présente, sa largeur s'anime (0 ↔ 52 pt) : l'île s'étire d'un seul tenant au
+            // lieu d'apparaître en bloc (019, retour utilisateur), le contenu en fondu.
+            ZStack(alignment: .center) {
+                if let trailing = signal.island.trailing {
+                    islandTrailing(trailing).fixedSize().transition(.opacity)
+                }
             }
+            .frame(width: trailingWidth)
+            .clipped()
         }
         .foregroundStyle(.white)
         .contentShape(Rectangle())
@@ -30,6 +35,18 @@ struct CompactView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityHidden(false)
         .accessibilityLabel(signal.accessibility)
+    }
+
+    private var isFolded: Bool { signal.island.folded && !display.isExpanded }
+
+    /// Largeur de l'oreille gauche : 0 quand l'île est repliée sur un autre écran (019).
+    static func leadingWidth(display: DisplayState, signal: NotchSignal) -> CGFloat {
+        signal.island.folded && !display.isExpanded ? 0 : NotchPanelController.earWidth
+    }
+
+    private var trailingWidth: CGFloat {
+        if signal.island.trailing != nil { return signal.trailingEarWidth(now: now) }
+        return display.isExpanded ? NotchPanelController.earWidth : 0
     }
 
     @ViewBuilder private var islandLeading: some View {
@@ -63,6 +80,7 @@ struct CompactView: View {
             case .back(let t): ("\u{21BB}" + t, .white)
             case .label(let t): (t, signal.island.tint.color)
             case .muted(let t): (t, .secondary)
+            case .percent(let t): (t, .white)
             case .attention: ("", .white)
             }
             Text(text)

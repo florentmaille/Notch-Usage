@@ -225,7 +225,8 @@ final class AppModel {
             if let panel {
                 panel.update(target: target)
             } else {
-                let controller = NotchPanelController(target: target, rootView: AnyView(NotchRootView().environment(self)))
+                let controller = NotchPanelController(target: target, rootView: AnyView(NotchRootView().environment(self)),
+                                                      cardView: AnyView(NotchCardView().environment(self)))
                 controller.onHoverChange = { [weak self] inside in self?.hover = inside }
                 controller.onDismiss = { [weak self] in self?.dismiss() }
                 panel = controller
@@ -292,7 +293,8 @@ final class AppModel {
     /// une sonde invisible suit quand même la barre active (pastille réduite à l'anneau côté écran à encoche).
     private func syncStatusItem() {
         let visible = menuBarIconMode.isVisible(roles: screenRoles)
-        let wantsProbe = !visible && !capsules.isEmpty
+        // L'île suit aussi la barre active dès qu'un écran sans encoche est branché (019).
+        let wantsProbe = !visible && (!capsules.isEmpty || (screenRoles.hasPlainScreen && screenRoles.island != nil))
         if let item = statusItem, item.isProbe == visible || (!visible && !wantsProbe) {
             item.remove()
             statusItem = nil
@@ -773,19 +775,28 @@ final class AppModel {
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
         #endif
-        signal = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app,
-                                  attention: visibleClaudeSessions.attention(now: now))
-        notifier.notifyIfNeeded(signal: signal, display: display, enabled: alertSettings.notifications, now: now)
-        panel?.contentHeight = expandedContentHeight
-        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
-        // d'arrivée d'une session Claude (017).
-        panel?.apply(display, ears: (NotchPanelController.earWidth, signal.trailingEarWidth(now: now)))
-        // Item (018) : compact quand la barre active est celle de l'écran de l'île (FR-022).
+        let base = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app,
+                                    attention: visibleClaudeSessions.attention(now: now))
+        notifier.notifyIfNeeded(signal: base, display: display, enabled: alertSettings.notifications, now: now)
+        // Barre de menus active : écran de l'île ou écran sans encoche (R4). Sert à l'item, à la pastille et à l'île.
         var activeBar = activeBarScreenID
         #if DEBUG
         if let forced = demoActiveBar { activeBar = forced == "notch" ? screenRoles.island?.id : "external" }
         #endif
-        let bar = BarContent.make(signal: signal, now: now, strings: .app)
+        // 019 : avec un écran sans encoche branché, l'île montre le chiffre quand on travaille sur le Mac et se
+        // replie sur la jauge ailleurs, comme la pastille. Le MacBook seul garde l'île de la 012.
+        var islandBar: NotchSignal.ActiveBar?
+        if screenRoles.hasPlainScreen, screenRoles.island != nil, let activeBar {
+            islandBar = screenRoles.isIsland(activeBar) ? .island : .elsewhere
+        }
+        signal = base.adapted(to: islandBar, strings: .app)
+        panel?.contentHeight = expandedContentHeight
+        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
+        // d'arrivée d'une session Claude (017).
+        panel?.apply(display, ears: (NotchPanelController.earWidth, signal.trailingEarWidth(now: now)))
+        // Item (018) : compact quand la barre active est celle de l'écran de l'île (FR-022). Dérivé du signal avant
+        // adaptation : le point Claude de la 017 et l'échéance restent ceux de la limite.
+        let bar = BarContent.make(signal: base, now: now, strings: .app)
         barContent = bar
         statusItem?.update(content: screenRoles.isIsland(activeBar) ? bar.compact : bar.menuBarItem, beat: beat,
                            reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
