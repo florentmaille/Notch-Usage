@@ -38,6 +38,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         item.button?.action = #selector(clicked(_:))
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         item.button?.imagePosition = .imageOnly
+        // La sonde n'a rien à annoncer : VoiceOver ne doit pas s'arrêter sur un élément vide.
+        if probe { item.button?.setAccessibilityElement(false) }
         let workspace = NSWorkspace.shared.notificationCenter
         observers.append((workspace, workspace.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.readActiveScreen() }
