@@ -22,14 +22,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// Durée de la phase éclairée d'un battement (006 : double battement de l'île en ~0,8 s).
     static let litDuration: TimeInterval = 0.4
 
-    /// Sonde : item sans largeur ni clic, qui ne sert qu'à suivre la barre active pour la pastille quand
-    /// l'icône est réglée sur « Jamais » (retour utilisateur : pastille réduite à l'anneau côté Mac).
-    let isProbe: Bool
-
-    init(model: AppModel, probe: Bool = false) {
+    init(model: AppModel) {
         self.model = model
-        isProbe = probe
-        item = NSStatusBar.system.statusItem(withLength: probe ? 0 : NSStatusItem.variableLength)
+        item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
         menu.autoenablesItems = false
         menu.delegate = self
@@ -38,8 +33,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         item.button?.action = #selector(clicked(_:))
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         item.button?.imagePosition = .imageOnly
-        // La sonde n'a rien à annoncer : VoiceOver ne doit pas s'arrêter sur un élément vide.
-        if probe { item.button?.setAccessibilityElement(false) }
         let workspace = NSWorkspace.shared.notificationCenter
         observers.append((workspace, workspace.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.readActiveScreen() }
@@ -78,7 +71,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         if observedWindow == nil { observeButtonWindow() }
         let beatChanged = lastBeat != nil && lastBeat != beat
         lastBeat = beat
-        if isProbe { return }
         if content != drawn {
             drawn = content
             item.button?.image = BarContentImage.image(content)
@@ -108,7 +100,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: Clic
 
     @objc private func clicked(_ sender: NSStatusBarButton) {
-        guard !isProbe else { return }
         if NSApp.currentEvent?.type == .rightMouseUp {
             closePopover()
             // Menu attaché le temps du clic : sinon il prendrait aussi le clic gauche.
@@ -145,7 +136,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Réglages depuis le menu sans île, ou capture : ouvre le popover s'il ne l'est pas.
     func openPopover() {
-        guard !isProbe, popover?.isShown != true, let button = item.button else { return }
+        guard popover?.isShown != true, let button = item.button else { return }
         showPopover(from: button)
     }
 
