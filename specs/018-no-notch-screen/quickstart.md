@@ -26,7 +26,7 @@ Attendu : vert. Les cas couvrent les configurations de SC-001, chaque ligne du t
 | 7 | Item | Clic gauche, Échap ; clic droit | Popover = panneau de l'île, fermé par Échap ; menu Actualiser · Réglages · Quitter |
 | 8 | Pastille activée, externe 1920 pt | Survoler la capsule | Carte 6 pt sous la barre, même contenu ; fermée à la sortie |
 | 9 | Pastille activée, écran 1440 pt | Regarder | Aucune pastille ; item présent |
-| 10 | Pastille activée, app en plein écran sur l'externe, démo `claude approval` | Regarder | Point violet centré |
+| 10 | Pastille activée, app en plein écran sur l'externe | Regarder | Aucune pastille, rien à sa place (016) |
 | 11 | Réglage Icône sur Jamais, Toujours, Automatique | Brancher / débrancher l'externe | Visibilité conforme à FR-018 |
 | 12 | VoiceOver sur l'item et la pastille | Écouter | Même annonce que l'île (FR-019) |
 

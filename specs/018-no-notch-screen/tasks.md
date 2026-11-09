@@ -156,7 +156,7 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - L'apparence vient de `statusItem.button.effectiveAppearance`, sinon de `NSApp.effectiveAppearance` (R6).
   - `recompute()` pousse `barContent` (jamais `.compact`) aux pastilles.
   - Une seule carte ou un seul popover ouvert à la fois.
-- [ ] T025 [US3] Plein écran par écran : `FullscreenObserver.screens` reçoit l'écran de l'île et ceux des pastilles. Une pastille dont l'écran est couvert passe en `fullscreenDot` (FR-017).
+- [x] T025 [US3] Plein écran par écran : `FullscreenObserver.screens` reçoit l'écran de l'île et ceux des pastilles. Une pastille dont l'écran est couvert passe en `fullscreenDot` (FR-017).
 - [ ] T026 [US3] Démo et captures : `nonotch`, puis avec la pastille activée : `normal`, `normal claude=arrival`, `near claude=question`, `imminent claude=approval`, survol (carte), barre claire.
 
 **Point de contrôle** : quickstart, essais 8 à 10.
@@ -177,7 +177,7 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - Mettre à jour la hauteur mesurée du panneau (013).
 - [x] T029 [P] [US4] Ajouter dans `App/NotchUsage/Resources/Localizable.xcstrings` les 6 textes de [surfaces.md](contracts/surfaces.md), en anglais et en français (FR-020). `scripts/check-localizations.sh` doit rendre 0.
 - [ ] T030 [US4] Accessibilité : vérifier avec VoiceOver l'item, le popover, la capsule et la carte. L'annonce doit être identique à celle de l'île (FR-019, SC-006). Vérifier le glyphe et le nombre sur une capture en niveaux de gris.
-- [ ] T031 [US4] Mettre à jour `README.md`, en anglais et dans la section française :
+- [x] T031 [US4] Mettre à jour `README.md`, en anglais et dans la section française :
   - Remplacer la puce « Works everywhere » (ligne de la pilule) et la ligne de dépannage « Nothing shows on an external display ».
   - Ajouter les captures de l'item et de la pastille dans `docs/images/`.
   - Lier la planche `docs/design/external-screen.png`.
@@ -266,3 +266,6 @@ Ne pas confondre : `CompactStrip.Right.pill` désigne la puce de texte de l'orei
   - **Animation d'un seul tenant.** À l'ouverture, la fenêtre s'élargit d'abord, puis la capsule s'étire au tour suivant. À la fermeture, la capsule se resserre dans l'ancienne fenêtre, qui ne rétrécit qu'après le fondu de 0,3 s.
 - Correctif : l'observation de la fenêtre de l'item est retentée à chaque mise à jour, car la fenêtre n'existe parfois pas encore au démarrage.
 - Validé par Florent : vrais chiffres, pastille sur le Dell, bascule MacBook / Dell en moins d'une seconde, animations.
+
+- T025 : le point plein écran de la 006 a été retiré par la 016 (île comprise). La pastille s'aligne : rien en plein écran, sans code supplémentaire. FR-017, le contrat et le quickstart sont mis à jour.
+- T031 : le README (en anglais uniquement, il n'a pas de section française) est à jour : fonctionnalités, réglages, dépannage. `docs/images/settings.png` montre encore « Show in menu bar », à refaire avec la release.

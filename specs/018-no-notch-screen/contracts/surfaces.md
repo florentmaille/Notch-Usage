@@ -27,7 +27,7 @@ Référence visuelle : [external-screen.png](../../../docs/design/external-scree
 | Contenu | anneau 14 · texte 13,5 semibold · filet 1 × 13 · glyphe 16 + nombre 13 |
 | Élargissement | symétrique autour du centre, fondu 0,3 s (aucun en Réduire les animations) |
 | Carte | largeur 380, hauteur du contenu, 6 sous la barre, rayon 12 sur les quatre coins, fond noir 94 % ; survol 0,15 s, fermeture 0,10 s après sortie, Échap |
-| Plein écran | point de 7 centré à 4 du haut : violet (Claude), rouge pulsant (imminent), absent au calme |
+| Plein écran | rien : la pastille n'apparaît pas dans les espaces plein écran (pas de `fullScreenAuxiliary`), comme l'île depuis la 016 |
 | Barre active sur l'écran à encoche | anneau seul, comme l'item compact (retour 2026-11-09) ; sonde invisible si l'icône est sur « Jamais » |
 | Non affichée si | option désactivée, écran < 1700, barre masquée automatiquement, écran à encoche |
 

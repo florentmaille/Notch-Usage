@@ -78,8 +78,8 @@ L'utilisateur active « Pastille centrée » dans les réglages. Sur chaque écr
 5. **Given** une barre de menus claire, **Then** la capsule est un voile sombre et son texte est noir.
 6. **Given** la capsule affichée, **When** le pointeur la survole 0,15 s, **Then** elle s'éclaire et une carte apparaît 6 pt sous la barre, arrondie sur ses quatre coins, sans toucher la capsule ; la carte se ferme quand le pointeur quitte la capsule et la carte.
 7. **Given** l'option activée sur un écran de moins de 1700 pt de large, **Then** aucune pastille sur cet écran ; l'item de US1 reste le seul affichage.
-8. **Given** une app en plein écran sur un écran sans encoche, **Then** la capsule disparaît avec la barre de menus ; le point centré de la 006 la remplace (violet si Claude attend, rouge et pulsant si la limite est imminente, absent au calme).
-9. **Given** l'option désactivée, **Then** aucune pastille, aucun point plein écran sur les écrans sans encoche.
+8. **Given** une app en plein écran sur un écran sans encoche, **Then** la capsule disparaît avec la barre de menus et rien ne la remplace, comme l'île depuis la 016 ; le signal attend la sortie du plein écran.
+9. **Given** l'option désactivée, **Then** aucune pastille sur les écrans sans encoche.
 
 ---
 
@@ -106,7 +106,7 @@ L'utilisateur choisit dans les réglages quand l'item de barre de menus s'affich
 - **Écran principal changé à chaud** : l'île reste sur l'écran à encoche ; l'item de barre de menus est présent sur chaque barre, géré par macOS.
 - **Écran à encoche en écran secondaire** : l'île s'y affiche, même si la barre de menus principale est ailleurs.
 - **Barre de menus trop pleine** : macOS peut masquer l'item ; la pastille (si activée et si l'écran est assez large) reste le relais. Sans pastille, c'est une limite connue de macOS, documentée.
-- **Masquage automatique de la barre de menus** : l'item et la pastille ne sont visibles que quand la barre l'est ; le point plein écran ne s'affiche pas dans ce cas (la barre n'est pas en plein écran).
+- **Masquage automatique de la barre de menus** : l'item et la pastille ne sont visibles que quand la barre l'est.
 - **Menus d'app qui atteignent le centre sur un écran de 1700 pt ou plus** : la capsule peut chevaucher le dernier menu ; c'est accepté, puisqu'on ne lit pas l'étendue des menus (voir Hypothèses).
 - **Plusieurs écrans sans encoche** : une pastille par écran assez large ; un seul popover ou une seule carte ouverte à la fois.
 - **Popover ouvert pendant un changement d'écran** : il se ferme.
@@ -144,7 +144,7 @@ L'utilisateur choisit dans les réglages quand l'item de barre de menus s'affich
 - **FR-014**: La capsule MUST porter la jauge et son texte à gauche (mêmes règles que FR-004 à FR-006) et l'attente Claude à droite (mêmes règles que FR-007 et FR-008), séparées par un filet ; elle MUST s'élargir et se rétrécir symétriquement autour du centre de l'écran.
 - **FR-015**: Au survol de 0,15 s, la capsule MUST s'éclairer et une carte MUST apparaître 6 pt sous la barre, centrée, arrondie sur ses quatre coins, avec le contenu de FR-009 ; elle MUST se fermer 0,10 s après la sortie du pointeur de la capsule et de la carte, ou à Échap.
 - **FR-016**: Sur un écran de moins de 1700 pt de large, aucune capsule ne MUST s'afficher.
-- **FR-017**: En plein écran sur un écran sans encoche, option activée, le point centré de la 006 MUST remplacer la capsule (violet si Claude attend, rouge et pulsant à l'imminence, absent au calme).
+- **FR-017**: En plein écran sur un écran sans encoche, la capsule MUST disparaître avec la barre de menus, sans rien à sa place (aligné sur la 016 : plus de point plein écran, mis à jour le 2026-11-09).
 
 **Réglages, accessibilité, langue**
 
@@ -171,7 +171,7 @@ L'utilisateur choisit dans les réglages quand l'item de barre de menus s'affich
 | Claude attend (2 approbations) | jauge + main violette + « 2 » | jauge, filet, main violette + « 2 » |
 | Arrivée d'un signal Claude | + mot 4 s | + mot 4 s, élargissement symétrique |
 | Sans relevé | anneau vide | anneau vide |
-| Plein écran | invisible (barre masquée) | point centré de la 006 |
+| Plein écran | invisible (barre masquée) | invisible (016) |
 
 ## Success Criteria *(mandatory)*
 
