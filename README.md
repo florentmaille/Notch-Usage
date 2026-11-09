@@ -117,7 +117,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 
 ## Settings
 
-<img src="docs/images/settings.png" alt="Settings: open at login, menu bar icon, centered capsule, notifications, Claude Code, language" width="440" align="right">
+<img src="docs/images/settings.png" alt="Settings: open at login, menu bar icon, centered capsule, notifications, Claude Code, language, version and Check for updates" width="440" align="right">
 
 - **Open at login**.
 - **Menu bar icon**: *Automatic* (default: shown while a display without a notch is connected), *Always* or *Never*.
@@ -126,6 +126,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 - **Follow Claude Code**: adds seven hook entries to `~/.claude/settings.json` (all pointing at a small shell script in the app's container), and removes exactly those when turned off; your own hooks are left untouched. Takes effect at once, even in sessions already open. *Notify me when Claude waits* adds a macOS notification for approvals and questions.
 - **Language**: system, English or French.
 - **Advanced**: refresh interval (1 to 15 minutes, 3 by default) and the fallback thresholds (80 % / 95 %) used when no forecast exists.
+- **Version and Check for updates**: shows the installed version. Installed with Homebrew, the button opens Terminal to update and reopen the app; otherwise it opens the releases page. The app itself never goes online for this.
 
 If the browser sign-in is blocked, paste a `claude.ai` session key on the sign-in screen, under *Other method…*.
 
@@ -170,7 +171,7 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 
 ## Development
 
-The logic lives in `NotchUsageCore`, a Swift package with no dependency beyond Foundation and 230+ tests:
+The logic lives in `NotchUsageCore`, a Swift package with no dependency beyond Foundation and 300+ tests:
 
 ```bash
 swift test
@@ -183,11 +184,14 @@ certificate (free with an Apple ID, Xcode → Settings → Accounts), run `scrip
 Debug builds with it and keep Keychain access across builds.
 
 `scripts/demo.swift` drives a Debug build through its demo states (`normal`, `far`, `near`, `imminent25`, `imminent`, `blocked`,
-`offline`, …) and captures the notch; the README images come from it.
+`offline`, …), Claude Code sessions (`claude=approval3`, …) and screens (`layout=nonotch`, `menubar=notch|external`,
+`capsulehover=1`), and captures the notch, the menu bar icon and the capsule; the README images come from it
+(boards in [`docs/design/readme`](docs/design/readme)).
 
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
-[`specs/`](specs), from the first notch (001) and the forecast (003) to the island (012), the simpler settings (013)
-and the icon (014). `scripts/release.sh <version>` signs, notarizes and packages the zip used by the Homebrew cask
+[`specs/`](specs), from the first notch (001) and the forecast (003) to the island (012), the menu bar icon (014), Claude Code
+sessions (017), displays without a notch (018), the island following the active menu bar (019) and updates without
+network access (020). `scripts/release.sh <version>` signs, notarizes and packages the zip used by the Homebrew cask
 (Developer ID required).
 
 ## License

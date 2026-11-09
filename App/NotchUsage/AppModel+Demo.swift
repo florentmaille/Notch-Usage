@@ -52,6 +52,14 @@ extension AppModel {
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.itemsnapshot"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.debugItemSnapshot() }
         })
+        // `com.notchusage.debug.homebrew` objet "1" | "0" : les Réglages se comportent comme une installation Homebrew (020).
+        demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.homebrew"), object: nil, queue: .main) { [weak self] note in
+            let on = (note.object as? String) == "1"
+            MainActor.assumeIsolated {
+                UpdateLauncher.debugForceHomebrew = on
+                self?.recompute()
+            }
+        })
         // `com.notchusage.debug.capsulehover` objet "1" | "0" : ouvre ou ferme la carte de la pastille (captures).
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.capsulehover"), object: nil, queue: .main) { [weak self] note in
             let inside = (note.object as? String) == "1"

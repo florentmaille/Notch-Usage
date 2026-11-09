@@ -6,7 +6,15 @@ import NotchUsageCore
 /// sinon, la page des releases dans le navigateur.
 @MainActor
 enum UpdateLauncher {
+    #if DEBUG
+    /// Démo (captures du README) : simule une installation Homebrew, la build Debug tournant hors d'Applications.
+    static var debugForceHomebrew = false
+    #endif
+
     static var route: UpdateRoute {
+        #if DEBUG
+        if debugForceHomebrew { return .homebrew(prefix: "/opt/homebrew") }
+        #endif
         let existing = Set(UpdateRoute.caskroomCandidates.filter { FileManager.default.fileExists(atPath: $0) })
         return UpdateRoute.decide(appPath: Bundle.main.bundlePath, existingCaskrooms: existing)
     }
