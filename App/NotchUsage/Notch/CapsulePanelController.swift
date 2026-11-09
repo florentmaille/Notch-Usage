@@ -272,3 +272,30 @@ private struct CapsuleRoot: View {
         .animation(.easeOut(duration: 0.12), value: state.hovered)
     }
 }
+
+#if DEBUG
+/// Capture de la pastille et de sa carte (build Debug, captures du README) dans $TMPDIR.
+extension CapsulePanelController {
+    func debugSnapshot() {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+        for (name, view) in [("capsule", capsulePanel.contentView), ("capsule-card", cardPanel?.contentView)] {
+            guard let view, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent("notchusage-\(name).png"))
+        }
+        // Rendu 2x indépendant de l'écran (le Dell est en 1x) : la capsule seule, fond transparent.
+        if let content = state.content {
+            let renderer = ImageRenderer(content: CapsuleView(content: content, dark: state.dark))
+            renderer.scale = 2
+            if let cg = renderer.cgImage {
+                try? NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:])?
+                    .write(to: dir.appendingPathComponent("notchusage-capsule@2x.png"))
+            }
+        }
+        Log.app.notice("debug capsule snapshot \(dir.path, privacy: .public)")
+    }
+
+    /// Ouvre ou ferme la carte comme un survol (captures).
+    func debugHover(_ inside: Bool) { setHovered(inside) }
+}
+#endif
