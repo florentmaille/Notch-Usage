@@ -23,11 +23,19 @@ struct FullscreenHeuristicTests {
     }
 
     /// Retour utilisateur du 2026-11-09 : Teams agrandi, seul sur l'écran du Mac, était pris pour du plein écran.
-    /// Le bureau du Finder, visible dans un espace normal, tranche.
-    @Test func maximizedWindowAloneWithDesktopShownIsNotFullscreen() {
+    @Test func systemWindowsDecideBeforeTheShape() {
         let teams = [WindowFrame(x: 0, y: 39, width: 1800, height: 1130)]
-        #expect(!FullscreenHeuristic.isFullscreen(screen: screen, frontmost: teams, others: [externalWindow], desktopShown: true))
-        #expect(FullscreenHeuristic.isFullscreen(screen: screen, frontmost: teams, others: [externalWindow], desktopShown: false))
+        typealias Signals = FullscreenHeuristic.SpaceSignals
+        func check(_ signals: Signals) -> Bool {
+            FullscreenHeuristic.isFullscreen(screen: screen, frontmost: teams, others: [externalWindow], signals: signals)
+        }
+        // macOS 27 : le fond plein écran tranche, que le bureau soit affiché ou non (icônes masquées).
+        #expect(check(Signals(fullscreenBackdrop: true, windowManagerWallpaper: true)))
+        #expect(!check(Signals(windowManagerWallpaper: true, desktopShown: true)))
+        #expect(!check(Signals(windowManagerWallpaper: true, desktopShown: false)))
+        // Autre macOS, sans fond WindowManager : le bureau du Finder, puis la forme.
+        #expect(!check(Signals(desktopShown: true)))
+        #expect(check(Signals()))
     }
 
     @Test func singleWindowCoveringWholeScreen() {

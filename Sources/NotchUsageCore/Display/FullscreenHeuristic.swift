@@ -37,11 +37,31 @@ public enum FullscreenHeuristic {
     /// En dessous (50 × 50 pt), une fenêtre est ignorée : bulles, fenêtres techniques.
     static let minimumArea = 2_500.0
 
-    /// `desktopShown` : le bureau du Finder est visible sur cet écran. Un espace plein écran ne l'affiche jamais ; une
-    /// fenêtre agrandie seule sur l'écran (Teams, retour utilisateur) a la même forme qu'un plein écran, mais pas
-    /// ce bureau. Vérifié le 2026-11-09 sur macOS 27 : le bureau disparaît en plein écran, revient à la sortie.
-    public static func isFullscreen(screen: WindowFrame, frontmost: [WindowFrame], others: [WindowFrame], desktopShown: Bool = false) -> Bool {
-        if desktopShown { return false }
+    /// Fenêtres système de l'écran, lues sans permission (app propriétaire et niveau, jamais le nom).
+    public struct SpaceSignals: Sendable, Equatable {
+        /// Fond « Fullscreen Backdrop » de WindowManager (niveau du bureau + 1) : propre aux espaces plein écran.
+        public var fullscreenBackdrop: Bool
+        /// Fond d'écran dessiné par WindowManager (niveau du bureau - 1) : ce macOS sait signaler le plein écran.
+        public var windowManagerWallpaper: Bool
+        /// Bureau du Finder (icônes) : jamais affiché dans un espace plein écran.
+        public var desktopShown: Bool
+
+        public init(fullscreenBackdrop: Bool = false, windowManagerWallpaper: Bool = false, desktopShown: Bool = false) {
+            self.fullscreenBackdrop = fullscreenBackdrop
+            self.windowManagerWallpaper = windowManagerWallpaper
+            self.desktopShown = desktopShown
+        }
+    }
+
+    /// Une fenêtre agrandie seule sur l'écran (Teams, retour utilisateur) a la même forme qu'un plein écran : les
+    /// fenêtres système tranchent d'abord, la forme ne sert qu'en dernier recours. Vérifié le 2026-11-09 sur macOS 27
+    /// avec une vraie fenêtre plein écran : fond plein écran présent, bureau du Finder absent ; l'inverse au retour.
+    public static func isFullscreen(screen: WindowFrame, frontmost: [WindowFrame], others: [WindowFrame],
+                                    signals: SpaceSignals = SpaceSignals()) -> Bool {
+        if signals.fullscreenBackdrop { return true }
+        // Ce macOS dessine le fond plein écran : son absence suffit, icônes du bureau masquées ou non.
+        if signals.windowManagerWallpaper { return false }
+        if signals.desktopShown { return false }
         let parts = frontmost.compactMap { visiblePart($0, in: screen) }
         guard let first = parts.first else { return false }
         let union = parts.dropFirst().reduce(first) { $0.union($1) }

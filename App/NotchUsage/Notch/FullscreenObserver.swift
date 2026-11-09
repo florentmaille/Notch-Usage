@@ -51,16 +51,23 @@ final class FullscreenObserver {
         onChange?(result)
     }
 
-    /// Bureau du Finder visible sur l'écran : jamais dans un espace plein écran. App propriétaire et niveau de fenêtre
-    /// sont publics, sans permission d'enregistrement de l'écran (le nom des fenêtres, lui, peut en demander une).
-    private static func desktopShown(on target: WindowFrame) -> Bool {
-        guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else { return false }
-        let desktopIconLevel = Int(CGWindowLevelForKey(.desktopIconWindow))
-        return windows.contains { info in
-            guard (info[kCGWindowOwnerName as String] as? String) == "Finder", (info[kCGWindowLayer as String] as? Int) == desktopIconLevel,
-                  let dict = info[kCGWindowBounds as String] as? NSDictionary, let b = CGRect(dictionaryRepresentation: dict) else { return false }
-            return WindowFrame(x: b.minX, y: b.minY, width: b.width, height: b.height).overlaps(target)
+    /// Fenêtres système de l'écran (app propriétaire et niveau, publics sans permission ; le nom en demanderait une).
+    private static func spaceSignals(on target: WindowFrame) -> FullscreenHeuristic.SpaceSignals {
+        var signals = FullscreenHeuristic.SpaceSignals()
+        guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else { return signals }
+        let desktop = Int(CGWindowLevelForKey(.desktopWindow)), desktopIcon = Int(CGWindowLevelForKey(.desktopIconWindow))
+        for info in windows {
+            guard let owner = info[kCGWindowOwnerName as String] as? String, let layer = info[kCGWindowLayer as String] as? Int,
+                  let dict = info[kCGWindowBounds as String] as? NSDictionary, let b = CGRect(dictionaryRepresentation: dict),
+                  WindowFrame(x: b.minX, y: b.minY, width: b.width, height: b.height).overlaps(target) else { continue }
+            switch (owner, layer) {
+            case ("WindowManager", desktop + 1): signals.fullscreenBackdrop = true
+            case ("WindowManager", desktop - 1): signals.windowManagerWallpaper = true
+            case ("Finder", desktopIcon): signals.desktopShown = true
+            default: break
+            }
         }
+        return signals
     }
 
     private static func frontmostAppCoversScreen(_ screen: NSScreen?) -> Bool {
@@ -85,6 +92,6 @@ final class FullscreenObserver {
             if pid == app.processIdentifier { frontmost.append(frame) } else { others.append(frame) }
         }
         return FullscreenHeuristic.isFullscreen(screen: target, frontmost: frontmost, others: others,
-                                                 desktopShown: desktopShown(on: target))
+                                                 signals: spaceSignals(on: target))
     }
 }
