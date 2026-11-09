@@ -46,7 +46,7 @@ to block you; on the right, one number says how long before the block.
 | Weekly or model limit over its threshold | amber or red gauge | the limit's short name (`7d`, `Fable`) |
 | Offline or stale reading | grey wifi glyph | last known usage |
 | A Claude Code session waits for you (optional) | gauge, unchanged | violet hand (approval), violet `?` (question) or white check (finished); the word for 4 seconds, then the glyph; a count when several sessions wait |
-| Hover | the island stays, the full panel opens below and closes when the pointer leaves | |
+| Hover | the island stays, the full panel opens in a card just below the notch and closes when the pointer leaves | |
 
 The gauge fill and the number carry the information without colour.
 
@@ -60,6 +60,7 @@ The gauge fill and the number carry the information without colour.
 - **Screens without a notch, without a fake notch.** The island stays on the built-in display, even when an external display is the main one. On a display without a notch (an external display, or with the lid closed), the menu bar takes over:
   - **Menu bar item**: a gauge, plus the time left once a block is forecast (`2:05`, `8′` in red) and the Claude Code glyph with a count. When you work on the notched display, the island already carries the detail and the item shrinks to the gauge. Click it for the same panel as the island; right-click for *Refresh now*, *Settings* and *Quit*.
   - **Centered capsule (optional)**: on displays 1700 pt wide or more, a small dark capsule in the middle of the menu bar shows the same thing. Point at the top of the screen above it to open the panel just below the bar. It shrinks to the gauge while you work on the notched display. It hides in full-screen apps, like the island.
+  - **The detail follows you**: with a display without a notch connected, the island shows your usage right of the notch while you work on the Mac, and fades away while you work on the other display, where the menu bar carries the detail.
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
 - **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
