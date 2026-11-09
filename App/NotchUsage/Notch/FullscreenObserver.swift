@@ -51,6 +51,18 @@ final class FullscreenObserver {
         onChange?(result)
     }
 
+    /// Bureau du Finder visible sur l'écran : jamais dans un espace plein écran. App propriétaire et niveau de fenêtre
+    /// sont publics, sans permission d'enregistrement de l'écran (le nom des fenêtres, lui, peut en demander une).
+    private static func desktopShown(on target: WindowFrame) -> Bool {
+        guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else { return false }
+        let desktopIconLevel = Int(CGWindowLevelForKey(.desktopIconWindow))
+        return windows.contains { info in
+            guard (info[kCGWindowOwnerName as String] as? String) == "Finder", (info[kCGWindowLayer as String] as? Int) == desktopIconLevel,
+                  let dict = info[kCGWindowBounds as String] as? NSDictionary, let b = CGRect(dictionaryRepresentation: dict) else { return false }
+            return WindowFrame(x: b.minX, y: b.minY, width: b.width, height: b.height).overlaps(target)
+        }
+    }
+
     private static func frontmostAppCoversScreen(_ screen: NSScreen?) -> Bool {
         guard let screen, let app = NSWorkspace.shared.frontmostApplication,
               app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
@@ -72,6 +84,7 @@ final class FullscreenObserver {
             let frame = WindowFrame(x: b.minX, y: b.minY, width: b.width, height: b.height)
             if pid == app.processIdentifier { frontmost.append(frame) } else { others.append(frame) }
         }
-        return FullscreenHeuristic.isFullscreen(screen: target, frontmost: frontmost, others: others)
+        return FullscreenHeuristic.isFullscreen(screen: target, frontmost: frontmost, others: others,
+                                                 desktopShown: desktopShown(on: target))
     }
 }

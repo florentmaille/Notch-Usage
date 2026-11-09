@@ -17,6 +17,8 @@ public struct WindowFrame: Sendable, Equatable {
         return w > 0 && h > 0 ? WindowFrame(x: nx, y: ny, width: w, height: h) : nil
     }
 
+    public func overlaps(_ o: WindowFrame) -> Bool { intersection(o) != nil }
+
     func union(_ o: WindowFrame) -> WindowFrame {
         let nx = min(x, o.x), ny = min(y, o.y)
         return WindowFrame(x: nx, y: ny, width: max(maxX, o.maxX) - nx, height: max(maxY, o.maxY) - ny)
@@ -35,7 +37,11 @@ public enum FullscreenHeuristic {
     /// En dessous (50 × 50 pt), une fenêtre est ignorée : bulles, fenêtres techniques.
     static let minimumArea = 2_500.0
 
-    public static func isFullscreen(screen: WindowFrame, frontmost: [WindowFrame], others: [WindowFrame]) -> Bool {
+    /// `desktopShown` : le bureau du Finder est visible sur cet écran. Un espace plein écran ne l'affiche jamais ; une
+    /// fenêtre agrandie seule sur l'écran (Teams, retour utilisateur) a la même forme qu'un plein écran, mais pas
+    /// ce bureau. Vérifié le 2026-11-09 sur macOS 27 : le bureau disparaît en plein écran, revient à la sortie.
+    public static func isFullscreen(screen: WindowFrame, frontmost: [WindowFrame], others: [WindowFrame], desktopShown: Bool = false) -> Bool {
+        if desktopShown { return false }
         let parts = frontmost.compactMap { visiblePart($0, in: screen) }
         guard let first = parts.first else { return false }
         let union = parts.dropFirst().reduce(first) { $0.union($1) }

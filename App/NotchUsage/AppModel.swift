@@ -76,6 +76,8 @@ final class AppModel {
     /// Item de barre de menus (014, 018) : automatique (écran sans encoche connecté), toujours ou jamais.
     private(set) var menuBarIconMode: MenuBarIconMode = AppModel.loadMenuBarIconMode()
     @ObservationIgnored private var statusItem: StatusItemController?
+    /// Barre active sans item (icône sur « Jamais ») : clic et changement d'app.
+    @ObservationIgnored private let barTracker = ActiveBarTracker()
     /// Rôle des écrans connectés (018) : île sur l'écran à encoche, item enrichi sur les autres.
     @ObservationIgnored private(set) var screenRoles: ScreenRoles = .empty
     /// Écran de la barre de menus active, lu sur la fenêtre de l'item (R4) : compact sur l'écran de l'île.
@@ -189,6 +191,7 @@ final class AppModel {
     func stop() {
         statusItem?.remove()
         statusItem = nil
+        barTracker.stop()
         capsules.values.forEach { $0.close() }
         capsules = [:]
         tickTask?.cancel()
@@ -289,19 +292,29 @@ final class AppModel {
     }
     #endif
 
-    /// Crée ou retire l'item selon le réglage et les écrans (FR-018). Icône sur « Jamais » mais pastille affichée :
-    /// une sonde invisible suit quand même la barre active (pastille réduite à l'anneau côté écran à encoche).
+    /// Crée ou retire l'item selon le réglage et les écrans (FR-018). Sans item (« Jamais ») mais avec pastille ou île
+    /// à adapter (018, 019), `ActiveBarTracker` suit la barre active : aucune sonde, donc aucun trou dans la barre.
     private func syncStatusItem() {
         let visible = menuBarIconMode.isVisible(roles: screenRoles)
-        // L'île suit aussi la barre active dès qu'un écran sans encoche est branché (019).
-        let wantsProbe = !visible && (!capsules.isEmpty || (screenRoles.hasPlainScreen && screenRoles.island != nil))
-        if let item = statusItem, item.isProbe == visible || (!visible && !wantsProbe) {
+        let wantsTracking = !visible && (!capsules.isEmpty || (screenRoles.hasPlainScreen && screenRoles.island != nil))
+        if wantsTracking {
+            barTracker.onChange = { [weak self] id in
+                guard let self else { return }
+                self.activeBarScreenID = id
+                self.recompute()
+            }
+            barTracker.start()
+            activeBarScreenID = barTracker.screenID
+        } else {
+            barTracker.stop()
+        }
+        if !visible, let item = statusItem {
             item.remove()
             statusItem = nil
-            activeBarScreenID = nil
+            if !wantsTracking { activeBarScreenID = nil }
         }
-        if (visible || wantsProbe), statusItem == nil {
-            let item = StatusItemController(model: self, probe: !visible)
+        if visible, statusItem == nil {
+            let item = StatusItemController(model: self)
             item.onActiveScreenChange = { [weak self] id in
                 guard let self else { return }
                 self.activeBarScreenID = id
@@ -793,6 +806,9 @@ final class AppModel {
         if screenRoles.hasPlainScreen, screenRoles.island != nil, let activeBar {
             islandBar = screenRoles.isIsland(activeBar) ? .island : .elsewhere
         }
+        // Survol de l'encoche : l'île réapparaît au-dessus de la carte, même si la barre active est ailleurs (le
+        // pointeur ne déplace pas la barre de menus, seul un clic le fait ; retour utilisateur).
+        if hover, islandBar == .elsewhere { islandBar = .island }
         signal = base.adapted(to: islandBar, strings: .app)
         panel?.contentHeight = expandedContentHeight
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot

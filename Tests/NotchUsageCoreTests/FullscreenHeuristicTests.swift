@@ -22,6 +22,14 @@ struct FullscreenHeuristicTests {
         #expect(!FullscreenHeuristic.isFullscreen(screen: screen, frontmost: chrome, others: teams))
     }
 
+    /// Retour utilisateur du 2026-11-09 : Teams agrandi, seul sur l'écran du Mac, était pris pour du plein écran.
+    /// Le bureau du Finder, visible dans un espace normal, tranche.
+    @Test func maximizedWindowAloneWithDesktopShownIsNotFullscreen() {
+        let teams = [WindowFrame(x: 0, y: 39, width: 1800, height: 1130)]
+        #expect(!FullscreenHeuristic.isFullscreen(screen: screen, frontmost: teams, others: [externalWindow], desktopShown: true))
+        #expect(FullscreenHeuristic.isFullscreen(screen: screen, frontmost: teams, others: [externalWindow], desktopShown: false))
+    }
+
     @Test func singleWindowCoveringWholeScreen() {
         #expect(FullscreenHeuristic.isFullscreen(screen: screen, frontmost: [screen], others: []))
     }
