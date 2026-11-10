@@ -168,7 +168,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSPopoverDelegate {
         guard let model else { return }
         let display = model.display
         // Sessions Claude en attente (017), avant les limites : clic = amener l'application d'origine devant.
-        let waiting = model.visibleClaudeSessions.waiting
+        let waiting = model.claude.visibleSessions.waiting
         if !waiting.isEmpty {
             menu.addItem(info(String(localized: "Claude Code")))
             for session in waiting {
