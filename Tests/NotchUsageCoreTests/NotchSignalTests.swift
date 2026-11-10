@@ -26,23 +26,22 @@ struct NotchSignalTests {
 
     @Test func calmReadingIsSilent() {
         let s = signal(display(.idle(snap(42))))
-        #expect(s.content == .silent && s.edge == nil && s.isSilent)
+        #expect(s.content == .silent && s.edge == nil)
         #expect(s.accessibility == "5-hour window, 42 percent, resets in 2h 14m")
         let holds = signal(display(.idle(snap(42)), forecasts: ["session": .holdsUntilReset]))
         #expect(holds.content == .silent)
     }
 
     @Test func hoverAndPinShowTheBand() {
-        let d = display(.idle(snap(42)), hover: true)
-        let strip = CompactStrip.make(display: d, now: now, language: .english, strings: CompactStripTests.english, locale: Locale(identifier: "en_US"), timeZone: utc)
-        #expect(signal(d).content == .band(strip))
-        #expect(!signal(d).isSilent)
+        let s = signal(display(.idle(snap(42)), hover: true))
+        #expect(s.content == .band && s.edge == nil)
+        // L'annonce reste celle de la limite, survol ou non.
+        #expect(s.accessibility == "5-hour window, 42 percent, resets in 2h 14m")
     }
 
     @Test func staleOrFailedReadingShowsAGreyBandWithoutEdge() {
         let failed = signal(display(.failed(.server(503), previous: snap(42))))
-        guard case .band(let strip) = failed.content else { Issue.record("expected band"); return }
-        #expect(strip.tone == .muted && failed.edge == nil)
+        #expect(failed.content == .band && failed.edge == nil)
         let stale = signal(display(.idle(snap(42, age: 45 * 60))))
         guard case .band = stale.content else { Issue.record("expected band"); return }
         #expect(stale.edge == nil)
@@ -56,12 +55,12 @@ struct NotchSignalTests {
         #expect(signal(display(.reauthRequired(previous: nil))).edge == nil)
     }
 
-    @Test func onlyTheBandWidensTheNotch() {
-        #expect(signal(display(.idle(snap(42)), hover: true)).isBand)
-        #expect(!signal(display(.idle(snap(42)))).isBand)
-        #expect(!signal(display(.idle(snap(55)), forecasts: ["session": .blockAt(now.addingTimeInterval(7200))])).isBand)
-        #expect(!signal(display(.idle(snap(83)), level: .warning)).isBand)
-        #expect(!signal(display(.idle(snap(100)), level: .critical)).isBand)
+    @Test func onlyHoverAndGreyStatesAreABand() {
+        #expect(signal(display(.idle(snap(42)), hover: true)).content == .band)
+        #expect(signal(display(.idle(snap(42)))).content != .band)
+        #expect(signal(display(.idle(snap(55)), forecasts: ["session": .blockAt(now.addingTimeInterval(7200))])).content != .band)
+        #expect(signal(display(.idle(snap(83)), level: .warning)).content != .band)
+        #expect(signal(display(.idle(snap(100)), level: .critical)).content != .band)
     }
 
     // MARK: US2 - paliers
@@ -246,7 +245,7 @@ struct NotchSignalTests {
 
     @Test func hoverKeepsTheIslandForTheViewToChoose() {
         let s = signal(display(.idle(snap(42)), hover: true))
-        #expect(s.isBand && s.island == Island(leading: .gauge(value: 42, tint: .calm)))
+        #expect(s.content == .band && s.island == Island(leading: .gauge(value: 42, tint: .calm)))
     }
 }
 
@@ -333,7 +332,7 @@ struct NotchSignalAttentionTests {
         let a = attention(.approval, count: 3)
         let collapsed = signal(display(.idle(snap(42))), attention: a)
         let hovered = signal(display(.idle(snap(42)), hover: true), attention: a)
-        #expect(collapsed.island == hovered.island && hovered.isBand)
+        #expect(collapsed.island == hovered.island && hovered.content == .band)
     }
 
     @Test func badgeAndTrailingTakePartInEquality() {

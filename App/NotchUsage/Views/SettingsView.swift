@@ -56,7 +56,7 @@ struct SettingsView: View {
         .toggleStyle(.switch)
         .onAppear {
             intervalMinutes = (model.refreshSettings.interval.timeIntervalValue / 60).rounded()
-            model.refreshClaudeHooksStatus()
+            model.claude.refreshHooksStatus()
         }
     }
 
@@ -101,21 +101,21 @@ struct SettingsView: View {
                     set: { model.setNotificationsEnabled($0) }))
                 // Sessions Claude Code en attente (017) : abonnement aux hooks, réversible ; notification en option.
                 row("Follow Claude Code", isOn: Binding(
-                    get: { model.followsClaudeCode },
-                    set: { model.setFollowsClaudeCode($0) }))
+                    get: { model.claude.follows },
+                    set: { model.claude.setFollows($0) }))
                 if let note = claudeNote {
                     HStack {
                         Text(note.text).font(.caption2).foregroundStyle(note.isError ? .orange : .secondary)
                         if note.repairable {
                             Spacer()
-                            Button("Repair") { model.repairClaudeHooks() }
+                            Button("Repair") { model.claude.repairHooks() }
                         }
                     }
                 }
-                if model.followsClaudeCode {
+                if model.claude.follows {
                     row("Notify me when Claude waits", isOn: Binding(
-                        get: { model.notifiesClaudeAttention },
-                        set: { model.setNotifiesClaudeAttention($0) }))
+                        get: { model.claude.notifiesAttention },
+                        set: { model.claude.setNotifiesAttention($0) }))
                 }
                 HStack {
                     Text("Language")
@@ -144,12 +144,12 @@ struct SettingsView: View {
 
     /// Note sous « Follow Claude Code » : erreur d'écriture, config absente ou modifiée à la main.
     private var claudeNote: (text: String, isError: Bool, repairable: Bool)? {
-        if let error = model.claudeHooksError { return (error, true, false) }
-        switch model.claudeHooksStatus {
+        if let error = model.claude.hooksError { return (error, true, false) }
+        switch model.claude.hooksStatus {
         case .claudeMissing: return (String(localized: "Claude Code was not found on this Mac."), false, false)
         case .unreadable: return (String(localized: "~/.claude/settings.json could not be read."), true, false)
         case .partial: return (String(localized: "Hooks were changed outside the app."), false, true)
-        case .absent where model.followsClaudeCode: return (String(localized: "Hooks were removed outside the app."), false, true)
+        case .absent where model.claude.follows: return (String(localized: "Hooks were removed outside the app."), false, true)
         case .absent, .installed: return nil
         }
     }

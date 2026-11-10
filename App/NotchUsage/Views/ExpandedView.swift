@@ -10,7 +10,7 @@ struct ExpandedView: View {
         VStack(alignment: .leading, spacing: 10) {
             header(d)
             if let banner = d.banner { bannerView(banner) }
-            if !model.visibleClaudeSessions.waiting.isEmpty { ClaudeSessionsSection() }
+            if !model.claude.visibleSessions.waiting.isEmpty { ClaudeSessionsSection() }
             switch d.content {
             case .limits:
                 ForEach(d.limits) { limit in
@@ -132,7 +132,7 @@ struct ClaudeSessionsSection: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Claude Code")
                 .font(.caption2.weight(.semibold)).textCase(.uppercase).foregroundStyle(.secondary)
-            ForEach(model.visibleClaudeSessions.waiting) { session in
+            ForEach(model.claude.visibleSessions.waiting) { session in
                 ClaudeSessionRow(session: session, now: model.now) { model.activateSession(session.id) }
             }
             Text("Click a session to bring it to the front.")

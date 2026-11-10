@@ -210,6 +210,89 @@ struct AppPresentationTests {
         #expect(!fm.fileExists(atPath: url.path) && ClaudeSessionsFile.load(from: url) == nil)
     }
 
+    // MARK: Suivi Claude Code, sans processus ni fichier réels
+
+    /// Suivi isolé d'`AppModel` : horloge, processus, préférences et fichier de sessions sont fournis par le test.
+    private func following(dir: URL, now: Date, notifies: Bool, alive: @escaping (Int32) -> Bool) -> (ClaudeFollowing, UserDefaults, String) {
+        let suite = "notchusage.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.set(notifies, forKey: ClaudeFollowing.notifiesKey)
+        var environment = ClaudeFollowing.Environment()
+        environment.defaults = defaults
+        environment.sessionsURL = dir.appending(path: "claude-sessions.json")
+        environment.now = { now }
+        environment.bootDate = { now.addingTimeInterval(-3600) }
+        environment.isAlive = alive
+        // 101 : le shell qui a lancé le hook ; 500 : le processus de la session, dans le Terminal.
+        environment.sessionProcess = { $0 == 101 ? 500 : $0 }
+        environment.originApp = { $0 == 500 ? "com.apple.Terminal" : nil }
+        return (ClaudeFollowing(environment: environment), defaults, suite)
+    }
+
+    private func hookEvent(_ kind: ClaudeHookEvent.Kind, session: String = "s1", tool: String? = "Write", pid: Int32? = 101, at: Date) -> ClaudeHookEvent {
+        ClaudeHookEvent(kind: kind, sessionID: session, cwd: "/tmp/projet", sessionTitle: nil, toolName: tool, promptID: "p1", pid: pid, receivedAt: at)
+    }
+
+    /// Une demande de permission devient une attente rattachée au processus de la session, notifiée une fois,
+    /// écrite sur disque ; le tour terminé puis le clic l'effacent ; la session disparaît avec son processus.
+    @Test func claudeFollowingTracksNotifiesAndPersistsASession() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notchusage-following-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: dir) }
+        let now = Date(timeIntervalSince1970: 1_762_776_000)
+        var alive: Set<Int32> = [500]
+        let (following, defaults, suite) = following(dir: dir, now: now, notifies: true, alive: { alive.contains($0) })
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let url = dir.appending(path: "claude-sessions.json")
+        var changes = 0
+        var notified: [(name: String, kind: ClaudeWaitingKind, id: String)] = []
+        following.onChange = { changes += 1 }
+        following.notify = { notified.append(($0, $1, $2)) }
+
+        following.handle([hookEvent(.permissionRequest, at: now)])
+        let session = try #require(following.sessions.sessions["s1"])
+        #expect(session.originPID == 500 && session.originApp == "com.apple.Terminal")
+        #expect(session.waiting?.kind == .approval && following.visibleSessions.waiting.count == 1)
+        #expect(notified.count == 1 && notified.first?.kind == .approval && notified.first?.id == "s1-p1" && notified.first?.name == "projet")
+        #expect(changes == 1)
+        #expect(ClaudeSessionsFile.load(from: url) == following.sessions)
+
+        // Permission accordée, tour terminé : coche, sans nouvelle notification ; le clic l'efface.
+        following.handle([hookEvent(.postToolUse, at: now), hookEvent(.stop, tool: nil, at: now)])
+        #expect(following.sessions.sessions["s1"]?.waiting?.kind == .done && notified.count == 1)
+        following.clearDone()
+        #expect(following.sessions.waiting.isEmpty && changes == 3)
+
+        // Terminal fermé : au survol suivant la session disparaît, et le fichier avec elle.
+        alive = []
+        following.expireDeadSessions()
+        #expect(following.sessions.isEmpty && !fm.fileExists(atPath: url.path))
+    }
+
+    /// Au lancement, les attentes écrites avant la fermeture reviennent, sans celles dont le processus a disparu ;
+    /// réglage de notification éteint, rien n'est notifié.
+    @Test func claudeFollowingRestoresPendingSessionsAndStaysQuietWhenAskedTo() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notchusage-following-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: dir) }
+        let now = Date(timeIntervalSince1970: 1_762_776_000)
+        let (first, defaults, suite) = following(dir: dir, now: now, notifies: false, alive: { _ in true })
+        defer { defaults.removePersistentDomain(forName: suite) }
+        var notified = 0
+        first.notify = { _, _, _ in notified += 1 }
+        first.handle([hookEvent(.permissionRequest, session: "vivante", at: now),
+                      hookEvent(.permissionRequest, session: "terminée", pid: 900, at: now)])
+        #expect(notified == 0 && first.sessions.waiting.count == 2)
+
+        // Nouvelle instance, comme après un redémarrage de l'app : le processus 900 n'existe plus.
+        let (second, defaults2, suite2) = following(dir: dir, now: now.addingTimeInterval(120), notifies: false, alive: { $0 == 500 })
+        defer { defaults2.removePersistentDomain(forName: suite2) }
+        #expect(second.sessions.isEmpty)
+        second.restoreSessions()
+        #expect(second.sessions.waiting.map(\.id) == ["vivante"])
+        #expect(second.sessions.sessions["vivante"]?.waiting?.kind == .approval)
+    }
+
     // MARK: Modèle, sans fenêtre
 
     /// `hover = false` referme l'île quand le popover ou une carte s'ouvre : s'il ramenait aussi aux limites, les

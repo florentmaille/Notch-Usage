@@ -95,11 +95,11 @@ extension AppModel {
                 .reduce(event(.permissionRequest, "a2", cwd: "/Users/demo/Projects/ontraak-site", tool: "Edit", ago: 45))
                 .reduce(event(.stop, "d1", cwd: "/Users/demo/Projects/deck-q4", ago: 360))
         default:
-            demoClaude = nil
+            claude.demoSessions = nil
             recompute()
             return
         }
-        demoClaude = tracker
+        claude.demoSessions = tracker
         if mode == "arrival" {
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(AttentionFormat.arrivalDuration), tolerance: .milliseconds(50))

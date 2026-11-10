@@ -17,7 +17,7 @@ struct NotchRootView: View {
                 Color.clear
                     .frame(height: NotchPanelController.hiddenStripHeight)
             } else {
-                CompactView(display: d, signal: s, beat: model.beat, now: model.now, onTap: { model.clearDoneSessions() },
+                CompactView(display: d, signal: s, beat: model.beat, now: model.now, onTap: { model.claude.clearDone() },
                             onOpen: { model.openPanel() })
                     .frame(height: d.layout.height)
                     // Le fond noir épouse l'île et non la fenêtre : la fenêtre s'élargit d'abord, invisible, puis

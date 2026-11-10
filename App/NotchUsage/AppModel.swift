@@ -50,7 +50,7 @@ final class AppModel {
             // popover ou une carte s'ouvre, et ne doit pas fermer les réglages qu'ils affichent.
             if hover != oldValue { showSettings = false }
             // Au survol, les sessions dont le processus a disparu sont retirées (017, R7) : jamais sur un timer.
-            if hover { claudeSessions = claudeSessions.expire(now: Date(), alive: ProcessLiveness.isAlive) }
+            if hover { claude.expireDeadSessions() }
             if hover { statusItem?.closePopover(); capsules.values.forEach { $0.dismissCard() } }
             recompute()
         }
@@ -93,19 +93,9 @@ final class AppModel {
     @ObservationIgnored private var capsules: [String: CapsulePanelController] = [:]
     @ObservationIgnored private var screensByID: [String: NSScreen] = [:]
     var now = Date()
-    // Sessions Claude Code en attente (017) : fil d'événements des hooks, réglages, statut des entrées installées.
-    @ObservationIgnored private var claudeWatcher: ClaudeEventsWatcher?
-    @ObservationIgnored private var arrivalTask: Task<Void, Never>?
-    /// Écrites sur disque à chaque changement : une attente en cours survit au redémarrage de l'app.
-    private(set) var claudeSessions = ClaudeSessionTracker() {
-        didSet { if claudeSessions != oldValue { ClaudeSessionsFile.save(claudeSessions) } }
-    }
-    private(set) var followsClaudeCode = UserDefaults.standard.bool(forKey: AppModel.followsClaudeKey)
-    private(set) var notifiesClaudeAttention = UserDefaults.standard.bool(forKey: AppModel.notifiesClaudeKey)
-    private(set) var claudeHooksStatus: ClaudeSettingsFile.Status = .absent
-    var claudeHooksError: String?
-    fileprivate static let followsClaudeKey = "followsClaudeCode"
-    fileprivate static let notifiesClaudeKey = "notifiesClaudeAttention"
+    /// Sessions Claude Code en attente (017) : réglage, fil d'événements des hooks, sessions suivies. Le modèle lui
+    /// fournit le recalcul et la notification, et lit ses sessions pour l'île, la barre de menus et le panneau.
+    @ObservationIgnored let claude = ClaudeFollowing()
 
     private static let accountKey = "account"
     private static let legacyPurgeKey = "legacyBrowserDataPurged"
@@ -153,7 +143,6 @@ final class AppModel {
     @ObservationIgnored var demoState: FetchState?
     @ObservationIgnored var demoForecasts: [String: Forecast] = [:]
     @ObservationIgnored var demoObservers: [any NSObjectProtocol] = []
-    @ObservationIgnored var demoClaude: ClaudeSessionTracker?
     @ObservationIgnored var demoNoNotch = false
     @ObservationIgnored var demoNotchOnly = false
     @ObservationIgnored var demoActiveBar: String?
@@ -174,11 +163,9 @@ final class AppModel {
         }
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
-        refreshClaudeHooksStatus()
-        if followsClaudeCode {
-            migrateLegacyClaudeHooks()
-            startClaudeWatcher()
-        }
+        claude.onChange = { [weak self] in self?.recompute() }
+        claude.notify = { [weak self] name, kind, id in self?.notifier.notifyClaude(name: name, kind: kind, id: id) }
+        claude.start()
         snapshots.removeLegacyFiles()
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         hourlyHistory = (try? snapshots.loadHourlyHistory()) ?? HourlyHistory()
@@ -218,9 +205,7 @@ final class AppModel {
         capsules = [:]
         tickTask?.cancel()
         stateTask?.cancel()
-        arrivalTask?.cancel()
-        claudeWatcher?.stop()
-        claudeWatcher = nil
+        claude.stop()
         // Appelé à la terminaison : le processus s'arrête, inutile d'attendre l'arrêt du coordinateur.
         coordinator = nil
         #if DEBUG
@@ -282,7 +267,7 @@ final class AppModel {
                 capsule.update(screen: screen)
             } else {
                 let capsule = CapsulePanelController(screenID: id, screen: screen, model: self)
-                capsule.onTap = { [weak self] in self?.clearDoneSessions() }
+                capsule.onTap = { [weak self] in self?.claude.clearDone() }
                 capsule.onCardOpen = { [weak self] in
                     guard let self else { return }
                     self.hover = false
@@ -362,7 +347,7 @@ final class AppModel {
     /// sur l'île ou la pastille. Rien si le popover montrait les réglages, où elles ne figurent pas.
     func popoverDidClose() {
         guard !showSettings else { return }
-        clearDoneSessions()
+        claude.clearDone()
     }
 
     /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).
@@ -683,137 +668,11 @@ final class AppModel {
 
     // MARK: Claude Code (017)
 
-    /// Sessions montrées : celles de la démo en build Debug, sinon les vraies.
-    var visibleClaudeSessions: ClaudeSessionTracker {
-        #if DEBUG
-        if let demoClaude { return demoClaude }
-        #endif
-        return claudeSessions
-    }
-
-    private func startClaudeWatcher() {
-        guard claudeWatcher == nil else { return }
-        do {
-            try ClaudeHookScript.ensure()
-        } catch {
-            Log.app.error("claude hook script: \(error.localizedDescription, privacy: .public)")
-        }
-        // Attentes d'avant le redémarrage de l'app : relues sans les sessions dont le processus a disparu. Les
-        // événements écrits pendant la fermeture s'appliquent ensuite par-dessus, au démarrage du lecteur.
-        if let saved = ClaudeSessionsFile.load() {
-            claudeSessions = saved.restored(now: Date(), bootedAt: ProcessLiveness.bootDate ?? .distantPast, alive: ProcessLiveness.isAlive)
-            Log.app.notice("claude sessions restored: \(self.claudeSessions.waiting.count, privacy: .public) waiting")
-        }
-        let watcher = ClaudeEventsWatcher(url: ClaudeHookScript.eventsURL) { [weak self] events in self?.handleClaudeEvents(events) }
-        claudeWatcher = watcher
-        watcher.start()
-    }
-
-    /// Les versions 0.5.4 à 0.6.1 écrivaient le chemin du script sans apostrophes : le shell le coupait à l'espace de
-    /// « Application Support » et aucun événement n'arrivait. Le réglage est déjà actif : les entrées sont remplacées
-    /// au lancement, sans clic. En cas d'échec, la note « Réparer » des réglages reste.
-    private func migrateLegacyClaudeHooks() {
-        let path = ClaudeHookScript.scriptURL.path
-        guard ClaudeSettingsFile.hasLegacyEntries(scriptPath: path) else { return }
-        do {
-            try ClaudeHookScript.ensure()
-            try ClaudeSettingsFile.install(scriptPath: path)
-            Log.app.notice("claude hooks migrated to the quoted command")
-        } catch {
-            Log.app.error("claude hooks migration: \(error.localizedDescription, privacy: .public)")
-        }
-        refreshClaudeHooksStatus()
-    }
-
-    private func stopClaudeWatcher() {
-        claudeWatcher?.stop()
-        claudeWatcher = nil
-        arrivalTask?.cancel()
-        claudeSessions = ClaudeSessionTracker()
-    }
-
-    /// Réduit les événements reçus, résout l'application d'origine des sessions nouvelles, retire les sessions
-    /// mortes, relance le libellé d'arrivée (4 s) et notifie si demandé.
-    private func handleClaudeEvents(_ events: [ClaudeHookEvent]) {
-        let previous = claudeSessions.attention(now: Date())?.arrivedAt
-        var tracker = claudeSessions
-        for event in events {
-            // La vivacité se vérifie sur le processus de la session : si un shell a lancé le hook, on remonte à son
-            // parent avant de réduire (le tracker ignore les événements sans type, on ne peut pas corriger après).
-            let event = event.withPID(event.pid.map(ProcessLiveness.sessionProcess(from:)))
-            tracker = tracker.reduce(event)
-            if let session = tracker.sessions[event.sessionID], session.originApp == nil, let pid = event.pid {
-                tracker = tracker.settingOrigin(app: ProcessLiveness.originApp(of: pid)?.bundleIdentifier, for: event.sessionID)
-            }
-            if notifiesClaudeAttention, event.kind == .permissionRequest, let session = tracker.sessions[event.sessionID] {
-                notifier.notifyClaude(name: session.displayName(fallback: CompactStrip.Strings.app.claude.sessionFallback),
-                                      kind: event.isQuestion ? .question : .approval, id: "\(event.sessionID)-\(event.promptID ?? "")")
-            }
-        }
-        let now = Date()
-        claudeSessions = tracker.expire(now: now, alive: ProcessLiveness.isAlive)
-        if let arrived = claudeSessions.attention(now: now)?.arrivedAt, arrived != previous, AttentionFormat.showsArrival(arrivedAt: arrived, now: now) {
-            arrivalTask?.cancel()
-            arrivalTask = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(AttentionFormat.arrivalDuration), tolerance: .milliseconds(50))
-                guard !Task.isCancelled else { return }
-                self?.recompute()
-            }
-        }
-        Log.app.notice("claude events: \(events.count, privacy: .public) received, \(self.claudeSessions.waiting.count, privacy: .public) waiting")
-        recompute()
-    }
-
-    /// Clic sur une ligne du panneau ou du menu : l'application d'où vient la session passe devant ; l'attente reste.
+    /// Clic sur une ligne du panneau ou du menu : l'application d'où vient la session passe devant, le panneau se
+    /// referme ; l'attente reste. Le suivi lui-même vit dans `ClaudeFollowing`.
     func activateSession(_ id: String) {
-        guard let session = visibleClaudeSessions.sessions[id] else { return }
-        if let app = session.originApp { ProcessLiveness.activate(bundleID: app) }
+        guard claude.activateSession(id) else { return }
         hover = false
-    }
-
-    /// Clic sur l'île : les « terminé » s'effacent, les attentes bloquantes restent (017, FR-002).
-    func clearDoneSessions() {
-        claudeSessions = claudeSessions.clearDone()
-        #if DEBUG
-        demoClaude = demoClaude?.clearDone()
-        #endif
-        recompute()
-    }
-
-    func setFollowsClaudeCode(_ enabled: Bool) {
-        claudeHooksError = nil
-        do {
-            if enabled {
-                try ClaudeHookScript.ensure()
-                try ClaudeSettingsFile.install(scriptPath: ClaudeHookScript.scriptURL.path)
-            } else {
-                try ClaudeSettingsFile.remove(scriptPath: ClaudeHookScript.scriptURL.path)
-            }
-        } catch {
-            claudeHooksError = error.localizedDescription
-            Log.app.error("claude hooks: \(error.localizedDescription, privacy: .public)")
-            refreshClaudeHooksStatus()
-            recompute()
-            return
-        }
-        followsClaudeCode = enabled
-        defaults.set(enabled, forKey: Self.followsClaudeKey)
-        if enabled { startClaudeWatcher() } else { stopClaudeWatcher() }
-        refreshClaudeHooksStatus()
-        Log.app.notice("claude hooks \(enabled ? "installed" : "removed", privacy: .public)")
-        recompute()
-    }
-
-    func setNotifiesClaudeAttention(_ enabled: Bool) {
-        notifiesClaudeAttention = enabled
-        defaults.set(enabled, forKey: Self.notifiesClaudeKey)
-    }
-
-    /// Entrées modifiées à la main : réinstaller remet les manquantes sans doubler les présentes.
-    func repairClaudeHooks() { setFollowsClaudeCode(true) }
-
-    func refreshClaudeHooksStatus() {
-        claudeHooksStatus = ClaudeSettingsFile.status(scriptPath: ClaudeHookScript.scriptURL.path)
     }
 
     // MARK: Interaction
@@ -873,7 +732,7 @@ final class AppModel {
         if demoState != nil { display.forecasts = demoForecasts }
         #endif
         let base = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app,
-                                    attention: visibleClaudeSessions.attention(now: now))
+                                    attention: claude.visibleSessions.attention(now: now))
         // Courbe de la semaine (021) : prévision hebdomadaire de la 016, recalculée si le modèle ne l'a pas encore.
         var hourly = hourlyHistory
         #if DEBUG
