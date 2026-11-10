@@ -80,6 +80,14 @@ Une ligne par événement : `{"ppid": 9019, "ts": 1762360000, "event": {<payload
 Droits 600. Tronqué par l'app (offset remis à 0) après consommation au-delà de 64 Ko et au lancement
 après rattrapage ; jamais lu par autre chose.
 
+## Fichier `claude-sessions.json`
+
+Sessions suivies, écrites par l'app à chaque changement (droits 600) : identifiant de session, dossier, titre, pid,
+application d'origine, attente en cours (nature, depuis quand, outil). Jamais de texte de conversation. Relu au
+lancement, pour qu'une attente déjà lue avant un redémarrage de l'app réapparaisse sans attendre le prochain
+événement de la session ; les sessions dont le processus a disparu, ou antérieures au démarrage du Mac (pid
+réattribuable), sont écartées. Supprimé dès que plus rien n'est suivi, et quand le réglage est désactivé.
+
 ## Payload utile (spike)
 
 `event.hook_event_name`, `event.session_id`, `event.cwd`, `event.session_title` (desktop,

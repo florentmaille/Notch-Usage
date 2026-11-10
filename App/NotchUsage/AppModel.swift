@@ -96,7 +96,10 @@ final class AppModel {
     // Sessions Claude Code en attente (017) : fil d'événements des hooks, réglages, statut des entrées installées.
     @ObservationIgnored private var claudeWatcher: ClaudeEventsWatcher?
     @ObservationIgnored private var arrivalTask: Task<Void, Never>?
-    private(set) var claudeSessions = ClaudeSessionTracker()
+    /// Écrites sur disque à chaque changement : une attente en cours survit au redémarrage de l'app.
+    private(set) var claudeSessions = ClaudeSessionTracker() {
+        didSet { if claudeSessions != oldValue { ClaudeSessionsFile.save(claudeSessions) } }
+    }
     private(set) var followsClaudeCode = UserDefaults.standard.bool(forKey: AppModel.followsClaudeKey)
     private(set) var notifiesClaudeAttention = UserDefaults.standard.bool(forKey: AppModel.notifiesClaudeKey)
     private(set) var claudeHooksStatus: ClaudeSettingsFile.Status = .absent
@@ -694,6 +697,12 @@ final class AppModel {
             try ClaudeHookScript.ensure()
         } catch {
             Log.app.error("claude hook script: \(error.localizedDescription, privacy: .public)")
+        }
+        // Attentes d'avant le redémarrage de l'app : relues sans les sessions dont le processus a disparu. Les
+        // événements écrits pendant la fermeture s'appliquent ensuite par-dessus, au démarrage du lecteur.
+        if let saved = ClaudeSessionsFile.load() {
+            claudeSessions = saved.restored(now: Date(), bootedAt: ProcessLiveness.bootDate ?? .distantPast, alive: ProcessLiveness.isAlive)
+            Log.app.notice("claude sessions restored: \(self.claudeSessions.waiting.count, privacy: .public) waiting")
         }
         let watcher = ClaudeEventsWatcher(url: ClaudeHookScript.eventsURL) { [weak self] events in self?.handleClaudeEvents(events) }
         claudeWatcher = watcher

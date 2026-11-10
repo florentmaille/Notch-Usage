@@ -133,4 +133,34 @@ struct ClaudeSessionTrackerTests {
         let justDone = ClaudeSessionTracker().reduce(event(.stop)).attention(now: t0)
         #expect(justDone?.kind == .done && justDone?.count == 1)
     }
+
+    // MARK: Conservation d'un lancement à l'autre
+
+    /// Les sessions suivies sont écrites sur disque : une attente déjà lue avant un redémarrage de l'app réapparaît
+    /// au lancement, au lieu d'attendre le prochain événement de la session.
+    @Test func trackerRoundTripsThroughJSON() throws {
+        var t = ClaudeSessionTracker().reduce(approval)
+        t = t.reduce(event(.stop, session: "s2", cwd: "/tmp/x", title: "Titre", pid: 200, at: 3))
+        t = t.settingOrigin(app: "com.apple.Terminal", for: "s1")
+        let decoded = try JSONDecoder().decode(ClaudeSessionTracker.self, from: JSONEncoder().encode(t))
+        #expect(decoded == t)
+        #expect(decoded.waiting.map(\.id) == ["s1", "s2"])
+        #expect(decoded.sessions["s1"]?.originApp == "com.apple.Terminal" && decoded.sessions["s2"]?.title == "Titre")
+    }
+
+    /// Au lancement, une session ne survit ni à la fin de son processus, ni à un redémarrage du Mac : son pid a pu
+    /// être réattribué à un autre processus, qui la ferait passer pour vivante.
+    @Test func restoreDropsDeadAndPreBootSessions() {
+        var t = ClaudeSessionTracker().reduce(approval)                                           // s1, pid 100, à t0
+        t = t.reduce(event(.permissionRequest, session: "s2", tool: "Bash", pid: 200, at: 60))
+        t = t.reduce(event(.stop, session: "s3", pid: 300, at: 120))
+        let now = t0.addingTimeInterval(600), longAgo = t0.addingTimeInterval(-3600)
+        #expect(Set(t.restored(now: now, bootedAt: longAgo, alive: { _ in true }).sessions.keys) == ["s1", "s2", "s3"])
+        #expect(Set(t.restored(now: now, bootedAt: longAgo, alive: { $0 != 200 }).sessions.keys) == ["s1", "s3"])
+        // Mac redémarré à t0 + 90 s : les sessions d'avant disparaissent même si leur pid répond.
+        #expect(Set(t.restored(now: now, bootedAt: t0.addingTimeInterval(90), alive: { _ in true }).sessions.keys) == ["s3"])
+        // Les attentes restaurées gardent leur nature et leur ancienneté.
+        let kept = t.restored(now: now, bootedAt: longAgo, alive: { _ in true })
+        #expect(kept.sessions["s1"]?.waiting == .init(kind: .approval, since: t0, toolName: "Bash", promptID: "p1"))
+    }
 }

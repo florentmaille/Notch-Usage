@@ -181,6 +181,35 @@ struct AppPresentationTests {
         #expect(try String(contentsOf: sandbox.events, encoding: .utf8).split(separator: "\n").count == 2)
     }
 
+    /// Une attente en cours survit au redémarrage de l'app : le suivi est écrit sur disque (droits 600), relu au
+    /// lancement sans les sessions dont le processus a disparu, et le fichier s'efface quand plus rien n'est suivi.
+    @Test func claudeSessionsSurviveARestartOnDisk() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notchusage-sessions-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: dir) }
+        let url = dir.appending(path: "claude-sessions.json")
+        let at = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down))
+        func request(_ session: String, pid: Int32) -> ClaudeHookEvent {
+            ClaudeHookEvent(kind: .permissionRequest, sessionID: session, cwd: "/tmp/projet", sessionTitle: nil, toolName: "Write",
+                            promptID: "p", pid: pid, receivedAt: at)
+        }
+        // Notre propre processus vit ; le pid 1 du second est remplacé par un pid qui n'existe pas.
+        let alive = ProcessInfo.processInfo.processIdentifier
+        let tracker = ClaudeSessionTracker().reduce(request("vivante", pid: alive)).reduce(request("terminée", pid: 2_000_000_000))
+        ClaudeSessionsFile.save(tracker, to: url)
+        #expect(try fm.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int == 0o600)
+        #expect(ClaudeSessionsFile.load(from: url) == tracker)
+
+        let boot = try #require(ProcessLiveness.bootDate)
+        #expect(boot < Date())
+        let restored = try #require(ClaudeSessionsFile.load(from: url)).restored(now: Date(), bootedAt: boot, alive: ProcessLiveness.isAlive)
+        #expect(Set(restored.sessions.keys) == ["vivante"])
+        #expect(restored.sessions["vivante"]?.waiting?.kind == .approval)
+
+        ClaudeSessionsFile.save(ClaudeSessionTracker(), to: url)
+        #expect(!fm.fileExists(atPath: url.path) && ClaudeSessionsFile.load(from: url) == nil)
+    }
+
     // MARK: Modèle, sans fenêtre
 
     /// `hover = false` referme l'île quand le popover ou une carte s'ouvre : s'il ramenait aussi aux limites, les

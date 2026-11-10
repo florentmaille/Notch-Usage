@@ -1,7 +1,7 @@
 import Foundation
 
 /// Ce qu'une session attend de l'utilisateur (017). L'ordre est l'urgence : approbation, question, puis terminé.
-public enum ClaudeWaitingKind: Int, Sendable, Comparable, CaseIterable {
+public enum ClaudeWaitingKind: Int, Sendable, Comparable, CaseIterable, Codable {
     case approval, question, done
 
     public static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
@@ -10,8 +10,8 @@ public enum ClaudeWaitingKind: Int, Sendable, Comparable, CaseIterable {
 }
 
 /// Une session Claude Code connue par ses événements (017, data-model.md).
-public struct ClaudeSession: Sendable, Equatable, Identifiable {
-    public struct Waiting: Sendable, Equatable {
+public struct ClaudeSession: Sendable, Equatable, Identifiable, Codable {
+    public struct Waiting: Sendable, Equatable, Codable {
         public let kind: ClaudeWaitingKind
         public let since: Date
         public let toolName: String?
@@ -44,8 +44,9 @@ public struct ClaudeSession: Sendable, Equatable, Identifiable {
     }
 }
 
-/// État des sessions suivies, valeur immuable réduite événement par événement.
-public struct ClaudeSessionTracker: Sendable, Equatable {
+/// État des sessions suivies, valeur immuable réduite événement par événement. Codable : l'app l'écrit sur disque
+/// pour qu'une attente en cours survive à son redémarrage.
+public struct ClaudeSessionTracker: Sendable, Equatable, Codable {
     /// Sans processus connu, une session disparaît après ce délai sans événement.
     public static let expiry: TimeInterval = 8 * 3600
 
@@ -99,6 +100,16 @@ public struct ClaudeSessionTracker: Sendable, Equatable {
             }
         }
         return copy
+    }
+
+    /// État relu au lancement de l'app. Une session ne survit ni à la fin de son processus, ni à un redémarrage du
+    /// Mac : son pid a pu être réattribué à un autre processus, qui la ferait passer pour vivante.
+    public func restored(now: Date, bootedAt: Date, alive: (Int32) -> Bool) -> Self {
+        var copy = self
+        for (id, s) in sessions where s.lastEventAt < bootedAt {
+            copy.sessions[id] = nil
+        }
+        return copy.expire(now: now, alive: alive)
     }
 
     /// Clic sur l'île : les « terminé » s'effacent, les attentes bloquantes restent.
