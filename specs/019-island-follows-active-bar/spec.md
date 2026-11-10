@@ -23,7 +23,7 @@ Demandée et validée à l'essai par Florent, sur la build Release locale (MacBo
 
 ## Code
 
-- **Core** : `NotchSignal.adapted(to: ActiveBar?)`, `Island.Trailing.percent`, `Island.folded`. Tests dans `IslandActiveBarTests`.
+- **Core** : `NotchSignal.carryingPercent`, `Island.Trailing.percent`, `ScreenRoles.islandCarriesPercent`. Tests dans `IslandActiveBarTests` et `SurfacePlanTests`. Jusqu'à la 0.6.2 : `adapted(to: ActiveBar?)` et `Island.folded`, retirés avec l'effacement de l'île.
 - **App** :
   - `AppModel.recompute` adapte l'île à la barre active.
   - `CompactView` : oreilles à largeur animée.

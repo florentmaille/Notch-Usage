@@ -568,7 +568,7 @@ final class AppModel {
         }
         notifier.notifyIfNeeded(signal: base, display: display, enabled: alertSettings.notifications, now: now)
         // 019 : à côté d'un écran sans encoche, l'île porte le pourcentage au calme, où que l'on travaille.
-        signal = base.adapted(to: surfaces.islandBar, strings: .app)
+        signal = surfaces.islandCarriesPercent ? base.carryingPercent(strings: .app) : base
         surfaces.render(display: display, trailingEar: signal.trailingEarWidth(now: now),
                         bar: BarContent.make(signal: base, now: now, strings: .app), beat: beat)
     }

@@ -36,9 +36,9 @@ struct SurfacePlanTests {
     /// l'autre écran (retour utilisateur, 2026-11-10 : elle s'effaçait quand on travaillait ailleurs). Le MacBook
     /// seul garde l'île de la 012.
     @Test func nextToAPlainScreenTheIslandAlwaysCarriesTheDetail() {
-        #expect(ScreenRoles(island: island, plain: [wide]).islandBar == .island)
-        #expect(ScreenRoles(island: island, plain: [narrow]).islandBar == .island)
-        #expect(ScreenRoles(island: island, plain: []).islandBar == nil)
-        #expect(ScreenRoles(island: nil, plain: [wide]).islandBar == nil)
+        #expect(ScreenRoles(island: island, plain: [wide]).islandCarriesPercent)
+        #expect(ScreenRoles(island: island, plain: [narrow]).islandCarriesPercent)
+        #expect(!ScreenRoles(island: island, plain: []).islandCarriesPercent)
+        #expect(!ScreenRoles(island: nil, plain: [wide]).islandCarriesPercent)
     }
 }

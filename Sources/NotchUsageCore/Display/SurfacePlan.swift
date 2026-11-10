@@ -21,8 +21,8 @@ public struct SurfacePlan: Sendable, Equatable {
 extension ScreenRoles {
     /// À côté d'un écran sans encoche, l'île porte le pourcentage au calme (019), que l'on travaille sur le Mac ou
     /// sur l'autre écran : elle ne s'efface plus quand on travaille ailleurs (retour utilisateur, 2026-11-10).
-    /// `nil` : MacBook seul, l'île de la 012.
-    public var islandBar: NotchSignal.ActiveBar? {
-        hasPlainScreen && island != nil ? .island : nil
+    /// Faux : MacBook seul, l'île de la 012.
+    public var islandCarriesPercent: Bool {
+        hasPlainScreen && island != nil
     }
 }

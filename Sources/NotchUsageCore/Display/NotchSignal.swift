@@ -64,14 +64,11 @@ public struct NotchSignal: Sendable, Equatable {
         public let trailing: Trailing?
         /// Point au coin de la jauge quand la limite garde l'oreille droite (017, R9).
         public let badge: ClaudeWaitingKind?
-        /// 019 : on travaille sur un écran sans encoche, l'île s'efface (ni jauge ni oreille) ; la pastille porte le suivi.
-        public let folded: Bool
 
-        public init(leading: Leading, trailing: Trailing? = nil, badge: ClaudeWaitingKind? = nil, folded: Bool = false) {
+        public init(leading: Leading, trailing: Trailing? = nil, badge: ClaudeWaitingKind? = nil) {
             self.leading = leading
             self.trailing = trailing
             self.badge = badge
-            self.folded = folded
         }
 
         /// La limite garde l'oreille droite quand elle est imminente (échéance rouge) ou épuisée.
@@ -146,27 +143,13 @@ public struct NotchSignal: Sendable, Equatable {
                     accessibility: accessibility ?? self.accessibility)
     }
 
-    /// Barre de menus active, quand un écran sans encoche est branché (019).
-    public enum ActiveBar: Sendable, Equatable {
-        case island      // on travaille sur l'écran à encoche
-        case elsewhere   // on travaille sur un écran sans encoche
-    }
-
-    /// 019 : comme la pastille, l'île montre le chiffre là où l'on travaille et s'efface ailleurs. Sur l'écran de
-    /// l'île, une oreille droite vide reçoit le pourcentage ; ailleurs, l'île se replie entièrement (`folded`), jauge
-    /// comprise (retour utilisateur). L'annonce VoiceOver, le palier et le battement ne changent pas.
-    public func adapted(to activeBar: ActiveBar?, strings: CompactStrip.Strings) -> NotchSignal {
-        switch activeBar {
-        case nil:
-            return self
-        case .island?:
-            guard island.trailing == nil, case .gauge(let value, _) = island.leading else { return self }
-            let percent = strings.percent(Int(min(100, max(0, value)).rounded()))
-            return with(island: Island(leading: island.leading, trailing: .percent(percent), badge: island.badge),
-                        attention: attention, limitTrailing: limitTrailing)
-        case .elsewhere?:
-            return with(island: Island(leading: island.leading, folded: true), attention: attention, limitTrailing: limitTrailing)
-        }
+    /// 019 : à côté d'un écran sans encoche, une oreille droite vide reçoit le pourcentage ; une échéance ou une
+    /// attente Claude garde la sienne. L'annonce VoiceOver, le palier et le battement ne changent pas.
+    public func carryingPercent(strings: CompactStrip.Strings) -> NotchSignal {
+        guard island.trailing == nil, case .gauge(let value, _) = island.leading else { return self }
+        let percent = strings.percent(Int(min(100, max(0, value)).rounded()))
+        return with(island: Island(leading: island.leading, trailing: .percent(percent), badge: island.badge),
+                    attention: attention, limitTrailing: limitTrailing)
     }
 
     public static func make(display: DisplayState, now: Date, language: InterfaceLanguage, strings: CompactStrip.Strings,

@@ -18,8 +18,7 @@ struct CompactView: View {
         // L'encoche physique au centre. Repliée, l'oreille droite n'existe qu'avec une donnée ; dépliée, elle
         // garde sa place pour que l'encoche reste au centre du panneau.
         HStack(spacing: 0) {
-            // Repliée (019), l'oreille gauche se resserre vers l'encoche ; la racine compense par une marge à gauche.
-            islandLeading.opacity(isFolded ? 0 : 1).frame(width: Self.leadingWidth(display: display, signal: signal)).clipped()
+            islandLeading.frame(width: NotchPanelController.earWidth).clipped()
             Color.clear.frame(width: display.layout.width)
             // Oreille droite toujours présente, sa largeur s'anime (0 ↔ 52 pt) : l'île s'étire d'un seul tenant au
             // lieu d'apparaître en bloc (019, retour utilisateur), le contenu en fondu.
@@ -39,13 +38,6 @@ struct CompactView: View {
         .accessibilityLabel(signal.accessibility)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { onOpen?() }
-    }
-
-    private var isFolded: Bool { signal.island.folded && !display.isExpanded }
-
-    /// Largeur de l'oreille gauche : 0 quand l'île est repliée sur un autre écran (019).
-    static func leadingWidth(display: DisplayState, signal: NotchSignal) -> CGFloat {
-        signal.island.folded && !display.isExpanded ? 0 : NotchPanelController.earWidth
     }
 
     private var trailingWidth: CGFloat {

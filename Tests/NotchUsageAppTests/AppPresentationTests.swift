@@ -346,7 +346,7 @@ struct AppPresentationTests {
     /// n'est retenue que si elle change vraiment (une mesure transitoire sous 40 pt est ignorée).
     @Test func surfacesWithoutScreensHoldNothing() {
         let surfaces = Surfaces()
-        #expect(!surfaces.hasIsland && surfaces.islandBar == nil)
+        #expect(!surfaces.hasIsland && !surfaces.islandCarriesPercent)
         #expect(surfaces.layout == .fallback)
         #expect(!surfaces.setContentHeight(20))
         #expect(surfaces.setContentHeight(599.4))

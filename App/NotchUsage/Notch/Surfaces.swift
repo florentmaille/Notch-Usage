@@ -195,7 +195,7 @@ final class Surfaces {
     }
 
     /// À côté d'un écran sans encoche, l'île porte le pourcentage (019) : le modèle y adapte le signal de l'encoche.
-    var islandBar: NotchSignal.ActiveBar? { roles.islandBar }
+    var islandCarriesPercent: Bool { roles.islandCarriesPercent }
 
     /// Applique à chaque surface ce que le modèle vient de calculer. `bar` dérive du signal avant adaptation à la
     /// barre active : le point Claude de la 017 et l'échéance restent ceux de la limite.
