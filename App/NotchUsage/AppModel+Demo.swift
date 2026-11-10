@@ -5,7 +5,7 @@ import NotchUsageCore
 #if DEBUG
 /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
 /// `com.notchusage.debug.demo` objet "normal" | "far" | "near" | "imminent25" | "imminent" | "pace" | "warning" | "critical"
-/// | "blocked" | "offline" | "reauth" | "off" ; `com.notchusage.debug.tick` force un tick de 30 s (006) ;
+/// | "blocked" | "offline" | "reauth" | "weekblock" | "off" ; `com.notchusage.debug.tick` force un tick de 30 s (006) ;
 /// `com.notchusage.debug.layout` objet "nonotch" | "notchonly" | "notch" simule l'absence d'écran à encoche (018),
 /// ou un MacBook seul (écrans sans encoche ignorés) ;
 /// `com.notchusage.debug.menubar` objet "notch" | "external" | "off" force la barre active (018).
@@ -151,9 +151,35 @@ extension AppModel {
         case "blocked": demoState = .idle(snapshot(100, 52, 71, sessionReset: 3600 + 2 * 60))
         case "offline": demoState = .failed(.network(.notConnectedToInternet), previous: snapshot(42, 27, 35, sessionReset: 3600 + 49 * 60, age: 25 * 60))
         case "reauth": demoState = .reauthRequired(previous: nil)
+        // 021 : semaine en avance, 70 % de la limite hebdomadaire après 3,8 jours (blocage prévu avant le reset).
+        case "weekblock": demoState = .idle(snapshot(42, 70, 35))
         default: demoState = nil
         }
+        demoHourly = demoState?.snapshot.map { Self.demoWeek(for: $0, now: now) }
         recompute()
+    }
+
+    /// Semaine fictive cohérente avec l'usage hebdomadaire de la démo (021) : journées de travail de 9 h à 19 h en
+    /// semaine, nuits et week-ends plats, jusqu'à l'usage actuel.
+    static func demoWeek(for snapshot: UsageSnapshot, now: Date) -> HourlyHistory {
+        guard let weekly = snapshot.limits.first(where: { $0.kind == .weeklyAll }), let reset = weekly.resetsAt else { return HourlyHistory() }
+        let start = reset.addingTimeInterval(-PaceForecaster.weekPeriod)
+        let calendar = Calendar.current
+        let hours = Int(now.timeIntervalSince(start) / 3600)
+        func works(_ date: Date) -> Bool {
+            let hour = calendar.component(.hour, from: date)
+            return !calendar.isDateInWeekend(date) && (9..<19).contains(hour)
+        }
+        let dates = (0..<hours).map { start.addingTimeInterval(Double($0) * 3600 + 1800) }
+        let step = weekly.utilization / Double(max(1, dates.filter(works).count + 1))
+        var usage = 0.0
+        var history = HourlyHistory()
+        for date in dates {
+            if works(date) { usage += step }
+            let limit = UsageLimit(id: weekly.id, kind: .weeklyAll, modelName: nil, utilization: (usage * 10).rounded() / 10, resetsAt: reset)
+            history = history.appending(UsageSnapshot(limits: [limit], fetchedAt: date))
+        }
+        return history
     }
 }
 #endif

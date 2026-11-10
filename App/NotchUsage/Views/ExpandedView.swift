@@ -17,6 +17,8 @@ struct ExpandedView: View {
                     LimitRow(limit: limit, now: model.now, highlighted: d.alertLevel != .none && limit.id == d.headline?.limit.id,
                              settings: model.alertSettings, forecast: d.forecasts[limit.id])
                 }
+                // Courbe de la semaine (021), sous les limites ; absente sans limite hebdomadaire toutes modèles.
+                if let week = model.weekCurve { WeekSection(state: week) }
             case .reauthRequired:
                 statusBlock(icon: "exclamationmark.lock", title: String(localized: "Reconnect required"),
                             message: reauthMessage)

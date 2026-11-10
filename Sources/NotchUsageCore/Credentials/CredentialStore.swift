@@ -28,5 +28,8 @@ public protocol SnapshotStore: Sendable {
     /// Relevés des deux dernières heures (003), supprimés par `wipe()`.
     func loadHistory() throws -> UsageHistory?
     func saveHistory(_ history: UsageHistory) throws
+    /// Un relevé par heure sur 8 jours (021), supprimé par `wipe()`.
+    func loadHourlyHistory() throws -> HourlyHistory?
+    func saveHourlyHistory(_ history: HourlyHistory) throws
     func wipe() throws
 }

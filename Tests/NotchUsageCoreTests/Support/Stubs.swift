@@ -44,6 +44,7 @@ final class MemorySnapshotStore: SnapshotStore, @unchecked Sendable {
     var snapshot: UsageSnapshot?
     var ledger: AlertLedger?
     var history: UsageHistory?
+    var hourly: HourlyHistory?
     private(set) var wiped = false
     init(snapshot: UsageSnapshot? = nil) { self.snapshot = snapshot }
     func loadSnapshot() throws -> UsageSnapshot? { lock.withLock { snapshot } }
@@ -52,7 +53,9 @@ final class MemorySnapshotStore: SnapshotStore, @unchecked Sendable {
     func saveLedger(_ l: AlertLedger) throws { lock.withLock { ledger = l } }
     func loadHistory() throws -> UsageHistory? { lock.withLock { history } }
     func saveHistory(_ h: UsageHistory) throws { lock.withLock { history = h } }
-    func wipe() throws { lock.withLock { snapshot = nil; ledger = nil; history = nil; wiped = true } }
+    func loadHourlyHistory() throws -> HourlyHistory? { lock.withLock { hourly } }
+    func saveHourlyHistory(_ h: HourlyHistory) throws { lock.withLock { hourly = h } }
+    func wipe() throws { lock.withLock { snapshot = nil; ledger = nil; history = nil; hourly = nil; wiped = true } }
 }
 
 /// Fournisseur factice : séquence de résultats, compte les appels.
