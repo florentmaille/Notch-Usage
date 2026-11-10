@@ -19,6 +19,9 @@ enum ProviderSupport {
         case 200 where response.isHTML: throw FetchError.challenge
         case 200, 204:
             if response.body.isEmpty { throw FetchError.emptyBody }
+        // Blocage Cloudflare sans l'en-tête `cf-mitigated` (pare-feu, VPN) : la page est en HTML, les refus de
+        // l'API en JSON. Les identifiants sont bons : nouvel essai, pas de reconnexion.
+        case 403 where response.isHTML: throw FetchError.challenge
         case 401, 403: throw FetchError.unauthorized
         case 429: throw FetchError.rateLimited(retryAfter: response.retryAfter)
         default: throw FetchError.server(response.status)

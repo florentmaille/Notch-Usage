@@ -190,7 +190,22 @@ struct AppPresentationTests {
         #expect(mode == 0o600)
     }
 
-    /// App fermée, le fichier n'est plus vidé : passé le plafond il repart de zéro au lieu de grossir sans fin.
+    /// App fermée, le script n'écrit rien : le texte des conversations ne reste pas sur disque jusqu'au prochain
+    /// lancement. (Les autres tests tournent dans l'hôte de test, un processus `NotchUsage` : le script y écrit.)
+    @Test func hookScriptWritesNothingWhileTheAppIsNotRunning() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notch usage fermée \(UUID().uuidString)", directoryHint: .isDirectory)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: dir) }
+        let script = dir.appending(path: "claude-hook.sh"), events = dir.appending(path: "claude-events.jsonl")
+        try ClaudeHookScript.contents(eventsPath: events.path, appProcess: "NotchUsageAbsent").write(to: script, atomically: true, encoding: .utf8)
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+        #expect(Self.runHook(ClaudeHooksInstaller.command(for: script.path), payload: Self.payload(session: "closed", bytes: 1_000)) == 0)
+        #expect(!fm.fileExists(atPath: events.path))
+        #expect(ClaudeHookScript.contents(eventsPath: events.path).contains("/usr/bin/pgrep -a -x 'NotchUsage' "))
+    }
+
+    /// App en marche mais fichier non vidé (suivi bloqué) : passé le plafond il repart de zéro au lieu de grossir sans fin.
     @Test func hookScriptStartsOverPastTheSizeCap() throws {
         let sandbox = try hookSandbox()
         defer { try? FileManager.default.removeItem(at: sandbox.dir) }

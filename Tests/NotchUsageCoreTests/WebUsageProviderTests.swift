@@ -79,6 +79,14 @@ struct WebUsageProviderTests {
         await #expect(throws: FetchError.challenge) { try await p.fetch() }
     }
 
+    /// Page de blocage Cloudflare sans `cf-mitigated` : la clé de session reste valable, la boucle réessaie.
+    @Test func forbiddenHTMLPageIsChallengeNotUnauthorized() async {
+        let (p, _) = makeProvider([.success(.status(403, body: Fixture.data("usage-cloudflare.html"), headers: ["Content-Type": "text/html; charset=UTF-8"]))],
+                                  organizationID: "3f5d0c2e-7a1b-4c8d-9e2f-1a2b3c4d5e6f")
+        await #expect(throws: FetchError.challenge) { try await p.fetch() }
+        #expect(!FetchError.challenge.isTerminal)
+    }
+
     @Test func forbiddenIsUnauthorized() async {
         let (p, _) = makeProvider([.success(.status(403, body: Data("{}".utf8)))], organizationID: "3f5d0c2e-7a1b-4c8d-9e2f-1a2b3c4d5e6f")
         await #expect(throws: FetchError.unauthorized) { try await p.fetch() }

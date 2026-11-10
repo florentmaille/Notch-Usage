@@ -43,6 +43,8 @@ final class ClaudeEventsWatcher {
     }
 
     func stop() {
+        // Ce qui n'a pas été lu ne le sera plus par cette instance : rien ne reste sur disque après l'arrêt.
+        if fd >= 0 { ftruncate(fd, 0) }
         source?.cancel()
         source = nil
         fd = -1
