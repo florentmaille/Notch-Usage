@@ -54,7 +54,7 @@ Format de la 012 : une ligne par tâche, tests d'abord (constitution III), fichi
 
 ## Phase 6: Validation
 
-- [ ] T034 Quickstart §3 en réel sur une session de l'app Claude et une session CLI (8 étapes) ; `diff` de `settings.json` avant/après activation puis désactivation
+- [x] T034 Quickstart §3 en réel sur une session de l'app Claude et une session CLI (8 étapes) ; `diff` de `settings.json` avant/après activation puis désactivation
 - [ ] T035 Budgets : 10 min avec trois sessions suivies, CPU < 1 %, empreinte ± 2 Mo de la 0.5.3 ; `swift test` et `xcodebuild test` verts ; version `0.5.4` et notes de release dans `docs/release-notes/`
 
 ## Dépendances
@@ -71,5 +71,5 @@ Format de la 012 : une ligne par tâche, tests d'abord (constitution III), fichi
 - Pipeline réel sans toucher à `~/.claude/settings.json` : préférence `followsClaudeCode` posée à la main, script écrit en 700 dans le conteneur, événement injecté par le script → fichier → watcher → île en moins d'une seconde, fichier vidé après consommation et au lancement, ligne dans le panneau avec « 2 s ».
 - Mesures sur 60 s avec trois sessions en attente : 0,14 s CPU (0,23 %), empreinte 36,9 Mo (Debug, après captures ; à remesurer en Release).
 - Plein écran : le point n'existe plus depuis la 016 ; spec FR-009 et contrat mis à jour, rien à faire.
-- **Non rejoué, à faire par Florent (T034)** : l'activation du réglage dans l'app, qui écrit `~/.claude/settings.json` (le classificateur du mode auto a refusé ce clic à l'agent) : activer, vérifier les 7 entrées et le diff, provoquer une approbation et une question dans une session réelle, désactiver, vérifier le retour à l'identique. Le clic sur une ligne (T025) n'a pas pu être observé : l'app d'origine (Claude) était déjà devant.
+- **T034 rejouée le 2026-11-10** sur la branche `fix/audit-p0`, avec une session CLI et une session de l'app Claude : les 8 étapes passent (entrées et `diff`, main, bulle, coche et clic, terminal fermé, attente provoquée app fermée, désactivation à l'identique, config illisible jamais réécrite). Jusque-là aucun événement n'arrivait en réel : la commande installée était le chemin brut du script, coupé à l'espace de « Application Support » par le shell (code 127). Relevé pendant la recette : le clic sur la pastille n'effaçait pas les « terminé » (corrigé) ; une attente déjà lue avant un redémarrage de l'app n'est pas restaurée (limite connue). Le clic sur une ligne (T025) reste non observé.
 - Reste (T035) : mesure Release sur 10 min, version et notes de release au moment de la 0.5.5.
