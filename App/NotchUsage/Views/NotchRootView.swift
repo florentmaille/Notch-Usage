@@ -22,9 +22,7 @@ struct NotchRootView: View {
                     .frame(height: d.layout.height)
                     // Le fond noir épouse l'île et non la fenêtre : la fenêtre s'élargit d'abord, invisible, puis
                     // l'oreille s'étire (019).
-                    .background { NotchShape(display: d).opacity(s.island.folded ? 0 : 1) }
-                    // L'encoche reste à sa place quand l'oreille gauche se resserre (fenêtre inchangée à gauche).
-                    .padding(.leading, NotchPanelController.earWidth - CompactView.leadingWidth(display: d, signal: s))
+                    .background { NotchShape(display: d) }
             }
         }
         // L'île part du bord gauche de la fenêtre, posée sur l'encoche par le contrôleur.

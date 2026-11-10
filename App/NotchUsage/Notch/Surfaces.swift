@@ -4,7 +4,7 @@ import Observation
 import SwiftUI
 
 /// Surfaces de l'app : île de l'écran à encoche, item de barre de menus, pastilles des écrans sans encoche (018).
-/// Suit les écrans et la barre de menus active, crée ou retire les surfaces selon les réglages (`SurfacePlan`),
+/// Suit les écrans, crée ou retire les surfaces selon les réglages (`SurfacePlan`),
 /// leur applique ce que le modèle a calculé et n'en laisse qu'une ouverte à la fois (FR-010). Le modèle garde
 /// l'état d'interaction (survol, réglages affichés) et décide de ce qui s'affiche ; rien de cela ici.
 @MainActor
@@ -35,9 +35,7 @@ final class Surfaces {
     @ObservationIgnored private var island: NotchPanelController?
     @ObservationIgnored private var statusItem: StatusItemController?
     @ObservationIgnored private var capsules: [String: CapsulePanelController] = [:]
-    /// Barre active sans item (icône sur « Jamais ») : clic et changement d'app.
-    @ObservationIgnored private let barTracker = ActiveBarTracker()
-    /// Écran de la barre de menus active, lu sur la fenêtre de l'item (R4) ou suivi par `barTracker`.
+    /// Écran de la barre de menus active, lu sur la fenêtre de l'item (R4) : lui seul s'y adapte (FR-022).
     @ObservationIgnored private var activeBarScreenID: String?
     /// Hauteur idéale du contenu déplié, mesurée par la vue.
     @ObservationIgnored private var contentHeight = NotchPanelController.expandedHeight
@@ -77,7 +75,6 @@ final class Surfaces {
     func stop() {
         statusItem?.remove()
         statusItem = nil
-        barTracker.stop()
         capsules.values.forEach { $0.close() }
         capsules = [:]
         screens.stop()
@@ -150,20 +147,12 @@ final class Surfaces {
         }
     }
 
-    /// Crée ou retire l'item selon le plan (FR-018). Sans item mais avec une pastille ou une île à adapter (018, 019),
-    /// `ActiveBarTracker` suit la barre active : aucune sonde, donc aucun trou dans la barre.
+    /// Crée ou retire l'item selon le plan (FR-018).
     private func syncStatusItem(_ plan: SurfacePlan) {
-        if plan.tracksActiveBar {
-            barTracker.onChange = { [weak self] id in self?.activeBarChanged(id) }
-            barTracker.start()
-            activeBarScreenID = barTracker.screenID
-        } else {
-            barTracker.stop()
-        }
         if !plan.showsItem, let item = statusItem {
             item.remove()
             statusItem = nil
-            if !plan.tracksActiveBar { activeBarScreenID = nil }
+            activeBarScreenID = nil
         }
         if plan.showsItem, statusItem == nil, let model {
             let item = StatusItemController(model: model)
@@ -205,10 +194,8 @@ final class Surfaces {
         return activeBarScreenID
     }
 
-    /// Barre active vue de l'île (019) : le modèle y adapte le signal de l'encoche.
-    func islandBar(hover: Bool) -> NotchSignal.ActiveBar? {
-        roles.islandBar(active: activeBar, hover: hover)
-    }
+    /// À côté d'un écran sans encoche, l'île porte le pourcentage (019) : le modèle y adapte le signal de l'encoche.
+    var islandCarriesPercent: Bool { roles.islandCarriesPercent }
 
     /// Applique à chaque surface ce que le modèle vient de calculer. `bar` dérive du signal avant adaptation à la
     /// barre active : le point Claude de la 017 et l'échéance restent ceux de la limite.
@@ -217,14 +204,15 @@ final class Surfaces {
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
         // d'arrivée d'une session Claude (017).
         island?.apply(display, ears: (NotchPanelController.earWidth, trailingEar))
-        // Item et pastille : anneau seul quand la barre active est celle de l'écran de l'île (FR-022).
-        let onIslandBar = roles.isIsland(activeBar)
+        // Item : anneau seul quand la barre active est celle de l'écran de l'île, qui porte le détail (FR-022).
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        statusItem?.update(content: onIslandBar ? bar.compact : bar.menuBarItem, beat: beat, reduceMotion: reduceMotion)
+        statusItem?.update(content: roles.isIsland(activeBar) ? bar.compact : bar.menuBarItem, beat: beat, reduceMotion: reduceMotion)
         guard !capsules.isEmpty else { return }
         let dark = menuBarIsDark
         for capsule in capsules.values {
-            capsule.apply(content: onIslandBar ? bar.compact : bar, dark: dark, beat: beat, reduceMotion: reduceMotion)
+            // Pastille : détail complet quel que soit l'écran où l'on travaille (retour utilisateur, 2026-11-10) ;
+            // elle se réduisait à l'anneau quand la barre active était celle du Mac.
+            capsule.apply(content: bar, dark: dark, beat: beat, reduceMotion: reduceMotion)
             capsule.refreshCard()
         }
     }

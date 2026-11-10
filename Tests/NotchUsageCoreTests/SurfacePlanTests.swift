@@ -14,7 +14,7 @@ struct SurfacePlanTests {
     }
 
     @Test func aMacBookAloneOnlyHasItsIsland() {
-        #expect(plan() == SurfacePlan(showsItem: false, capsuleScreens: [], tracksActiveBar: false))
+        #expect(plan() == SurfacePlan(showsItem: false, capsuleScreens: []))
         #expect(plan(.always).showsItem)
         // L'option de la pastille ne crée rien sans écran sans encoche.
         #expect(plan(capsule: true).capsuleScreens.isEmpty)
@@ -32,26 +32,13 @@ struct SurfacePlanTests {
         #expect(plan(island: false, plain: [narrow], capsule: true).capsuleScreens.isEmpty)
     }
 
-    /// Avec l'item, la barre active se lit sur sa fenêtre. Sans lui, elle n'est suivie que si une surface s'y
-    /// adapte : une pastille, ou l'île quand un écran sans encoche est branché (019).
-    @Test func theActiveBarIsTrackedOnlyWithoutTheItemAndWithSomethingToAdapt() {
-        #expect(!plan(plain: [wide], capsule: true).tracksActiveBar)
-        #expect(plan(plain: [wide], .never).tracksActiveBar)
-        #expect(plan(island: false, plain: [wide], .never, capsule: true).tracksActiveBar)
-        #expect(!plan(island: false, plain: [wide], .never).tracksActiveBar)
-        #expect(!plan(island: false, plain: [narrow], .never, capsule: true).tracksActiveBar)
-        #expect(!plan(.never).tracksActiveBar)
-    }
-
-    /// 019 : barre active vue de l'île. Au survol, l'île réapparaît entière même si l'on travaille ailleurs.
-    @Test func theIslandFollowsTheActiveBarOnlyNextToAPlainScreen() {
-        let both = ScreenRoles(island: island, plain: [wide])
-        #expect(both.islandBar(active: "mac", hover: false) == .island)
-        #expect(both.islandBar(active: "dell", hover: false) == .elsewhere)
-        #expect(both.islandBar(active: "dell", hover: true) == .island)
-        // Barre active inconnue, MacBook seul ou pas d'île : l'île de la 012, sans adaptation.
-        #expect(both.islandBar(active: nil, hover: true) == nil)
-        #expect(ScreenRoles(island: island, plain: []).islandBar(active: "mac", hover: false) == nil)
-        #expect(ScreenRoles(island: nil, plain: [wide]).islandBar(active: "dell", hover: false) == nil)
+    /// À côté d'un écran sans encoche, l'île porte le pourcentage au calme, que l'on travaille sur le Mac ou sur
+    /// l'autre écran (retour utilisateur, 2026-11-10 : elle s'effaçait quand on travaillait ailleurs). Le MacBook
+    /// seul garde l'île de la 012.
+    @Test func nextToAPlainScreenTheIslandAlwaysCarriesTheDetail() {
+        #expect(ScreenRoles(island: island, plain: [wide]).islandCarriesPercent)
+        #expect(ScreenRoles(island: island, plain: [narrow]).islandCarriesPercent)
+        #expect(!ScreenRoles(island: island, plain: []).islandCarriesPercent)
+        #expect(!ScreenRoles(island: nil, plain: [wide]).islandCarriesPercent)
     }
 }

@@ -567,8 +567,8 @@ final class AppModel {
             weekCurve = nil
         }
         notifier.notifyIfNeeded(signal: base, display: display, enabled: alertSettings.notifications, now: now)
-        // 019 : à côté d'un écran sans encoche, l'île suit la barre de menus active, comme la pastille.
-        signal = base.adapted(to: surfaces.islandBar(hover: hover), strings: .app)
+        // 019 : à côté d'un écran sans encoche, l'île porte le pourcentage au calme, où que l'on travaille.
+        signal = surfaces.islandCarriesPercent ? base.carryingPercent(strings: .app) : base
         surfaces.render(display: display, trailingEar: signal.trailingEarWidth(now: now),
                         bar: BarContent.make(signal: base, now: now, strings: .app), beat: beat)
     }

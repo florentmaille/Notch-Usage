@@ -8,10 +8,11 @@ Demandée et validée à l'essai par Florent, sur la build Release locale (MacBo
 | Situation | Île (écran à encoche) | Pastille (écran sans encoche) |
 |---|---|---|
 | MacBook seul | inchangée (012) | sans objet |
-| Écran sans encoche branché, on travaille sur le Mac | jauge à gauche ; à droite, le **pourcentage** au calme, sinon l'échéance ou Claude (inchangés) | anneau seul |
-| Écran sans encoche branché, on travaille ailleurs | **effacée** : ni jauge, ni oreille, ni fond ; l'encoche physique seule | détail complet |
+| Écran sans encoche branché, on travaille sur le Mac | jauge à gauche ; à droite, le **pourcentage** au calme, sinon l'échéance ou Claude (inchangés) | détail complet (jusqu'à la 0.6.2 : anneau seul) |
+| Écran sans encoche branché, on travaille ailleurs | **comme sur le Mac** : jauge et pourcentage, échéance ou Claude (jusqu'à la 0.6.2 : effacée, l'encoche physique seule) | détail complet |
 | Survol de l'encoche | l'île ne s'agrandit plus ; une **carte détachée** (380 pt, 6 pt sous l'encoche, quatre coins arrondis) porte le panneau | carte de la 018 |
 
+- 2026-11-10, retour de Florent : la pastille et l'île restent affichées en entier quel que soit l'écran où l'on travaille (« on ne voit plus rien sur le Mac »). Seul l'item de barre de menus suit encore la barre active, qu'il lit sur sa propre fenêtre : le suivi des clics (`ActiveBarTracker`) disparaît.
 - La barre active vient de la fenêtre de l'item de barre de menus (spike 018). Si l'icône est réglée sur « Jamais », une sonde de largeur nulle prend le relais dès qu'un écran sans encoche est branché.
 - VoiceOver, palier, battement et notifications partent du signal avant adaptation : rien ne change pour eux.
 - Mouvement d'un seul tenant, comme la pastille :
@@ -22,7 +23,7 @@ Demandée et validée à l'essai par Florent, sur la build Release locale (MacBo
 
 ## Code
 
-- **Core** : `NotchSignal.adapted(to: ActiveBar?)`, `Island.Trailing.percent`, `Island.folded`. Tests dans `IslandActiveBarTests`.
+- **Core** : `NotchSignal.carryingPercent`, `Island.Trailing.percent`, `ScreenRoles.islandCarriesPercent`. Tests dans `IslandActiveBarTests` et `SurfacePlanTests`. Jusqu'à la 0.6.2 : `adapted(to: ActiveBar?)` et `Island.folded`, retirés avec l'effacement de l'île.
 - **App** :
   - `AppModel.recompute` adapte l'île à la barre active.
   - `CompactView` : oreilles à largeur animée.
