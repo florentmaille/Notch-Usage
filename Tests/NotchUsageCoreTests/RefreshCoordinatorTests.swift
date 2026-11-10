@@ -254,8 +254,7 @@ struct RefreshCoordinatorTests {
     @Test func readingThatLandsAfterStopIsDiscarded() async throws {
         let provider = GatedUsageProvider(snapA)
         let store = MemorySnapshotStore()
-        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings()), store: store, clock: TestClock(),
-                                   alertHook: { _, ledger in (ledger ?? AlertLedger(), []) })
+        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings()), store: store, clock: TestClock())
         await c.start()
         for _ in 0..<200 where await provider.calls == 0 { await Task.yield() }
         #expect(await provider.calls == 1)
@@ -263,7 +262,6 @@ struct RefreshCoordinatorTests {
         await provider.release()
         for _ in 0..<200 { await Task.yield() }
         #expect(store.snapshot == nil)
-        #expect(store.ledger == nil)
         #expect(await c.state == .loading(previous: nil))
     }
 
@@ -292,30 +290,5 @@ struct RefreshCoordinatorTests {
         await h.coordinator.stop()
         await h.clock.advance(by: 3600)
         #expect(await h.provider.calls == 1)
-    }
-}
-
-@Suite("RefreshCoordinator alerts", .serialized)
-struct RefreshCoordinatorAlertTests {
-    @Test func alertHookRunsOnEachSnapshotAndPersistsLedger() async throws {
-        let provider = StubUsageProvider([.success(makeSnapshot([("session", 50)])), .success(makeSnapshot([("session", 85)])), .success(makeSnapshot([("session", 86)]))])
-        let store = MemorySnapshotStore()
-        let clock = TestClock()
-        let evaluator = AlertEvaluator()
-        let settings = AlertSettings()
-        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings()), store: store, clock: clock,
-                                   alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: settings, ledger: ledger ?? AlertLedger()) })
-        actor Collector { var events: [AlertEvent] = []; func add(_ e: AlertEvent) { events.append(e) } }
-        let collector = Collector()
-        let stream = c.alerts
-        Task { for await e in stream { await collector.add(e) } }
-        await c.start()
-        await clock.settle()
-        await clock.advance(by: 180)
-        await clock.advance(by: 180)
-        for _ in 0..<50 { if await collector.events.count == 1 { break }; await Task.yield() }
-        #expect(await collector.events == [AlertEvent(limitID: "session", level: .warning)])
-        #expect(store.ledger?.entries["session"]?.firedLevels == [.warning])
-        #expect(await provider.calls == 3)
     }
 }

@@ -10,19 +10,14 @@ public enum PauseReason: Sendable, Hashable {
 /// Garantie : jamais deux requêtes à moins de `RefreshSettings.minimumInterval`.
 public actor RefreshCoordinator {
     public nonisolated let states: AsyncStream<FetchState>
-    public nonisolated let alerts: AsyncStream<AlertEvent>
     private let stateContinuation: AsyncStream<FetchState>.Continuation
-    private let alertContinuation: AsyncStream<AlertEvent>.Continuation
 
     private let provider: any UsageProvider
     private var policy: RefreshPolicy
     private let store: any SnapshotStore
     private let clock: any Clock
-    /// Hook d'évaluation des alertes, branché par l'app (US2). Retourne les événements à émettre.
-    private let alertHook: (@Sendable (UsageSnapshot, AlertLedger?) -> (AlertLedger, [AlertEvent]))?
 
     public private(set) var state: FetchState = .idle(nil)
-    private var ledger: AlertLedger?
     private var loopTask: Task<Void, Never>?
     private var sleepTask: Task<Void, Never>?
     private var pauseReasons: Set<PauseReason> = []
@@ -36,24 +31,20 @@ public actor RefreshCoordinator {
     /// `pausedFor` : motifs de pause déjà en cours à la création (économie d'énergie au lancement, verrou pendant un
     /// changement de réglage). Sans eux, un coordinateur neuf relevait pendant la pause de l'app.
     public init(provider: any UsageProvider, policy: RefreshPolicy, store: any SnapshotStore, clock: any Clock,
-                pausedFor reasons: Set<PauseReason> = [],
-                alertHook: (@Sendable (UsageSnapshot, AlertLedger?) -> (AlertLedger, [AlertEvent]))? = nil) {
+                pausedFor reasons: Set<PauseReason> = []) {
         self.provider = provider
         self.policy = policy
         self.store = store
         self.clock = clock
         self.pauseReasons = reasons
-        self.alertHook = alertHook
         self.lastDelay = policy.delayAfterSuccess()
         (states, stateContinuation) = AsyncStream.makeStream(of: FetchState.self, bufferingPolicy: .unbounded)
-        (alerts, alertContinuation) = AsyncStream.makeStream(of: AlertEvent.self, bufferingPolicy: .unbounded)
     }
 
     // MARK: - Cycle de vie
 
     public func start() {
         guard loopTask == nil, !stopped else { return }
-        ledger = try? store.loadLedger()
         if let cached = try? store.loadSnapshot() {
             publish(.idle(cached))
             // Cache récent (relevé de validation, redémarrage après réglage) : il compte comme
@@ -76,7 +67,6 @@ public actor RefreshCoordinator {
         resumeWaiters.forEach { $0.resume() }
         resumeWaiters.removeAll()
         stateContinuation.finish()
-        alertContinuation.finish()
     }
 
     public func pause(reason: PauseReason) {
@@ -161,12 +151,6 @@ public actor RefreshCoordinator {
             guard !stopped else { return .terminal }
             try? store.saveSnapshot(snapshot)
             publish(.idle(snapshot))
-            if let alertHook {
-                let (newLedger, events) = alertHook(snapshot, ledger)
-                ledger = newLedger
-                try? store.saveLedger(newLedger)
-                events.forEach { alertContinuation.yield($0) }
-            }
             return .scheduled(policy.delayAfterSuccess())
         } catch {
             guard !stopped else { return .terminal }

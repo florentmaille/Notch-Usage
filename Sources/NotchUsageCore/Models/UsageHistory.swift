@@ -14,14 +14,7 @@ public struct Reading: Codable, Sendable, Equatable {
         self.resetsAt = resetsAt
     }
 
-    /// Même période si les heures de reset diffèrent de moins de 10 min (même règle que le registre d'alertes).
-    func isSamePeriod(as other: Date?) -> Bool {
-        switch (resetsAt, other) {
-        case (nil, nil): return true
-        case let (a?, b?): return abs(a.timeIntervalSince(b)) < 600
-        default: return false
-        }
-    }
+    func isSamePeriod(as other: Date?) -> Bool { ResetPeriod.isSame(resetsAt, other) }
 }
 
 /// Relevés des deux dernières heures, source de la prévision. Persisté avec le cache de relevés.

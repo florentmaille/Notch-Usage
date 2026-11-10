@@ -33,6 +33,17 @@ struct SupportTests {
         #expect(!SingleInstance.shouldYield(me: c, others: [d]) && SingleInstance.shouldYield(me: d, others: [c]))
     }
 
+    /// Même période malgré les fractions de seconde qui varient d'un relevé à l'autre ; une nouvelle fenêtre décale
+    /// le reset de plusieurs heures.
+    @Test func resetPeriodToleratesJitterOnly() {
+        let reset = Date(timeIntervalSince1970: 1_762_005_600)
+        #expect(ResetPeriod.isSame(reset, reset.addingTimeInterval(-0.912)))
+        #expect(ResetPeriod.isSame(reset, reset.addingTimeInterval(599)))
+        #expect(!ResetPeriod.isSame(reset, reset.addingTimeInterval(600)))
+        #expect(!ResetPeriod.isSame(reset, reset.addingTimeInterval(5 * 3600)))
+        #expect(ResetPeriod.isSame(nil, nil) && !ResetPeriod.isSame(reset, nil) && !ResetPeriod.isSame(nil, reset))
+    }
+
     @Test func boundedIntNeverTraps() {
         #expect(1e300.boundedInt == 1_000_000_000_000 && (-1e300).boundedInt == -1_000_000_000_000)
         #expect(Double.nan.boundedInt == 0 && Double.infinity.boundedInt == 0)

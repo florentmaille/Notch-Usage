@@ -1,7 +1,7 @@
 import Foundation
 import NotchUsageCore
 
-/// Dernier relevé et registre d'alertes dans `~/Library/Application Support/NotchUsage/`.
+/// Dernier relevé et historiques dans `~/Library/Application Support/NotchUsage/`.
 final class FileSnapshotStore: SnapshotStore {
     private let directory: URL
     private let encoder: JSONEncoder = {
@@ -23,14 +23,13 @@ final class FileSnapshotStore: SnapshotStore {
     }
 
     private var snapshotURL: URL { directory.appending(path: "snapshot.json") }
-    private var ledgerURL: URL { directory.appending(path: "alerts.json") }
+    /// Registre d'alertes des versions jusqu'à 0.6.1 : plus écrit ni lu, effacé au lancement et à la déconnexion.
+    private var legacyLedgerURL: URL { directory.appending(path: "alerts.json") }
     private var historyURL: URL { directory.appending(path: "history.json") }
     private var hourlyURL: URL { directory.appending(path: "weekly.json") }
 
     func loadSnapshot() throws -> UsageSnapshot? { try load(snapshotURL) }
     func saveSnapshot(_ snapshot: UsageSnapshot) throws { try save(snapshot, to: snapshotURL) }
-    func loadLedger() throws -> AlertLedger? { try load(ledgerURL) }
-    func saveLedger(_ ledger: AlertLedger) throws { try save(ledger, to: ledgerURL) }
     func loadHistory() throws -> UsageHistory? { try load(historyURL) }
     func saveHistory(_ history: UsageHistory) throws { try save(history, to: historyURL) }
     func loadHourlyHistory() throws -> HourlyHistory? { try load(hourlyURL) }
@@ -40,10 +39,14 @@ final class FileSnapshotStore: SnapshotStore {
     /// Claude Code (017), qui restent installés après une déconnexion.
     func wipe() throws {
         var failure: (any Error)?
-        for url in [snapshotURL, ledgerURL, historyURL, hourlyURL] where FileManager.default.fileExists(atPath: url.path) {
+        for url in [snapshotURL, legacyLedgerURL, historyURL, hourlyURL] where FileManager.default.fileExists(atPath: url.path) {
             do { try FileManager.default.removeItem(at: url) } catch { failure = failure ?? error }
         }
         if let failure { throw failure }
+    }
+
+    func removeLegacyFiles() {
+        try? FileManager.default.removeItem(at: legacyLedgerURL)
     }
 
     private func load<T: Decodable>(_ url: URL) throws -> T? {

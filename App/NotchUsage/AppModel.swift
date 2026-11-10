@@ -23,7 +23,6 @@ final class AppModel {
     @ObservationIgnored private var panel: NotchPanelController?
     @ObservationIgnored private var coordinator: RefreshCoordinator?
     @ObservationIgnored private var stateTask: Task<Void, Never>?
-    @ObservationIgnored private var alertTask: Task<Void, Never>?
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var loginWindow: BrowserLoginWindow?
 
@@ -44,8 +43,6 @@ final class AppModel {
     var beat: Int { beatCounter.beats }
     /// Raisons de pause en cours (veille, verrou, économie d'énergie) : le tick n'y recalcule rien.
     @ObservationIgnored private var pausedReasons: Set<PauseReason> = []
-    /// Réglages d'alerte lus par le hook du coordinateur à chaque relevé : un changement de seuil ne redémarre rien.
-    @ObservationIgnored private let alertSettingsBox: OSAllocatedUnfairLock<AlertSettings>
     /// Survol de l'encoche (013 : seule façon d'ouvrir le panneau). En le quittant, on revient aux limites.
     var hover = false {
         didSet {
@@ -131,7 +128,6 @@ final class AppModel {
         refreshSettings = settings
         let storedAlerts = defaults.data(forKey: Self.alertsKey).flatMap { try? JSONDecoder().decode(AlertSettings.self, from: $0) } ?? AlertSettings()
         alertSettings = storedAlerts
-        alertSettingsBox = OSAllocatedUnfairLock(initialState: storedAlerts)
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
@@ -176,6 +172,7 @@ final class AppModel {
             migrateLegacyClaudeHooks()
             startClaudeWatcher()
         }
+        snapshots.removeLegacyFiles()
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         hourlyHistory = (try? snapshots.loadHourlyHistory()) ?? HourlyHistory()
         screens.onChange = { [weak self] snapshot in self?.applyScreens(snapshot) }
@@ -213,7 +210,6 @@ final class AppModel {
         capsules = [:]
         tickTask?.cancel()
         stateTask?.cancel()
-        alertTask?.cancel()
         arrivalTask?.cancel()
         claudeWatcher?.stop()
         claudeWatcher = nil
@@ -364,15 +360,11 @@ final class AppModel {
 
     private func startCoordinator(for account: Account) {
         stateTask?.cancel()
-        alertTask?.cancel()
         let old = coordinator
         Task { await old?.stop() }
-        let evaluator = alertEvaluator
-        let box = alertSettingsBox
         // Les pauses en cours sont transmises à la création : `pause(_:)` n'a touché que l'ancien coordinateur.
         let c = RefreshCoordinator(provider: connection.makeProvider(for: account), policy: RefreshPolicy(settings: refreshSettings),
-                                   store: snapshots, clock: SystemClock(), pausedFor: pausedReasons,
-                                   alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: box.withLock { $0 }, ledger: ledger ?? AlertLedger()) })
+                                   store: snapshots, clock: SystemClock(), pausedFor: pausedReasons)
         coordinator = c
         let states = c.states
         stateTask = Task { [weak self] in
@@ -384,13 +376,6 @@ final class AppModel {
                 self.fetchState = self.fetchState.displayed(next: state)
                 self.recompute()
                 if case .reauthRequired = state { await self.handleReauth() }
-            }
-        }
-        let alerts = c.alerts
-        alertTask = Task { [weak self] in
-            for await event in alerts {
-                guard self != nil else { return }
-                Log.refresh.notice("alert \(event.level.rawValue, privacy: .public) on \(event.limitID, privacy: .public)")
             }
         }
         Task { await c.start() }
@@ -583,7 +568,6 @@ final class AppModel {
 
     func signOut() {
         stateTask?.cancel()
-        alertTask?.cancel()
         let c = coordinator
         let store = snapshots
         // Un relevé en vol peut encore être écrit avant l'arrêt effectif : second effacement une fois le
@@ -653,11 +637,9 @@ final class AppModel {
         saveAlertSettings()
     }
 
-    /// Les nouveaux seuils s'appliquent au relevé suivant (US2 sc. 4) : le hook lit la boîte, sans redémarrage.
+    /// Les nouveaux seuils s'appliquent aussitôt : le recalcul les lit, sans redémarrer le coordinateur.
     private func saveAlertSettings() {
         if let data = try? JSONEncoder().encode(alertSettings) { defaults.set(data, forKey: Self.alertsKey) }
-        let current = alertSettings
-        alertSettingsBox.withLock { $0 = current }
         recompute()
     }
 

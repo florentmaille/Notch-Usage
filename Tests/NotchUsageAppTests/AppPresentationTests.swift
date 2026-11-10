@@ -82,7 +82,8 @@ struct AppPresentationTests {
         defer { try? fm.removeItem(at: dir) }
         let store = FileSnapshotStore(directory: dir)
         try store.saveSnapshot(UsageSnapshot(limits: [], fetchedAt: Date()))
-        try store.saveLedger(AlertLedger())
+        // Registre d'alertes laissé par une version jusqu'à 0.6.1 : plus écrit, mais toujours effacé.
+        try "{}".write(to: dir.appending(path: "alerts.json"), atomically: true, encoding: .utf8)
         try store.saveHistory(UsageHistory())
         try store.saveHourlyHistory(HourlyHistory())
         for name in ["claude-hook.sh", "claude-events.jsonl"] {
@@ -92,7 +93,7 @@ struct AppPresentationTests {
 
         try store.wipe()
         #expect(try Set(fm.contentsOfDirectory(atPath: dir.path)) == ["claude-hook.sh", "claude-events.jsonl"])
-        #expect(try store.loadSnapshot() == nil && store.loadLedger() == nil && store.loadHistory() == nil && store.loadHourlyHistory() == nil)
+        #expect(try store.loadSnapshot() == nil && store.loadHistory() == nil && store.loadHourlyHistory() == nil)
         // Rien à effacer : pas d'erreur.
         try store.wipe()
     }
