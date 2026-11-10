@@ -33,7 +33,8 @@ struct ConnectView: View {
             DisclosureGroup(isExpanded: $showsKey) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        SecureField("sk-ant-sid…", text: $pastedKey)
+                        // Libellé pour VoiceOver : sans lui, le champ se lisait « sk-ant-sid… ».
+                        SecureField("Session key", text: $pastedKey, prompt: Text(verbatim: "sk-ant-sid…"))
                             .textFieldStyle(.roundedBorder)
                         Button("Use") {
                             model.applySessionKey(pastedKey)

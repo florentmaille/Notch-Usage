@@ -26,8 +26,9 @@ Fonction pure du core, sans réseau ni horloge : `forecast(readings, resetsAt, n
 3. Pente : régression linéaire de `utilization` sur `at`, en points par seconde.
 4. Pente ≤ 0 → `holdsUntilReset`.
 5. Projection : `t = now + (100 - dernière utilisation) / pente`.
-6. `resetsAt` absente → `holdsUntilReset` (rien à comparer). Sinon `t < resetsAt` → `blockAt(t)`,
-   sinon `holdsUntilReset`.
+6. `resetsAt` absente → `unavailable` : rien ne dit que le reset arrive avant `t`, les seuils reprennent la
+   main (jusqu'à la 0.6.2 : `holdsUntilReset`, qui éteignait le seuil critique). Sinon `t < resetsAt` →
+   `blockAt(t)`, sinon `holdsUntilReset`.
 7. Dernière utilisation ≥ 100 → `unavailable` (la limite est épuisée, l'affichage suit un autre état).
 
 L'appelant écarte avant l'appel les relevés d'une autre période de réinitialisation (tolérance de
@@ -46,7 +47,8 @@ L'appelant écarte avant l'appel les relevés d'une autre période de réinitial
 | Trou de veille | 70→30, 0→55 | +4 h | `unavailable` (hors fenêtre, un seul relevé restant) |
 | Trou dans la fenêtre | 40→30, 5→52, 0→55 | +4 h | `unavailable` (écart de 35 min) |
 | Blocage après reset | 30→80, 0→82 | +30 min | `holdsUntilReset` |
-| Sans heure de reset | 30→40, 0→55 | absente | `holdsUntilReset` |
+| Sans heure de reset | 30→40, 0→55 | absente | `unavailable` |
+| Sans heure de reset, plat | 30→42, 15→42, 0→42 | absente | `holdsUntilReset` |
 | Déjà bloquée | 30→90, 0→100 | +1 h | `unavailable` |
 
 ## Stabilisation (hystérésis)

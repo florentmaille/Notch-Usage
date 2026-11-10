@@ -483,6 +483,16 @@
         }
       }
     },
+    "Collapsed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repliée"
+          }
+        }
+      }
+    },
     "Connect your Claude account": {
       "localizations": {
         "fr": {
@@ -569,6 +579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Terminé"
+          }
+        }
+      }
+    },
+    "Expanded": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dépliée"
           }
         }
       }
@@ -983,6 +1003,16 @@
         }
       }
     },
+    "Session key": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé de session"
+          }
+        }
+      }
+    },
     "Settings": {
       "localizations": {
         "fr": {
@@ -1381,16 +1411,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "attend une réponse"
-          }
-        }
-      }
-    },
-    "sk-ant-sid…": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "sk-ant-sid…"
           }
         }
       }

@@ -47,9 +47,10 @@ public struct WeekCurve: Sendable, Equatable {
         let past = history.readings(for: limit.id)
             .filter { $0.isSamePeriod(as: resetsAt) && $0.at >= start && $0.at < now }
             .map { Point(fraction: fraction($0.at), usage: $0.utilization) }
+        // FR-007 : 2 relevés depuis le reset. Le point « maintenant » reprend le dernier relevé, il ne compte pas.
+        guard past.count >= 2 else { return .notEnough }
         let current = Point(fraction: fraction(now), usage: limit.utilization)
         let points = past + [current]
-        guard points.count >= 2 else { return .notEnough }
 
         var projection = Projection.none
         var tint = NotchSignal.Island.Tint.calm
@@ -60,14 +61,16 @@ public struct WeekCurve: Sendable, Equatable {
         case .holdsUntilReset?:
             // Même rythme que la 016 : usage moyen depuis le début de la semaine, nuits comprises.
             let elapsed = now.timeIntervalSince(start)
-            projection = .holds(atReset: elapsed > 0 ? limit.utilization * week / elapsed : limit.utilization)
+            // Plafonné : la prévision affichée peut dater du relevé précédent (anti-rebond), « tient » reste sous 100 %.
+            projection = .holds(atReset: min(100, elapsed > 0 ? limit.utilization * week / elapsed : limit.utilization))
         case .unavailable?, nil:
             break
         }
 
         var days: [Day] = []
         var midnight = calendar.startOfDay(for: start)
-        if midnight <= start { midnight = calendar.date(byAdding: .day, value: 1, to: midnight) ?? midnight.addingTimeInterval(86_400) }
+        // Reset à minuit local : la première journée commence au reset et garde son repère.
+        if midnight < start { midnight = calendar.date(byAdding: .day, value: 1, to: midnight) ?? midnight.addingTimeInterval(86_400) }
         while midnight < resetsAt {
             days.append(Day(fraction: fraction(midnight), date: midnight))
             midnight = calendar.date(byAdding: .day, value: 1, to: midnight) ?? midnight.addingTimeInterval(86_400)

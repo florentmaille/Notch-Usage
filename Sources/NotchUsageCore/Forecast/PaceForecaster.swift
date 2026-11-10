@@ -42,8 +42,9 @@ public enum PaceForecaster {
         guard slope > 0 else { return .holdsUntilReset }
 
         let blockAt = now.addingTimeInterval((100 - last.utilization) / slope)
-        guard let resetsAt, blockAt < resetsAt else { return .holdsUntilReset }
-        return .blockAt(blockAt)
+        // Sans heure de reset, rien ne dit qu'il arrive avant le blocage : pas de prévision, les seuils reprennent la main.
+        guard let resetsAt else { return .unavailable }
+        return blockAt < resetsAt ? .blockAt(blockAt) : .holdsUntilReset
     }
 
     /// Durée d'une période hebdomadaire et part écoulée minimale avant d'extrapoler (016).

@@ -38,6 +38,7 @@ struct WeekSection: View {
         .padding(.top, 4)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
+        .accessibilityValue(collapsed ? Text("Collapsed") : Text("Expanded"))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { collapsed.toggle() }
     }

@@ -46,8 +46,20 @@ struct WeekCurveTests {
         #expect(curve(23, HourlyHistory(), forecast: .holdsUntilReset) == .notEnough)
     }
 
+    /// FR-007 : il faut 2 relevés depuis le reset. Le point « maintenant » reprend le dernier relevé, déjà dans
+    /// l'historique : le compter rendait le message inatteignable dans l'app.
+    @Test func aSingleReadingIsNotEnough() {
+        #expect(curve(23, history([(89.9, 23)]), forecast: .holdsUntilReset) == .notEnough)
+    }
+
+    /// La prévision affichée peut dater du relevé précédent (anti-rebond) : « tient » ne dépasse jamais 100 %.
+    @Test func holdsProjectionIsCappedAt100() {
+        guard case .curve(let c)? = curve(60, history([(10, 20), (50, 45)]), forecast: .holdsUntilReset) else { Issue.record("curve"); return }
+        #expect(c.projection == .holds(atReset: 100))
+    }
+
     @Test func holdsProjectsToTheResetWithThe016Formula() {
-        guard case .curve(let c)? = curve(23, history([(10, 2)]), forecast: .holdsUntilReset) else { Issue.record("curve"); return }
+        guard case .curve(let c)? = curve(23, history([(10, 2), (50, 12)]), forecast: .holdsUntilReset) else { Issue.record("curve"); return }
         guard case .holds(let atReset) = c.projection else { Issue.record("holds"); return }
         #expect(abs(atReset - 23 * 168.0 / 90) < 1e-9)
         #expect(c.tint == .calm)
@@ -55,27 +67,42 @@ struct WeekCurveTests {
 
     @Test func blockProjectsTo100AtTheBlockTime() {
         let block = Date.iso("2026-11-11T14:00:00Z")   // dans 46 h : palier lointain
-        guard case .curve(let c)? = curve(70, history([(10, 20)]), forecast: .blockAt(block)) else { Issue.record("curve"); return }
+        guard case .curve(let c)? = curve(70, history([(10, 20), (50, 45)]), forecast: .blockAt(block)) else { Issue.record("curve"); return }
         guard case .blocks(let at, let fraction) = c.projection else { Issue.record("blocks"); return }
         #expect(at == block)
         #expect(abs(fraction - block.timeIntervalSince(weekStart) / PaceForecaster.weekPeriod) < 1e-9)
         #expect(c.tint == .far)
-        let soon = curve(95, history([(10, 20)]), forecast: .blockAt(now.addingTimeInterval(20 * 60)))
+        let soon = curve(95, history([(10, 20), (50, 45)]), forecast: .blockAt(now.addingTimeInterval(20 * 60)))
         guard case .curve(let s)? = soon else { Issue.record("curve"); return }
         #expect(s.tint == .imminent)
     }
 
     @Test func unavailableHasNoProjection() {
-        guard case .curve(let c)? = curve(23, history([(10, 2)]), forecast: .unavailable) else { Issue.record("curve"); return }
+        guard case .curve(let c)? = curve(23, history([(10, 2), (50, 12)]), forecast: .unavailable) else { Issue.record("curve"); return }
         #expect(c.projection == .none)
     }
 
     @Test func daysAreLocalMidnights() {
-        guard case .curve(let c)? = curve(23, history([(10, 2)]), forecast: nil) else { Issue.record("curve"); return }
+        guard case .curve(let c)? = curve(23, history([(10, 2), (50, 12)]), forecast: nil) else { Issue.record("curve"); return }
         // Semaine du jeudi 5 22:00 au jeudi 12 22:00 : minuits du vendredi 6 au jeudi 12.
         #expect(c.days.count == 7)
         #expect(abs(c.days[0].fraction - 2.0 / 168) < 1e-9)
         #expect(c.days[0].date == .iso("2026-11-06T00:00:00Z"))
+        #expect(c.days.last?.date == .iso("2026-11-12T00:00:00Z"))
+        #expect(c.todayIndex == 3)   // lundi 9
+    }
+
+    /// Reset à minuit local : la semaine compte 7 journées entières, la première commence au reset.
+    @Test func aResetAtLocalMidnightShowsSevenDays() {
+        let midnight = Date.iso("2026-11-13T00:00:00Z")
+        let start = midnight.addingTimeInterval(-PaceForecaster.weekPeriod)
+        let h = [10.0, 50].reduce(HourlyHistory()) { h, hours in
+            h.appending(UsageSnapshot(limits: [limit(5, reset: midnight)], fetchedAt: start.addingTimeInterval(hours * 3600)))
+        }
+        let state = WeekCurve.make(limit: limit(23, reset: midnight), history: h, forecast: nil, now: now, calendar: utc)
+        guard case .curve(let c)? = state else { Issue.record("curve"); return }
+        #expect(c.days.count == 7)
+        #expect(c.days.first?.date == start && c.days.first?.fraction == 0)
         #expect(c.days.last?.date == .iso("2026-11-12T00:00:00Z"))
         #expect(c.todayIndex == 3)   // lundi 9
     }

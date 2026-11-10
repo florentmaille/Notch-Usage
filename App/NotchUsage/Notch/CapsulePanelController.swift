@@ -27,6 +27,8 @@ final class CapsulePanelController {
     private var hoverWork: DispatchWorkItem?
     private var inside: (capsule: Bool, card: Bool) = (false, false)
     private var keyMonitor: Any?
+    /// Menu ouvert depuis la carte (Langue, icône de barre) : elle ne se referme pas pendant le choix, comme l'île.
+    private let menus = MenuTracking()
     /// Ouverture de la carte : l'app ferme le popover et l'île (une seule surface ouverte à la fois).
     var onCardOpen: (() -> Void)?
     /// Clic sur la pastille : comme sur l'île, les sessions Claude « terminé » s'effacent (017, FR-002).
@@ -56,6 +58,7 @@ final class CapsulePanelController {
         capsulePanel.contentView = capsuleHover
         capsuleHover.onEnter = { [weak self] in self?.pointer(capsule: true) }
         capsuleHover.onExit = { [weak self] in self?.pointer(capsule: false) }
+        menus.onEnd = { [weak self] in self?.menuDidEnd() }
     }
 
     /// Hauteur de la barre de menus de l'écran ; 0 si elle est masquée automatiquement (pas de pastille).
@@ -159,6 +162,7 @@ final class CapsulePanelController {
     }
 
     func close() {
+        menus.stop()
         shrinkWork?.cancel()
         unlightWork?.cancel()
         hoverWork?.cancel()
@@ -173,11 +177,21 @@ final class CapsulePanelController {
         if let capsule { inside.capsule = capsule }
         if let card { inside.card = card }
         let isInside = inside.capsule || inside.card
+        // Le menu recouvre le pointeur : la sortie n'en est pas une tant qu'il est ouvert.
+        if !isInside, menus.isActive { return }
         hoverWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.setHovered(isInside) }
         hoverWork = work
         let delay = isInside ? NotchPanelController.hoverOpenDelay : NotchPanelController.hoverCloseDelay
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
+
+    /// Menu refermé : la position du pointeur est relue, il a pu quitter la carte pendant le choix.
+    private func menuDidEnd() {
+        guard let cardPanel else { return }
+        let mouse = NSEvent.mouseLocation
+        inside = (capsulePanel.frame.contains(mouse), cardPanel.frame.contains(mouse))
+        pointer()
     }
 
     private func setHovered(_ value: Bool) {
@@ -225,8 +239,8 @@ final class CapsulePanelController {
         // Hauteur idéale : proposer 2000 pt laissait le contenu (`maxHeight: .infinity`) tout prendre.
         let measured = NSHostingController(rootView: CapsuleCardView().fixedSize(horizontal: false, vertical: true).environment(model))
             .sizeThatFits(in: CGSize(width: CapsuleCardView.width, height: 2000)).height
-        let height = min(measured.rounded(.up), 560)
         let top = screen.frame.maxY - Self.menuBarHeight(screen) - Self.cardGap
+        let height = CardLayout.height(measured: measured, top: top, floor: screen.visibleFrame.minY)
         panel.setFrame(NSRect(x: (screen.frame.midX - CapsuleCardView.width / 2).rounded(), y: top - height,
                               width: CapsuleCardView.width, height: height), display: true)
     }

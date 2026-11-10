@@ -783,9 +783,10 @@ final class AppModel {
 
     func setExpandedContentHeight(_ height: CGFloat) {
         guard height > 40 else { return }
-        let clamped = min(height.rounded(.up), 480)
-        guard abs(clamped - expandedContentHeight) > 0.5 else { return }
-        expandedContentHeight = clamped
+        // Hauteur mesurée telle quelle : la carte se borne elle-même à l'écran (`CardLayout`).
+        let measured = height.rounded(.up)
+        guard abs(measured - expandedContentHeight) > 0.5 else { return }
+        expandedContentHeight = measured
         // Hors de la passe de mise en page qui a produit la mesure : redimensionner la fenêtre pendant cette passe
         // laissait la vue racine à l'ancienne hauteur (réglages coupés, 013).
         Task { @MainActor [weak self] in self?.recompute() }
