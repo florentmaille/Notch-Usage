@@ -112,6 +112,7 @@ L'utilisateur choisit dans les réglages quand l'item de barre de menus s'affich
 - **Popover ouvert pendant un changement d'écran** : il se ferme.
 - **Taille de l'item** : l'item ne dépasse jamais l'équivalent de « jauge + 2:05 + glyphe + nombre » ; le mot d'arrivée s'affiche dans le popover, pas dans l'item, si la barre est étroite.
 - **Popover et île ouverts en même temps** : ouvrir l'un ferme l'autre.
+- **Clic sur la pastille** : comme le clic sur l'île (017), il efface les sessions Claude « terminé » ; les attentes bloquantes restent.
 - **Réplique de l'item sur la barre inactive** : macOS y affiche une copie de l'item actif. Quand l'utilisateur travaille sur le MacBook, l'écran externe montre donc l'item compact ; c'est accepté, le regard est sur l'île.
 - **Aucun doublon voulu** : l'utilisateur peut régler l'icône sur « Jamais » et activer la pastille ; l'écran externe n'est alors couvert que s'il fait au moins 1700 pt et que sa barre est visible.
 

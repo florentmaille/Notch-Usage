@@ -15,7 +15,7 @@ final class CapsulePanelController {
     private let model: AppModel
     private let capsulePanel: NotchPanel
     private let capsuleHover: HoverView
-    private let capsuleHost: NSHostingView<AnyView>
+    private let capsuleHost: FirstMouseHostingView
     private var cardPanel: NotchPanel?
     private var cardHover: HoverView?
     private var content: BarContent?
@@ -29,6 +29,8 @@ final class CapsulePanelController {
     private var keyMonitor: Any?
     /// Ouverture de la carte : l'app ferme le popover et l'île (une seule surface ouverte à la fois).
     var onCardOpen: (() -> Void)?
+    /// Clic sur la pastille : comme sur l'île, les sessions Claude « terminé » s'effacent (017, FR-002).
+    var onTap: (() -> Void)?
 
     init(screenID: String, screen: NSScreen, model: AppModel) {
         self.screenID = screenID
@@ -38,7 +40,8 @@ final class CapsulePanelController {
         // Pas d'espace plein écran : la barre y est masquée, la pastille aussi (point plein écran : plus tard, R7).
         capsulePanel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         capsuleHover = HoverView(frame: .zero)
-        capsuleHost = NSHostingView(rootView: AnyView(EmptyView()))
+        // Premier clic accepté sans que la fenêtre ait le clavier, comme pour l'île.
+        capsuleHost = FirstMouseHostingView(rootView: AnyView(EmptyView()))
         capsuleHost.sizingOptions = []
         capsuleHost.translatesAutoresizingMaskIntoConstraints = false
         capsuleHover.addSubview(capsuleHost)
@@ -97,7 +100,7 @@ final class CapsulePanelController {
         capsuleWidth = NSHostingController(rootView: view).sizeThatFits(in: CGSize(width: 600, height: CapsuleView.height)).width.rounded(.up)
         if !hostsState {
             hostsState = true
-            capsuleHost.rootView = AnyView(CapsuleRoot(state: state))
+            capsuleHost.rootView = AnyView(CapsuleRoot(state: state, onTap: { [weak self] in self?.onTap?() }))
         }
         let update = { [state, dark, hovered, lit] in
             state.content = content
@@ -262,6 +265,7 @@ final class CapsuleState {
 /// transparent qui capte le pointeur, la capsule au centre.
 private struct CapsuleRoot: View {
     let state: CapsuleState
+    let onTap: () -> Void
 
     var body: some View {
         ZStack {
@@ -270,6 +274,8 @@ private struct CapsuleRoot: View {
                 CapsuleView(content: content, dark: state.dark, hovered: state.hovered, lit: state.lit)
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
         .animation(.easeOut(duration: 0.12), value: state.hovered)
     }
 }

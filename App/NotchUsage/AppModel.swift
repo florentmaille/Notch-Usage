@@ -274,6 +274,7 @@ final class AppModel {
                 capsule.update(screen: screen)
             } else {
                 let capsule = CapsulePanelController(screenID: id, screen: screen, model: self)
+                capsule.onTap = { [weak self] in self?.clearDoneSessions() }
                 capsule.onCardOpen = { [weak self] in
                     guard let self else { return }
                     self.hover = false
