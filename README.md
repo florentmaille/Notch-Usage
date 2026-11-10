@@ -193,7 +193,8 @@ Debug builds with it and keep Keychain access across builds.
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
 [`specs/`](specs), from the first notch (001) and the forecast (003) to the island (012), the menu bar icon (014), Claude Code
 sessions (017), displays without a notch (018), the island following the active menu bar (019) and updates without
-network access (020). `scripts/publish.sh <version>` publishes a preview end to end. It bumps the version and build, builds the zip,
+network access (020). `scripts/measure-budgets.py` checks the CPU and memory budgets on the running app over 10 minutes; run it before a release.
+`scripts/publish.sh <version>` publishes a preview end to end. It bumps the version and build, builds the zip,
 writes its checksum into the release notes, opens one PR and merges it once CI passes and you confirm, creates the
 GitHub pre-release, checks the published zip and updates the Homebrew cask. Write
 `docs/release-notes/<version>-preview.md` first, with `__SHA256__` where the checksum goes; `DRY_RUN=1` stops
