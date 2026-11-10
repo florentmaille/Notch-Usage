@@ -18,6 +18,13 @@ struct FetchStateTests {
         #expect(failed.displayed(next: .reauthRequired(previous: snap)) == .reauthRequired(previous: snap))
     }
 
+    /// Plan non pris en charge : l'essai horaire ne fait pas clignoter l'écran, « non pris en charge » reste
+    /// jusqu'à un relevé exploitable.
+    @Test func retryOfAnUnsupportedPlanKeepsTheMessage() {
+        #expect(FetchState.unsupported.displayed(next: .loading(previous: nil)) == .unsupported)
+        #expect(FetchState.unsupported.displayed(next: .idle(snap)) == .idle(snap))
+    }
+
     @Test func loadingAfterSuccessIsShown() {
         #expect(FetchState.idle(snap).displayed(next: .loading(previous: snap)) == .loading(previous: snap))
     }

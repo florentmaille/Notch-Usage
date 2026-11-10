@@ -613,6 +613,16 @@
         }
       }
     },
+    "If nothing shows, reopen Notch Usage from Applications: the icon comes back.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si rien ne s'affiche, rouvrez Notch Usage depuis Applications : l'icône revient."
+          }
+        }
+      }
+    },
     "Installed without Homebrew: download the latest version from the releases page.": {
       "localizations": {
         "fr": {

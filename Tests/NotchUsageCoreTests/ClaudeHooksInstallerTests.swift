@@ -24,7 +24,8 @@ struct ClaudeHooksInstallerTests {
                 let mine = groups[event]?.filter { ClaudeHooksInstaller.owns($0, scriptPath: script) } ?? []
                 #expect(mine.count == 1, Comment(rawValue: "\(fixture) \(event)"))
                 let hook = (mine.first?["hooks"] as? [[String: Any]])?.first
-                #expect(hook?["type"] as? String == "command" && hook?["command"] as? String == "'\(script)'" && hook?["timeout"] as? Int == 5)
+                #expect(hook?["type"] as? String == "command" && hook?["command"] as? String == "[ ! -x '\(script)' ] || exec '\(script)'"
+                        && hook?["timeout"] as? Int == 5)
             }
             // Les groupes de l'utilisateur sont là, avant les nôtres, inchangés.
             let userBefore = hooks(original), userAfter = groups.mapValues { $0.filter { !ClaudeHooksInstaller.owns($0, scriptPath: script) } }
@@ -56,19 +57,56 @@ struct ClaudeHooksInstallerTests {
 
         let installed = try ClaudeHooksInstaller.install(into: Data(), scriptPath: hook.path)
         let command = (hooks(installed)["Stop"]?.first?["hooks"] as? [[String: Any]])?.first?["command"] as? String
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", try #require(command)]
-        process.standardError = FileHandle.nullDevice
-        try process.run()
-        process.waitUntilExit()
-        #expect(process.terminationStatus == 0)
+        let result = try run(try #require(command))
+        #expect(result.status == 0 && result.stderr.isEmpty)
         #expect(fm.fileExists(atPath: marker.path))
     }
 
     @Test func commandIsQuotedForTheShell() {
-        #expect(ClaudeHooksInstaller.command(for: script) == "'/Users/f/Library/Application Support/NotchUsage/claude-hook.sh'")
-        #expect(ClaudeHooksInstaller.command(for: "/Users/o'neil/hook.sh") == "'/Users/o'\\''neil/hook.sh'")
+        let quoted = "'/Users/f/Library/Application Support/NotchUsage/claude-hook.sh'"
+        #expect(ClaudeHooksInstaller.command(for: script) == "[ ! -x \(quoted) ] || exec \(quoted)")
+        #expect(ClaudeHooksInstaller.command(for: "/Users/o'neil/hook.sh") == "[ ! -x '/Users/o'\\''neil/hook.sh' ] || exec '/Users/o'\\''neil/hook.sh'")
+    }
+
+    /// Lance la commande comme Claude Code (`<shell> -c <commande>`) ; rend le code de sortie et ce qui est écrit
+    /// sur la sortie d'erreur.
+    func run(_ command: String, shell: String = "/bin/sh") throws -> (status: Int32, stderr: String) {
+        let process = Process(), pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: shell)
+        process.arguments = ["-c", command]
+        process.standardError = pipe
+        try process.run()
+        let errors = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return (process.terminationStatus, String(decoding: errors, as: UTF8.self))
+    }
+
+    /// App désinstallée, script disparu, entrées restées dans `settings.json` : la commande ne fait rien et ne dit
+    /// rien, Claude Code ne voit aucune erreur de hook.
+    @Test func missingScriptIsASilentNoOp() throws {
+        let gone = FileManager.default.temporaryDirectory.appending(path: "notch usage absent \(UUID().uuidString)/claude-hook.sh").path
+        for shell in ["/bin/sh", "/bin/zsh"] {
+            let result = try run(ClaudeHooksInstaller.command(for: gone), shell: shell)
+            #expect(result.status == 0 && result.stderr.isEmpty, Comment(rawValue: shell))
+        }
+    }
+
+    /// Le script lit `$PPID` pour savoir quelle session l'a lancé : `exec` remplace le shell de la commande, le
+    /// parent du script est donc le processus qui a lancé le hook (Claude Code), pas un shell éphémère.
+    @Test func scriptSeesTheHookLauncherAsItsParent() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notch usage ppid \(UUID().uuidString)", directoryHint: .isDirectory)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: dir) }
+        let hook = dir.appending(path: "claude-hook.sh"), out = dir.appending(path: "ppid")
+        try "#!/bin/sh\necho \"$PPID\" > \"$(dirname \"$0\")/ppid\"\n".write(to: hook, atomically: true, encoding: .utf8)
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: hook.path)
+        for shell in ["/bin/sh", "/bin/zsh"] {
+            let result = try run(ClaudeHooksInstaller.command(for: hook.path), shell: shell)
+            #expect(result.status == 0, Comment(rawValue: shell))
+            let seen = try String(contentsOf: out, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+            #expect(seen == "\(ProcessInfo.processInfo.processIdentifier)", Comment(rawValue: shell))
+        }
     }
 
     /// Fichier laissé par les versions 0.5.4 à 0.6.1 : sept groupes au chemin brut, ajoutés à ceux de l'utilisateur.

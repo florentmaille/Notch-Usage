@@ -75,6 +75,24 @@ actor StubUsageProvider: UsageProvider {
     }
 }
 
+/// Fournisseur dont la requête reste en vol jusqu'à `release()` : arrêt ou déconnexion pendant un relevé.
+actor GatedUsageProvider: UsageProvider {
+    nonisolated let method: ConnectionMethod = .claudeCode
+    private let snapshot: UsageSnapshot
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private(set) var calls = 0
+    init(_ snapshot: UsageSnapshot) { self.snapshot = snapshot }
+    func fetch() async throws(FetchError) -> UsageSnapshot {
+        calls += 1
+        await withCheckedContinuation { waiters.append($0) }
+        return snapshot
+    }
+    func release() {
+        waiters.forEach { $0.resume() }
+        waiters = []
+    }
+}
+
 /// Horloge pilotée par les tests : `sleep` suspend jusqu'à `advance`.
 actor TestClock: Clock {
     private(set) var current: Date

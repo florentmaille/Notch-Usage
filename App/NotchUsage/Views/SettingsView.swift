@@ -89,6 +89,10 @@ struct SettingsView: View {
                     Text("Shown when a screen without a notch is connected")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                if model.menuBarIconMode == .never {
+                    Text("If nothing shows, reopen Notch Usage from Applications: the icon comes back.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
                 row("Centered capsule on wide screens", isOn: Binding(
                     get: { model.showsCenterCapsule },
                     set: { model.setShowsCenterCapsule($0) }))

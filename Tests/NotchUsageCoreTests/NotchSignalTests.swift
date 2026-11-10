@@ -212,6 +212,24 @@ struct NotchSignalTests {
         #expect(s == Island(leading: .gauge(value: 100, tint: .exhausted), trailing: .back("1:02")))
     }
 
+    /// Limite hebdomadaire atteinte : le retour se compte en jours (« 3d 5h »), pas en heures (« 77:00 »).
+    @Test func exhaustedWeeklyIslandCountsDays() {
+        let weekly = makeSnapshot([("session", 30), ("weekly_all", 100)], fetchedAt: now, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600))
+        #expect(signal(display(.idle(weekly), level: .critical)).island.trailing == .back("3d 5h"))
+        #expect(IslandFormat.back(remaining: 3 * 86400 + 5 * 3600, language: .french) == "3 j 5 h")
+        #expect(IslandFormat.back(remaining: 24 * 3600, language: .english) == "1d 0h")
+        // Sous 24 h, le format de l'île ne change pas.
+        #expect(IslandFormat.back(remaining: 23 * 3600 + 59 * 60, language: .english) == "23:59")
+        #expect(IslandFormat.back(remaining: 62 * 60, language: .french) == "1:02")
+    }
+
+    /// Une date de reset aberrante (réponse corrompue) ne fait pas planter la conversion en minutes.
+    @Test func absurdRemainingTimesDoNotTrap() {
+        #expect(!IslandFormat.deadline(remaining: 1e30).isEmpty)
+        #expect(!IslandFormat.back(remaining: 1e30, language: .english).isEmpty)
+        #expect(IslandFormat.deadline(remaining: -1e30) == "0\u{2032}")
+    }
+
     @Test func thresholdWithoutForecastShowsTheShortLabel() {
         let weekly = makeSnapshot([("session", 30), ("weekly_all", 97)], fetchedAt: now, resetsAt: now.addingTimeInterval(3 * 86400))
         #expect(signal(display(.idle(weekly), level: .critical)).island == Island(leading: .gauge(value: 97, tint: .imminent), trailing: .label("7d")))

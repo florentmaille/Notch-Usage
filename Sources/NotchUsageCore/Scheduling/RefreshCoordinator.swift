@@ -15,7 +15,7 @@ public actor RefreshCoordinator {
     private let alertContinuation: AsyncStream<AlertEvent>.Continuation
 
     private let provider: any UsageProvider
-    private let policy: RefreshPolicy
+    private var policy: RefreshPolicy
     private let store: any SnapshotStore
     private let clock: any Clock
     /// Hook d'évaluation des alertes, branché par l'app (US2). Retourne les événements à émettre.
@@ -100,6 +100,20 @@ public actor RefreshCoordinator {
 
     public var isPaused: Bool { !pauseReasons.isEmpty }
 
+    /// Nouvel intervalle (curseur des réglages) sans recréer le coordinateur : dernière requête, backoff et pauses
+    /// restent en place, donc aucune rafale et jamais deux requêtes à moins de `minimumInterval`.
+    public func update(policy: RefreshPolicy) {
+        guard policy != self.policy else { return }
+        self.policy = policy
+        // Seul un sommeil d'après succès se replanifie : nouvelle échéance = dernier relevé + nouvel intervalle.
+        // Relevé en vol, backoff d'erreur ou pause : le prochain délai lira la nouvelle politique.
+        guard sleepTask != nil, case .idle = state, let last = lastRequestAt else { return }
+        let interval = policy.delayAfterSuccess().timeInterval
+        let remaining = interval - clock.now.timeIntervalSince(last)
+        overrideDelay = .seconds(min(interval, max(0, remaining)))
+        sleepTask?.cancel()
+    }
+
     // MARK: - Boucle
 
     private func requestSoon() {
@@ -139,6 +153,9 @@ public actor RefreshCoordinator {
         lastRequestAt = clock.now
         do {
             let snapshot = try await provider.fetch()
+            // Arrêt (déconnexion, changement de compte) pendant la requête : le relevé n'est ni publié ni réécrit
+            // sur disque après l'effacement.
+            guard !stopped else { return .terminal }
             try? store.saveSnapshot(snapshot)
             publish(.idle(snapshot))
             if let alertHook {
@@ -149,6 +166,7 @@ public actor RefreshCoordinator {
             }
             return .scheduled(policy.delayAfterSuccess())
         } catch {
+            guard !stopped else { return .terminal }
             switch error {
             case .unauthorized, .credentialsUnavailable:
                 publish(.reauthRequired(previous: previous))

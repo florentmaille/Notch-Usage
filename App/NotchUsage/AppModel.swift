@@ -51,7 +51,9 @@ final class AppModel {
     /// Survol de l'encoche (013 : seule façon d'ouvrir le panneau). En le quittant, on revient aux limites.
     var hover = false {
         didSet {
-            if !hover { showSettings = false }
+            // Seul un vrai changement ramène aux limites : `hover = false` sert aussi à refermer l'île quand le
+            // popover ou une carte s'ouvre, et ne doit pas fermer les réglages qu'ils affichent.
+            if hover != oldValue { showSettings = false }
             // Au survol, les sessions dont le processus a disparu sont retirées (017, R7) : jamais sur un timer.
             if hover { claudeSessions = claudeSessions.expire(now: Date(), alive: ProcessLiveness.isAlive) }
             if hover { statusItem?.closePopover(); capsules.values.forEach { $0.dismissCard() } }
@@ -274,6 +276,7 @@ final class AppModel {
                 capsule.onCardOpen = { [weak self] in
                     guard let self else { return }
                     self.hover = false
+                    self.showSettings = false
                     self.statusItem?.closePopover()
                     for (other, c) in self.capsules where other != id { c.dismissCard() }
                 }
@@ -348,6 +351,7 @@ final class AppModel {
     /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).
     func popoverWillOpen() {
         hover = false
+        showSettings = false
         capsules.values.forEach { $0.dismissCard() }
     }
 
@@ -578,7 +582,13 @@ final class AppModel {
         stateTask?.cancel()
         alertTask?.cancel()
         let c = coordinator
-        Task { await c?.stop() }
+        let store = snapshots
+        // Un relevé en vol peut encore être écrit avant l'arrêt effectif : second effacement une fois le
+        // coordinateur arrêté, sauf si un compte a été reconnecté entre-temps.
+        Task { [weak self] in
+            await c?.stop()
+            if self?.account == nil { try? store.wipe() }
+        }
         coordinator = nil
         connection.signOut()
         history = UsageHistory()
@@ -610,7 +620,14 @@ final class AppModel {
     func setRefreshInterval(seconds: Double) {
         refreshSettings.interval = .seconds(seconds)
         defaults.set(refreshSettings.interval.components.seconds, forKey: Self.intervalKey)
-        restartIfConnected()
+        // Le coordinateur garde sa dernière requête : glisser le curseur ne déclenche aucune rafale. Le réglage est
+        // lu à l'exécution, le dernier cran l'emporte quel que soit l'ordre des tâches.
+        let c = coordinator
+        Task { [weak self] in
+            guard let self else { return }
+            await c?.update(policy: RefreshPolicy(settings: self.refreshSettings))
+        }
+        recompute()
     }
 
     func setAlertsEnabled(_ enabled: Bool) {
@@ -650,10 +667,6 @@ final class AppModel {
 
     func setLaunchAtLogin(_ enabled: Bool) {
         launchAtLoginStatus = LaunchAtLogin.set(enabled: enabled)
-    }
-
-    private func restartIfConnected() {
-        if let account, account.status == .connected { startCoordinator(for: account) }
     }
 
     // MARK: Claude Code (017)
@@ -707,13 +720,12 @@ final class AppModel {
         let previous = claudeSessions.attention(now: Date())?.arrivedAt
         var tracker = claudeSessions
         for event in events {
+            // La vivacité se vérifie sur le processus de la session : si un shell a lancé le hook, on remonte à son
+            // parent avant de réduire (le tracker ignore les événements sans type, on ne peut pas corriger après).
+            let event = event.withPID(event.pid.map(ProcessLiveness.sessionProcess(from:)))
             tracker = tracker.reduce(event)
             if let session = tracker.sessions[event.sessionID], session.originApp == nil, let pid = event.pid {
-                let origin = ProcessLiveness.originApp(of: pid)?.bundleIdentifier
-                tracker = tracker.settingOrigin(app: origin, for: event.sessionID)
-                // Le hook est lancé par un shell : la vivacité se vérifie sur le processus de la session.
-                tracker = tracker.reduce(ClaudeHookEvent(kind: .other, sessionID: event.sessionID, cwd: "", sessionTitle: nil, toolName: nil,
-                                                         promptID: nil, pid: ProcessLiveness.sessionProcess(from: pid), receivedAt: event.receivedAt))
+                tracker = tracker.settingOrigin(app: ProcessLiveness.originApp(of: pid)?.bundleIdentifier, for: event.sessionID)
             }
             if notifiesClaudeAttention, event.kind == .permissionRequest, let session = tracker.sessions[event.sessionID] {
                 notifier.notifyClaude(name: session.displayName(fallback: CompactStrip.Strings.app.claude.sessionFallback),
@@ -791,14 +803,32 @@ final class AppModel {
     /// « Réglages » du menu de la barre : le pointeur est loin de l'encoche, le panneau reste ouvert jusqu'à son survol.
     func openSettingsFromMenu() {
         // Sans île (capot fermé, Mac sans encoche), les réglages s'ouvrent dans le popover de l'item.
+        // L'ouverture ramène aux limites (popover comme île) : les réglages se demandent après.
         guard let panel else {
-            showSettings = true
             statusItem?.openPopover()
+            showSettings = true
             return
         }
-        showSettings = true
         hover = true
+        showSettings = true
         panel.holdOpen()
+    }
+
+    /// Ouvre le panneau sans survol : app rouverte depuis le Finder ou Spotlight, ou action VoiceOver sur l'île. La
+    /// carte prend le clavier. Sans île, le popover de l'item ; sans aucune surface (icône sur « Jamais », ni île
+    /// ni pastille), l'icône revient : c'est la seule sortie de cet état depuis l'interface.
+    func openPanel() {
+        if let panel {
+            hover = true
+            panel.holdOpen()
+            return
+        }
+        if statusItem == nil, capsules.isEmpty, menuBarIconMode == .never {
+            setMenuBarIconMode(.automatic)
+            Log.app.notice("reopened without any surface: menu bar icon restored")
+        }
+        // La fenêtre d'un item tout juste créé n'existe qu'au tour suivant de la boucle.
+        DispatchQueue.main.async { [weak self] in self?.statusItem?.openPopover() }
     }
 
     /// Échap : referme le panneau ouvert au survol.

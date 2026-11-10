@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import NotchUsageCore
+import os
 import SwiftUI
 import Testing
 @testable import NotchUsage
@@ -100,7 +101,99 @@ struct AppPresentationTests {
     @Test func hookCommandQuotesTheRealScriptPath() {
         let path = ClaudeHookScript.scriptURL.path
         #expect(path.contains(" "))
-        #expect(ClaudeHooksInstaller.command(for: path) == "'\(path)'")
+        #expect(ClaudeHooksInstaller.command(for: path) == "[ ! -x '\(path)' ] || exec '\(path)'")
+    }
+
+    // MARK: Script de hook, exécuté pour de vrai
+
+    /// Dossier jetable au nom piégé (espace, apostrophe), avec le script généré par l'app et sa commande installée.
+    private func hookSandbox() throws -> (dir: URL, events: URL, command: String) {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notch usage d'essai \(UUID().uuidString)", directoryHint: .isDirectory)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let script = dir.appending(path: "claude-hook.sh"), events = dir.appending(path: "claude-events.jsonl")
+        try ClaudeHookScript.contents(eventsPath: events.path).write(to: script, atomically: true, encoding: .utf8)
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+        return (dir, events, ClaudeHooksInstaller.command(for: script.path))
+    }
+
+    /// Lance la commande comme Claude Code : `/bin/sh -c <commande>`, payload du hook sur l'entrée standard.
+    private nonisolated static func runHook(_ command: String, payload: Data) -> Int32 {
+        let process = Process(), input = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", command]
+        process.standardInput = input
+        process.standardError = FileHandle.nullDevice
+        do { try process.run() } catch { return -1 }
+        try? input.fileHandleForWriting.write(contentsOf: payload)
+        try? input.fileHandleForWriting.close()
+        process.waitUntilExit()
+        return process.terminationStatus
+    }
+
+    /// Payload d'un `PostToolUse`, indenté comme Claude Code peut l'envoyer, avec une sortie d'outil volumineuse.
+    private nonisolated static func payload(session: String, bytes: Int) -> Data {
+        let object: [String: Any] = ["hook_event_name": "PostToolUse", "session_id": session, "cwd": "/tmp/projet", "tool_name": "Read",
+                                     "tool_response": String(repeating: "lorem ipsum ", count: bytes / 12)]
+        return (try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])) ?? Data()
+    }
+
+    /// Sessions ou outils en parallèle : chaque événement reste une ligne entière, lisible, rattachée au processus
+    /// qui a lancé le hook. Sans verrou, les trois écritures de chaque hook s'entremêlaient.
+    @Test func hookScriptKeepsConcurrentEventsOnSeparateLines() throws {
+        let sandbox = try hookSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.dir) }
+        let count = 8
+        let statuses = OSAllocatedUnfairLock(initialState: [Int32]())
+        let command = sandbox.command
+        DispatchQueue.concurrentPerform(iterations: count) { i in
+            let status = Self.runHook(command, payload: Self.payload(session: "session-\(i)", bytes: 100_000))
+            statuses.withLock { $0.append(status) }
+        }
+        #expect(statuses.withLock { $0 } == Array(repeating: 0, count: count))
+
+        let lines = try String(contentsOf: sandbox.events, encoding: .utf8).split(separator: "\n")
+        #expect(lines.count == count)
+        let events = lines.compactMap { ClaudeHookEvent.decode(line: $0, readAt: Date()) }
+        #expect(Set(events.map(\.sessionID)) == Set((0..<count).map { "session-\($0)" }))
+        #expect(events.allSatisfy { $0.kind == .postToolUse && $0.toolName == "Read" && $0.pid == ProcessInfo.processInfo.processIdentifier })
+        let mode = try FileManager.default.attributesOfItem(atPath: sandbox.events.path)[.posixPermissions] as? Int
+        #expect(mode == 0o600)
+    }
+
+    /// App fermée, le fichier n'est plus vidé : passé le plafond il repart de zéro au lieu de grossir sans fin.
+    @Test func hookScriptStartsOverPastTheSizeCap() throws {
+        let sandbox = try hookSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.dir) }
+        try Data(repeating: 0x78, count: ClaudeHookScript.eventsFileCap + 1).write(to: sandbox.events)
+        #expect(Self.runHook(sandbox.command, payload: Self.payload(session: "after-cap", bytes: 1_000)) == 0)
+        let lines = try String(contentsOf: sandbox.events, encoding: .utf8).split(separator: "\n")
+        #expect(lines.count == 1)
+        #expect(lines.first.flatMap { ClaudeHookEvent.decode(line: $0, readAt: Date()) }?.sessionID == "after-cap")
+        // Sous le plafond, rien n'est effacé.
+        #expect(Self.runHook(sandbox.command, payload: Self.payload(session: "next", bytes: 1_000)) == 0)
+        #expect(try String(contentsOf: sandbox.events, encoding: .utf8).split(separator: "\n").count == 2)
+    }
+
+    // MARK: Modèle, sans fenêtre
+
+    /// `hover = false` referme l'île quand le popover ou une carte s'ouvre : s'il ramenait aussi aux limites, les
+    /// réglages ouverts hors de l'île (Mac sans encoche, capot fermé) se refermaient aussitôt.
+    @Test func settingsOnlyResetWhenTheIslandReallyOpensOrCloses() {
+        let model = AppModel()
+        model.showSettings = true
+        model.hover = false
+        #expect(model.showSettings)
+        model.hover = true
+        #expect(!model.showSettings)
+        model.showSettings = true
+        model.hover = false
+        #expect(!model.showSettings)
+        // Sans île : « Réglages » du menu les montre dans le popover, qui s'ouvre sinon sur les limites.
+        model.openSettingsFromMenu()
+        #expect(model.showSettings)
+        model.popoverWillOpen()
+        #expect(!model.showSettings)
     }
 
     @Test func arrivalEarIsWiderThanAPlainEarOnlyWhileTheWordShows() {

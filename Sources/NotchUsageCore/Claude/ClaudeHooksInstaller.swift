@@ -11,10 +11,14 @@ public enum ClaudeHooksInstaller {
     public static let events = ["PermissionRequest", "PostToolUse", "PostToolUseFailure", "Stop", "UserPromptSubmit", "SessionEnd", "SessionStart"]
     public static let timeout = 5
 
-    /// Commande écrite dans le fichier : le chemin entre apostrophes. Claude Code la passe à `/bin/sh -c`, et le
-    /// chemin contient une espace (`Application Support`).
+    /// Commande écrite dans le fichier. Claude Code la passe à un shell (`-c`) :
+    /// - le chemin est entre apostrophes, il contient une espace (`Application Support`) ;
+    /// - script absent (app désinstallée, entrées restées) : rien ne s'exécute, aucune erreur de hook ;
+    /// - `exec` remplace le shell de la commande : le `$PPID` du script est le processus qui a lancé le hook, pas
+    ///   un shell déjà terminé quand l'app vérifie que la session vit encore.
     public static func command(for scriptPath: String) -> String {
-        "'" + scriptPath.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        let quoted = "'" + scriptPath.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        return "[ ! -x \(quoted) ] || exec \(quoted)"
     }
 
     public static func install(into data: Data, scriptPath: String) throws -> Data {

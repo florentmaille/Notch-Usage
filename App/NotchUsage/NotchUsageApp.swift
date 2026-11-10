@@ -24,6 +24,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
     }
 
+    /// App rouverte (Finder, Spotlight, `open`) alors qu'elle tourne : sans Dock ni fenêtre, c'est le seul geste
+    /// qui ne dépend ni du survol ni de l'icône de la barre de menus. Le panneau s'ouvre et prend le clavier.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        appModel?.openPanel()
+        return false
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         appModel?.stop()
     }

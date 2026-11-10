@@ -136,7 +136,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Réglages depuis le menu sans île, ou capture : ouvre le popover s'il ne l'est pas.
     func openPopover() {
-        guard popover?.isShown != true, let button = item.button else { return }
+        // Sans fenêtre (item pas encore dessiné, ou masqué par une barre pleine), `NSPopover.show` lèverait une exception.
+        guard popover?.isShown != true, let button = item.button, button.window != nil else { return }
         showPopover(from: button)
     }
 

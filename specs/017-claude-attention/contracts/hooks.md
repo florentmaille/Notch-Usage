@@ -2,9 +2,14 @@
 
 ## Entrées dans `~/.claude/settings.json`
 
-Toutes avec un seul hook : `{"type": "command", "command": "'<script>'", "timeout": 5}` où `<script>` est
-`~/Library/Application Support/NotchUsage/claude-hook.sh` (chemin absolu). La commande, chemin entre
-apostrophes, est le marqueur de propriété : Claude Code la passe à `/bin/sh -c`, et le chemin contient une espace.
+Toutes avec un seul hook : `{"type": "command", "command": "[ ! -x '<script>' ] || exec '<script>'", "timeout": 5}`
+où `<script>` est `~/Library/Application Support/NotchUsage/claude-hook.sh` (chemin absolu). Cette commande est
+le marqueur de propriété. Claude Code la passe à un shell (`-c`) :
+
+- le chemin est entre apostrophes : il contient une espace ;
+- script absent (app désinstallée, entrées restées) : rien ne s'exécute, code 0, aucune erreur de hook ;
+- `exec` remplace le shell de la commande : le `$PPID` du script est le processus qui a lancé le hook, pas un
+  shell déjà terminé quand l'app vérifie que la session vit encore (vérifié avec sh, bash, zsh et dash).
 
 Les versions 0.5.4 à 0.6.1 écrivaient le chemin brut : le shell le coupait à l'espace et le script ne tournait
 jamais (code 127 à chaque événement). Ces entrées sont aussi reconnues comme les nôtres : remplacées à
@@ -37,21 +42,37 @@ Statut : `absent` (aucun groupe), `installed` (les 7), `partial` (1 à 6), `unre
 
 ```sh
 #!/bin/sh
-# Notch Usage (017) : relaie un événement de Claude Code à l'app. Une ligne JSON par événement.
+# Notch Usage (017) : relaie un événement de Claude Code à l'app, une ligne JSON par événement.
 # L'app ne garde que le type, la session, le dossier, le titre et l'outil ; le fichier est vidé à chaque lecture.
-f="$HOME/Library/Application Support/NotchUsage/claude-events.jsonl"
+f='<dossier de l'app>/claude-events.jsonl'
 umask 077
-printf '{"ppid":%s,"ts":%s,"event":' "$PPID" "$(date +%s)" >> "$f" || true
-tr -d '\n' >> "$f" || true
-printf '}\n' >> "$f" || true
+[ -d "${f%/*}" ] || exit 0
+if [ "$1" != locked ] && [ -x /usr/bin/lockf ]; then
+  /usr/bin/lockf -k -s -t 2 "$f.lock" "$0" locked "$PPID" 2>/dev/null
+  exit 0
+fi
+[ "$1" = locked ] && p=$2 || p=$PPID
+[ "$(/usr/bin/stat -f %z "$f" 2>/dev/null || echo 0)" -gt 1048576 ] && : > "$f" 2>/dev/null
+printf '{"ppid":%s,"ts":%s,"event":' "$p" "$(date +%s)" >> "$f" 2>/dev/null || exit 0
+tr -d '\n' >> "$f" 2>/dev/null || true
+printf '}\n' >> "$f" 2>/dev/null || true
+exit 0
 ```
 
 Contraintes : termine en < 50 ms ; ne sort rien sur stdout (Claude Code lirait une réponse JSON) ; code
 de sortie 0 quoi qu'il arrive ; muet si le dossier n'existe plus. `tr -d '\n'` garde une ligne par
 événement quel que soit le payload (Claude Code termine ou non par un retour à la ligne).
 
-Note : trois écritures par événement ; une ligne peut donc être lue incomplète. Le lecteur
-ne consomme une ligne qu'au `\n` final et garde le reste pour la lecture suivante.
+Verrou : le script se relance sous `lockf` (verrou `claude-events.jsonl.lock`, libéré par le noyau si le hook
+est tué). Deux hooks simultanés, sessions ou outils en parallèle, n'entremêlent donc plus leurs trois
+écritures. Le pid du lanceur passe en argument : le parent du script relancé est `lockf`. Sans `lockf`,
+l'écriture se fait sans verrou.
+
+Plafond : passé 1 Mo, le fichier repart de zéro avant l'écriture. Il ne grossit que lorsque l'app, fermée, ne
+le vide plus ; seuls les derniers événements comptent à la relance.
+
+Le lecteur (hors verrou) peut lire une ligne incomplète : il ne consomme une ligne qu'au `\n` final et garde
+le reste pour la lecture suivante.
 
 ## Fichier `claude-events.jsonl`
 

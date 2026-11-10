@@ -79,7 +79,8 @@ final class NotchPanelController {
             },
         ]
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, event.keyCode == 53 else { return event } // Échap
+            // Échap referme l'île ouverte ; sinon la touche continue vers le popover ou la fenêtre de connexion.
+            guard let self, event.keyCode == 53, self.display?.isExpanded == true else { return event }
             self.onDismiss?()
             return nil
         }

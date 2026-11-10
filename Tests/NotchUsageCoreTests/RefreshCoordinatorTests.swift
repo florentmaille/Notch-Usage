@@ -183,13 +183,88 @@ struct RefreshCoordinatorTests {
         #expect(await h.clock.pendingSleepers == 0)
     }
 
-    @Test func unsupportedStopsLoop() async throws {
-        let h = makeHarness([.failure(.unsupported)])
+    /// Une réponse sans limite exploitable peut être passagère (ou l'abonnement changer) : la boucle ne s'arrête
+    /// plus, elle réessaie une fois par heure et reprend au premier relevé exploitable.
+    @Test func unsupportedRetriesSlowlyAndRecovers() async throws {
+        let h = makeHarness([.failure(.unsupported), .success(snapA)])
         await h.coordinator.start()
         await h.clock.settle()
         #expect(await h.coordinator.state == .unsupported)
-        await h.clock.advance(by: 3600)
+        await h.clock.advance(by: 3599)
         #expect(await h.provider.calls == 1)
+        await h.clock.advance(by: 1)
+        #expect(await h.provider.calls == 2)
+        #expect(await h.coordinator.state == .idle(snapA))
+    }
+
+    /// « Actualiser » relance un plan non pris en charge sans attendre l'heure, dans le respect des 60 s.
+    @Test func refreshNowRetriesAnUnsupportedPlan() async throws {
+        let h = makeHarness([.failure(.unsupported), .success(snapA)])
+        await h.coordinator.start()
+        await h.clock.settle()
+        await h.clock.advance(by: 90)
+        await h.coordinator.refreshNow()
+        await h.clock.settle()
+        #expect(await h.provider.calls == 2)
+        #expect(await h.coordinator.state == .idle(snapA))
+    }
+
+    /// Curseur d'intervalle (réglages) : la politique change sans recréer le coordinateur, donc sans perdre la
+    /// dernière requête. Aucune rafale, jamais deux requêtes à moins de 60 s.
+    @Test func intervalChangeReschedulesWithoutABurst() async throws {
+        func policy(minutes: Int) -> RefreshPolicy { RefreshPolicy(settings: RefreshSettings(interval: .seconds(minutes * 60))) }
+        let h = makeHarness([.success(snapA), .success(snapB)], interval: .seconds(600))
+        await h.coordinator.start()
+        await h.clock.settle()
+        #expect(await h.provider.calls == 1)
+        await h.clock.advance(by: 100)
+        // Glissé de 10 à 2 min, cran par cran : 100 s écoulées, la prochaine échéance reste à venir.
+        for minutes in stride(from: 9, through: 2, by: -1) { await h.coordinator.update(policy: policy(minutes: minutes)) }
+        await h.clock.settle()
+        #expect(await h.provider.calls == 1)
+        // 1 min : l'échéance (dernier relevé + 60 s) est passée, un seul relevé part.
+        await h.coordinator.update(policy: policy(minutes: 1))
+        await h.clock.settle()
+        #expect(await h.provider.calls == 2)
+        // Aller-retour immédiat : rien avant 60 s après ce relevé.
+        await h.coordinator.update(policy: policy(minutes: 15))
+        await h.coordinator.update(policy: policy(minutes: 1))
+        await h.clock.settle()
+        #expect(await h.provider.calls == 2)
+        await h.clock.advance(by: 59)
+        #expect(await h.provider.calls == 2)
+        await h.clock.advance(by: 1)
+        #expect(await h.provider.calls == 3)
+    }
+
+    /// Un intervalle allongé repousse l'échéance : le relevé prévu à l'ancienne cadence ne part pas.
+    @Test func longerIntervalPostponesTheNextReading() async throws {
+        let h = makeHarness([.success(snapA), .success(snapB)], interval: .seconds(60))
+        await h.coordinator.start()
+        await h.clock.settle()
+        await h.coordinator.update(policy: RefreshPolicy(settings: RefreshSettings(interval: .seconds(300))))
+        await h.clock.settle()
+        await h.clock.advance(by: 299)
+        #expect(await h.provider.calls == 1)
+        await h.clock.advance(by: 1)
+        #expect(await h.provider.calls == 2)
+    }
+
+    /// Déconnexion pendant une requête : le relevé qui aboutit après l'arrêt n'est ni publié ni réécrit sur disque.
+    @Test func readingThatLandsAfterStopIsDiscarded() async throws {
+        let provider = GatedUsageProvider(snapA)
+        let store = MemorySnapshotStore()
+        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings()), store: store, clock: TestClock(),
+                                   alertHook: { _, ledger in (ledger ?? AlertLedger(), []) })
+        await c.start()
+        for _ in 0..<200 where await provider.calls == 0 { await Task.yield() }
+        #expect(await provider.calls == 1)
+        await c.stop()
+        await provider.release()
+        for _ in 0..<200 { await Task.yield() }
+        #expect(store.snapshot == nil)
+        #expect(store.ledger == nil)
+        #expect(await c.state == .loading(previous: nil))
     }
 
     @Test func stopEndsLoop() async throws {

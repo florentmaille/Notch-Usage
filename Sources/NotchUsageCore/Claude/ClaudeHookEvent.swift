@@ -43,6 +43,12 @@ public struct ClaudeHookEvent: Sendable, Equatable {
 
     public var isQuestion: Bool { kind == .permissionRequest && toolName == Self.questionTool }
 
+    /// Même événement, rattaché à un autre processus : l'app remplace le lanceur du hook par le processus de la session.
+    public func withPID(_ pid: Int32?) -> ClaudeHookEvent {
+        ClaudeHookEvent(kind: kind, sessionID: sessionID, cwd: cwd, sessionTitle: sessionTitle, toolName: toolName, promptID: promptID,
+                        pid: pid, receivedAt: receivedAt)
+    }
+
     /// Décode une ligne ; `nil` pour une ligne vide, illisible ou sans `session_id`. Sans enveloppe (ligne écrite à la
     /// main), le payload nu est accepté : pas de pid, heure de lecture.
     public static func decode(line: Substring, readAt: Date) -> ClaudeHookEvent? {
