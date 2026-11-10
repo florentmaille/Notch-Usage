@@ -92,7 +92,9 @@ public struct BarContent: Sendable, Equatable {
         case .deadline(let s)?:
             text = s
             if island.tint == .imminent { emphasis = .imminent }
-        case .back(let s)?, .label(let s)?:
+        case .back(let s)?:
+            text = "\u{21BB}" + s   // même flèche que l'île : sans elle « 22' » se lit comme un blocage à venir
+        case .label(let s)?:
             text = s
         case .muted(let s)?:
             text = s

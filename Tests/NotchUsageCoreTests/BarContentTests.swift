@@ -53,7 +53,7 @@ struct BarContentTests {
     @Test func exhaustedBeatsAndShowsBack() {
         let c = content(display(.idle(snap(100))))
         #expect(c.gauge == BarContent.Gauge(fraction: 1, tint: .exhausted, beats: true))
-        #expect(c.text == "2:14")
+        #expect(c.text == "\u{21BB}2:14")
     }
 
     @Test func claudeWaitingAddsGlyphAndCount() {
