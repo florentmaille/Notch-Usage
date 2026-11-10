@@ -24,7 +24,7 @@ enum AppLanguage {
     }
 
     /// Relance après la fin de ce processus : deux instances simultanées dessineraient deux encoches.
-    static func relaunch() {
+    @MainActor static func relaunch() {
         let script = "while kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do sleep 0.1; done; open \"$0\""
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")

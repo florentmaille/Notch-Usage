@@ -63,4 +63,14 @@ struct ClaudeHookEventTests {
         let e = try #require(ClaudeHookEvent.decode(line: #"{"session_id":"s1","cwd":"/p/app","hook_event_name":"Stop"}"#, readAt: readAt))
         #expect(e.kind == .stop && e.pid == nil && e.receivedAt == readAt && e.cwd == "/p/app")
     }
+
+    /// Heure d'enveloppe aberrante (ligne écrite à la main ou abîmée) : l'heure de lecture la remplace.
+    @Test func implausibleEnvelopeTimeFallsBackToTheReadTime() {
+        let readAt = Date.iso("2026-11-05T18:00:00Z")
+        let line = #"{"ppid":4242,"ts":1e300,"event":{"hook_event_name":"Stop","session_id":"abc"}}"#
+        let event = ClaudeHookEvent.decode(line: Substring(line), readAt: readAt)
+        #expect(event?.receivedAt == readAt && event?.pid == 4242)
+        let sane = #"{"ppid":4242,"ts":1762365600,"event":{"hook_event_name":"Stop","session_id":"abc"}}"#
+        #expect(ClaudeHookEvent.decode(line: Substring(sane), readAt: readAt)?.receivedAt == Date(timeIntervalSince1970: 1_762_365_600))
+    }
 }

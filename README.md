@@ -26,7 +26,7 @@ Ever been cut off by Claude in the middle of a task? Notch Usage keeps your subs
 glance away: the **5-hour window**, the **weekly limit** and the **per-model weekly limits**, each
 with its reset time and a forecast of when you will hit the wall.
 
-It is native Swift, local-first, free of telemetry, and uses about 25 MB of memory.
+It is native Swift, local-first, free of telemetry, and uses 20 to 40 MB of memory depending on the displays connected.
 
 ## How it reads
 
@@ -68,7 +68,7 @@ The gauge fill and the number carry the information without colour.
 
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
-- **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
+- **Private.** Talks only to `api.anthropic.com` and `claude.ai`, and never follows a redirect to another host. No analytics, no crash reporting, secrets in the macOS Keychain only. To report a security issue, see [SECURITY.md](SECURITY.md).
 - **Accessible.** VoiceOver announces every limit in one sentence, whatever the notch shows; the gauge fill and the number carry the information without colour, and Reduce Motion stops the beat. No pointer needed: open Notch Usage again (Spotlight, Finder) and the panel opens with keyboard focus.
 - **English and French.** Follows your Mac's language, or pick one in Settings.
 

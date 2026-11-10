@@ -26,6 +26,21 @@ public protocol HTTPClient: Sendable {
     func send(_ request: URLRequest) async throws -> HTTPResponse
 }
 
+/// Redirections : même hôte et HTTPS seulement. Les requêtes portent le jeton ou le cookie de session, et
+/// URLSession recopie l'en-tête `Cookie` vers la cible ; les suivre ailleurs les enverrait hors des hôtes
+/// d'Anthropic (constitution, principe I). Refusée, la redirection ressort comme une réponse 3xx ordinaire.
+final class RedirectPolicy: NSObject, URLSessionTaskDelegate {
+    static func allows(from original: URL?, to target: URL?) -> Bool {
+        guard let from = original?.host?.lowercased(), let to = target?.host?.lowercased() else { return false }
+        return from == to && target?.scheme?.lowercased() == "https"
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        completionHandler(Self.allows(from: task.originalRequest?.url, to: request.url) ? request : nil)
+    }
+}
+
 /// Implémentation URLSession : session dédiée, attend la connectivité, timeout 15 s.
 public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     private let session: URLSession
@@ -38,7 +53,7 @@ public final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         config.httpCookieAcceptPolicy = .never
         config.httpShouldSetCookies = false
         config.urlCache = nil
-        session = URLSession(configuration: config)
+        session = URLSession(configuration: config, delegate: RedirectPolicy(), delegateQueue: nil)
     }
 
     public func send(_ request: URLRequest) async throws -> HTTPResponse {

@@ -267,6 +267,24 @@ struct RefreshCoordinatorTests {
         #expect(await c.state == .loading(previous: nil))
     }
 
+    /// « Actualiser » pendant un relevé en vol : ce relevé suffit, le suivant garde son échéance normale (il était
+    /// repoussé d'un délai minimal en plus).
+    @Test func refreshNowDuringAReadingAddsNoDelay() async throws {
+        let provider = GatedUsageProvider(snapA)
+        let clock = TestClock()
+        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings(interval: .seconds(180))),
+                                   store: MemorySnapshotStore(), clock: clock)
+        await c.start()
+        for _ in 0..<200 where await provider.calls == 0 { await Task.yield() }
+        await c.refreshNow()
+        await provider.release()
+        await clock.settle()
+        await clock.advance(by: 179)
+        #expect(await provider.calls == 1)
+        await clock.advance(by: 1)
+        #expect(await provider.calls == 2)
+    }
+
     @Test func stopEndsLoop() async throws {
         let h = makeHarness([.success(snapA)])
         await h.coordinator.start()

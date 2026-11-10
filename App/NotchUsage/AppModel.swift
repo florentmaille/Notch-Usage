@@ -39,8 +39,6 @@ final class AppModel {
     /// Ce que l'encoche repliée montre sans survol (005), dérivé de `display`.
     private(set) var signal: NotchSignal
     private(set) var layout: NotchLayout
-    /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
-    /// Battements du halo (006) : incrémenté sur le tick de 30 s selon `signal.pulse`, jamais remis à zéro.
     /// Battements du halo (006) : `BeatCounter` sur le tick de 30 s, jamais remis à zéro.
     private var beatCounter = BeatCounter()
     var beat: Int { beatCounter.beats }
@@ -106,6 +104,7 @@ final class AppModel {
     fileprivate static let notifiesClaudeKey = "notifiesClaudeAttention"
 
     private static let accountKey = "account"
+    private static let legacyPurgeKey = "legacyBrowserDataPurged"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
     fileprivate static let legacyMenuBarKey = "showsMenuBarIcon"
@@ -162,8 +161,14 @@ final class AppModel {
         #if DEBUG
         installDemoHook()
         #endif
-        // Les versions antérieures à 0.4.1 laissaient le cookie de session sur disque (007).
-        Task { await BrowserLoginWindow.purgeBrowserData() }
+        // Les versions antérieures à 0.4.1 laissaient le cookie de session sur disque (007) : purge une seule fois.
+        // À chaque lancement, elle démarrait WebKit et laissait son processus réseau en vie pour rien.
+        if !defaults.bool(forKey: Self.legacyPurgeKey) {
+            Task { [defaults] in
+                await BrowserLoginWindow.purgeBrowserData()
+                defaults.set(true, forKey: Self.legacyPurgeKey)
+            }
+        }
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
         refreshClaudeHooksStatus()
@@ -454,8 +459,6 @@ final class AppModel {
         Task { await c?.refreshNow() }
     }
 
-    /// Tick de 30 s : avance l'heure, recalcule, puis compte un battement d'après le rythme lu *avant* le recalcul,
-    /// pour que le tick qui fait entrer l'état imminent ne batte pas (006, R3). Une minute = un tick sur deux.
     /// Tick de 30 s : rien pendant une pause (veille, verrou) ; sinon recalcul puis cadence du battement d'après le
     /// rythme lu avant le recalcul (006, R3).
     func tick() {

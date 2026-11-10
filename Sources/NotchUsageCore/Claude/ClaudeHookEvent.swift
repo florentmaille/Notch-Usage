@@ -56,7 +56,9 @@ public struct ClaudeHookEvent: Sendable, Equatable {
         guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8) else { return nil }
         let decoder = JSONDecoder()
         if let envelope = try? decoder.decode(Envelope.self, from: data) {
-            return make(envelope.event, pid: envelope.ppid, at: envelope.ts.map { Date(timeIntervalSince1970: $0) } ?? readAt)
+            // Heure aberrante (ligne abîmée) : l'heure de lecture la remplace.
+            let at = envelope.ts.flatMap { ResetDateParser.plausible(Date(timeIntervalSince1970: $0)) } ?? readAt
+            return make(envelope.event, pid: envelope.ppid, at: at)
         }
         if let payload = try? decoder.decode(Payload.self, from: data) {
             return make(payload, pid: nil, at: readAt)

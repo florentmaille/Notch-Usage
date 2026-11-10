@@ -66,10 +66,11 @@ final class CapsulePanelController {
     func apply(content: BarContent, dark: Bool, beat: Int, reduceMotion: Bool) {
         let beatChanged = lastBeat != nil && lastBeat != beat
         lastBeat = beat
-        let changed = content != self.content || dark != self.dark
+        // L'annonce VoiceOver change chaque minute : seule une différence visible re-mesure et anime la pastille.
+        let changed = self.content.map { !$0.looksLike(content) } ?? true || dark != self.dark
         self.content = content
         self.dark = dark
-        if changed { render(animated: !reduceMotion) }
+        if changed { render(animated: !reduceMotion) } else { state.content = content }
         guard beatChanged, content.gauge?.beats == true, !reduceMotion else { return }
         lit = true
         render(animated: false)

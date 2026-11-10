@@ -7,6 +7,13 @@ public enum SessionKeyFormat {
         raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Domaine d'un cookie de claude.ai : `claude.ai` ou l'un de ses sous-domaines, avec ou sans point initial.
+    /// Un simple suffixe acceptait aussi `evilclaude.ai`.
+    public static func isClaudeCookieDomain(_ domain: String) -> Bool {
+        let host = domain.lowercased()
+        return host == "claude.ai" || host.hasSuffix(".claude.ai")
+    }
+
     /// Préfixe, version, puis un corps d'au moins 20 caractères d'URL sûrs : une valeur contenant `;`, un espace
     /// ou un retour à la ligne ne doit jamais atteindre l'en-tête `Cookie` (007).
     public static func isValid(_ raw: String) -> Bool {

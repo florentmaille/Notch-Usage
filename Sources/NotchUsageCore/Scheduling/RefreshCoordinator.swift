@@ -117,9 +117,12 @@ public actor RefreshCoordinator {
     // MARK: - Boucle
 
     private func requestSoon() {
+        // Relevé en vol : il suffit, et un délai posé maintenant s'ajouterait après le sommeil normal.
+        if case .loading = state, !stopped { return }
         let gap = lastRequestAt.map { clock.now.timeIntervalSince($0) } ?? .infinity
         let minimum = RefreshSettings.minimumInterval.timeInterval
-        overrideDelay = gap >= minimum ? .zero : .seconds(minimum - gap)
+        // Écart négatif : l'horloge a reculé, on ne fait pas attendre le temps reculé en plus.
+        overrideDelay = gap < 0 || gap >= minimum ? .zero : .seconds(minimum - gap)
         sleepTask?.cancel()
     }
 

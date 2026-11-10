@@ -128,6 +128,7 @@ struct SettingsView: View {
                     } label: { EmptyView() }
                         .pickerStyle(.menu)
                         .fixedSize()
+                        .accessibilityLabel(Text("Language"))
                         .onChange(of: language) { _, v in AppLanguage.store(v) }
                 }
                 if language != AppLanguage.launchedChoice {
@@ -172,6 +173,8 @@ struct SettingsView: View {
                 Text(intervalLabel).monospacedDigit().foregroundStyle(.secondary)
             }
             Slider(value: $intervalMinutes, in: 1...15, step: 1) { EmptyView() }
+                .accessibilityLabel(Text("Refresh every"))
+                .accessibilityValue(Text(intervalLabel))
                 .onChange(of: intervalMinutes) { _, v in model.setRefreshInterval(seconds: v * 60) }
             Divider().padding(.vertical, 2)
             Toggle("Use thresholds when no forecast exists", isOn: Binding(

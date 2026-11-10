@@ -44,7 +44,8 @@ final class FullscreenObserver {
     }
 
     func evaluate() {
-        let result = Self.frontmostAppCoversScreen(screen ?? NSScreen.screens.first)
+        // Sans île, personne ne lit cet état : pas de relevé des fenêtres à chaque changement d'app ou d'espace.
+        let result = screen.map { Self.frontmostAppCoversScreen($0) } ?? false
         guard result != isFullscreen else { return }
         isFullscreen = result
         Log.notch.notice("fullscreen: \(result)")

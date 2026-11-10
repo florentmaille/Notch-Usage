@@ -27,4 +27,14 @@ struct SessionKeyFormatTests {
     @Test func trimsWhitespace() {
         #expect(SessionKeyFormat.normalized("  sk-ant-sid02-abcdefghijklmnopqrstuvwxyz\n") == "sk-ant-sid02-abcdefghijklmnopqrstuvwxyz")
     }
+
+    /// Le cookie capturé doit venir de claude.ai ou d'un sous-domaine : un simple suffixe acceptait `evilclaude.ai`.
+    @Test func cookieDomainMustBeClaudeOrASubdomain() {
+        for domain in ["claude.ai", ".claude.ai", "api.claude.ai", ".API.Claude.AI"] {
+            #expect(SessionKeyFormat.isClaudeCookieDomain(domain), Comment(rawValue: domain))
+        }
+        for domain in ["evilclaude.ai", "claude.ai.evil.com", "claude.aix", "ai", ""] {
+            #expect(!SessionKeyFormat.isClaudeCookieDomain(domain), Comment(rawValue: domain))
+        }
+    }
 }

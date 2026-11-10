@@ -72,8 +72,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let beatChanged = lastBeat != nil && lastBeat != beat
         lastBeat = beat
         if content != drawn {
+            // L'annonce VoiceOver change chaque minute : l'image n'est régénérée que si le dessin change (FR-021).
+            let redraw = drawn.map { !$0.looksLike(content) } ?? true
             drawn = content
-            item.button?.image = BarContentImage.image(content)
+            if redraw { item.button?.image = BarContentImage.image(content) }
             item.button?.setAccessibilityLabel(content.accessibility)
             // La fenêtre peut n'apparaître qu'après ce premier dessin : nouvelle tentative au tour suivant.
             if observedWindow == nil { DispatchQueue.main.async { [weak self] in self?.observeButtonWindow() } }

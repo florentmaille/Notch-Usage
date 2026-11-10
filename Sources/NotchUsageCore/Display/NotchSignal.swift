@@ -269,8 +269,8 @@ public enum IslandFormat {
         return TimeLabels.for(language).daysHours(hours / 24, hours % 24)
     }
 
-    /// Minute entamée comptée. Borné à un an : une date de reset aberrante ne doit pas faire planter `Int(_:)`.
+    /// Minute entamée comptée ; jamais négatif, et sans plantage sur une date de reset aberrante.
     private static func wholeMinutes(_ remaining: TimeInterval) -> Int {
-        Int((min(max(remaining, 0), 366 * 86400) / 60).rounded(.up))
+        max(0, (remaining / 60).rounded(.up).boundedInt)
     }
 }
