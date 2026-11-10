@@ -76,7 +76,7 @@ struct SettingsView: View {
                 HStack {
                     Text("Menu bar icon")
                     Spacer()
-                    Picker("Menu bar icon", selection: Binding(get: { model.menuBarIconMode }, set: { model.setMenuBarIconMode($0) })) {
+                    Picker("Menu bar icon", selection: Binding(get: { model.surfaces.menuBarIconMode }, set: { model.surfaces.setMenuBarIconMode($0) })) {
                         Text("Automatic").tag(MenuBarIconMode.automatic)
                         Text("Always").tag(MenuBarIconMode.always)
                         Text("Never").tag(MenuBarIconMode.never)
@@ -85,17 +85,17 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     .fixedSize()
                 }
-                if model.menuBarIconMode == .automatic {
+                if model.surfaces.menuBarIconMode == .automatic {
                     Text("Shown when a screen without a notch is connected")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-                if model.menuBarIconMode == .never {
+                if model.surfaces.menuBarIconMode == .never {
                     Text("If nothing shows, reopen Notch Usage from Applications: the icon comes back.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
                 row("Centered capsule on wide screens", isOn: Binding(
-                    get: { model.showsCenterCapsule },
-                    set: { model.setShowsCenterCapsule($0) }))
+                    get: { model.surfaces.showsCenterCapsule },
+                    set: { model.surfaces.setShowsCenterCapsule($0) }))
                 row("Notify me before a block", isOn: Binding(
                     get: { model.alertSettings.notifications },
                     set: { model.setNotificationsEnabled($0) }))
