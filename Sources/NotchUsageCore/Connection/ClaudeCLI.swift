@@ -31,8 +31,14 @@ public enum ClaudeCLI {
                                           "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence"]
 
     /// Environnement minimal : sans `USER`, le CLI ne retrouve pas son entrée Trousseau et se dit déconnecté.
-    public static func environment(home: String, user: String) -> [String: String] {
-        ["HOME": home, "USER": user, "LOGNAME": user, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
+    /// Le `PATH` commence par le dossier du binaire et ceux de Homebrew : un `claude` installé par npm ou bun est
+    /// un script (`#!/usr/bin/env node`), qui échouait faute de trouver son interpréteur.
+    public static func environment(home: String, user: String, binary: String? = nil) -> [String: String] {
+        let own = binary.map { [String($0[..<($0.lastIndex(of: "/") ?? $0.startIndex)])] } ?? []
+        var seen = Set<String>()
+        let path = (own + ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"])
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+        return ["HOME": home, "USER": user, "LOGNAME": user, "PATH": path.joined(separator: ":")]
     }
 
     public static let timeout: TimeInterval = 45

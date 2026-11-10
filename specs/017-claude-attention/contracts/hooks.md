@@ -77,6 +77,10 @@ vide aussi le fichier à l'arrêt du lecteur.
 Plafond : passé 1 Mo, le fichier repart de zéro avant l'écriture. Garde-fou pour une app en marche qui ne le
 vide plus (bloquée).
 
+Le lecteur ne tronque le fichier que sous ce même verrou (`flock` sur `claude-events.jsonl.lock`) : un hook en
+train d'écrire ne perd pas son événement ; verrou occupé, la troncature est retentée 0,5 s plus tard. Il observe
+aussi la suppression et le renommage du fichier, et rouvre alors le chemin.
+
 Le lecteur (hors verrou) peut lire une ligne incomplète : il ne consomme une ligne qu'au `\n` final et garde
 le reste pour la lecture suivante.
 

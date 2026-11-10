@@ -118,6 +118,10 @@ struct AppPresentationTests {
             try "".write(to: dir.appending(path: name), atomically: true, encoding: .utf8)
         }
         #expect(try fm.contentsOfDirectory(atPath: dir.path).count == 6)
+        // Fichiers de données en 600, comme le fil d'événements et les sessions.
+        for name in ["snapshot.json", "history.json", "weekly.json"] {
+            #expect(try fm.attributesOfItem(atPath: dir.appending(path: name).path)[.posixPermissions] as? Int == 0o600)
+        }
 
         try store.wipe()
         #expect(try Set(fm.contentsOfDirectory(atPath: dir.path)) == ["claude-hook.sh", "claude-events.jsonl"])
@@ -219,6 +223,47 @@ struct AppPresentationTests {
         #expect(try String(contentsOf: sandbox.events, encoding: .utf8).split(separator: "\n").count == 2)
     }
 
+    /// Lecteur d'événements pour de vrai (script généré, fichier, verrou, file principale de l'app hôte) : un événement
+    /// lu vide le fichier ; pendant qu'un hook tient le verrou, la ligne est lue mais le fichier n'est pas tronqué,
+    /// puis il l'est une fois le verrou rendu ; un fichier supprimé est recréé et suivi de nouveau.
+    @Test func eventsWatcherTruncatesUnderTheLockAndReopensADeletedFile() async throws {
+        final class Received { var ids: [String] = [] }
+        let fm = FileManager.default
+        let sandbox = try hookSandbox()
+        defer { try? fm.removeItem(at: sandbox.dir) }
+        let received = Received()
+        let watcher = ClaudeEventsWatcher(url: sandbox.events) { received.ids += $0.map(\.sessionID) }
+        watcher.start()
+        defer { watcher.stop() }
+        func size() -> Int { ((try? fm.attributesOfItem(atPath: sandbox.events.path))?[.size] as? Int) ?? -1 }
+        func eventually(_ condition: () -> Bool) async -> Bool {
+            for _ in 0..<150 where !condition() { try? await Task.sleep(for: .milliseconds(20)) }
+            return condition()
+        }
+
+        #expect(Self.runHook(sandbox.command, payload: Self.payload(session: "one", bytes: 1_000)) == 0)
+        #expect(await eventually { received.ids == ["one"] && size() == 0 })
+
+        // Un hook « en cours » : le verrou du script est tenu, une ligne arrive.
+        let lock = open(sandbox.events.path + ".lock", O_RDWR | O_CREAT, 0o600)
+        #expect(lock >= 0 && flock(lock, LOCK_EX | LOCK_NB) == 0)
+        let line = Data(#"{"hook_event_name":"Stop","session_id":"two","cwd":"/tmp/projet"}"#.utf8) + Data([0x0A])
+        let handle = try FileHandle(forWritingTo: sandbox.events)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: line)
+        try handle.close()
+        #expect(await eventually { received.ids == ["one", "two"] })
+        #expect(size() == line.count)
+        flock(lock, LOCK_UN)
+        close(lock)
+        #expect(await eventually { size() == 0 })
+
+        try fm.removeItem(at: sandbox.events)
+        #expect(await eventually { fm.fileExists(atPath: sandbox.events.path) })
+        #expect(Self.runHook(sandbox.command, payload: Self.payload(session: "three", bytes: 1_000)) == 0)
+        #expect(await eventually { received.ids == ["one", "two", "three"] && size() == 0 })
+    }
+
     /// Une attente en cours survit au redémarrage de l'app : le suivi est écrit sur disque (droits 600), relu au
     /// lancement sans les sessions dont le processus a disparu, et le fichier s'efface quand plus rien n'est suivi.
     @Test func claudeSessionsSurviveARestartOnDisk() throws {
@@ -261,6 +306,7 @@ struct AppPresentationTests {
         environment.now = { now }
         environment.bootDate = { now.addingTimeInterval(-3600) }
         environment.isAlive = alive
+        environment.startedAt = { _ in nil }
         // 101 : le shell qui a lancé le hook ; 500 : le processus de la session, dans le Terminal.
         environment.sessionProcess = { $0 == 101 ? 500 : $0 }
         environment.originApp = { $0 == 500 ? "com.apple.Terminal" : nil }

@@ -83,6 +83,20 @@ struct ClaudeSessionTrackerTests {
         #expect(t.sessions["s1"] != nil && t.sessions["s3"] == nil)
     }
 
+    /// Session tuée sans `SessionEnd`, pid réattribué à un autre processus : démarré après le dernier événement de
+    /// la session, il ne la fait plus passer pour vivante. Le processus de la session, démarré avant, la garde.
+    @Test func expireRemovesASessionWhosePidWasReused() {
+        let t = ClaudeSessionTracker().reduce(approval)
+            .reduce(event(.permissionRequest, session: "s2", tool: "Bash", pid: 200, at: 30))
+        let starts: [Int32: Date] = [100: t0.addingTimeInterval(3600), 200: t0.addingTimeInterval(-600)]
+        let kept = t.expire(now: t0.addingTimeInterval(7200), alive: { _ in true }, startedAt: { starts[$0] })
+        #expect(Set(kept.sessions.keys) == ["s2"])
+        // Démarrage inconnu, ou dans la marge de l'heure de l'événement (seconde entière) : la session reste.
+        #expect(t.expire(now: t0, alive: { _ in true }, startedAt: { _ in nil }).sessions.count == 2)
+        #expect(t.expire(now: t0, alive: { _ in true }, startedAt: { _ in self.t0.addingTimeInterval(ClaudeSessionTracker.reuseMargin) }).sessions["s1"] != nil)
+        #expect(Set(t.restored(now: t0.addingTimeInterval(7200), bootedAt: .distantPast, alive: { _ in true }, startedAt: { starts[$0] }).sessions.keys) == ["s2"])
+    }
+
     @Test func clearDoneKeepsBlockingWaits() {
         let t = ClaudeSessionTracker().reduce(event(.stop)).reduce(event(.permissionRequest, session: "s2", tool: "Bash")).clearDone()
         #expect(t.sessions["s1"]?.waiting == nil && t.sessions["s2"]?.waiting?.kind == .approval)
