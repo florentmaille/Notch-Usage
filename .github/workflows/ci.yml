@@ -1,9 +1,10 @@
 name: CI
 
+# PR seulement : toute modification de main passe par une PR verte (constitution, workflow). Un run par push
+# sur main faisait doublon et s'annulait au merge suivant ; on le relance à la main au besoin (Actions → Run).
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 # Jeton de CI en lecture seule : aucun job n'écrit dans le dépôt (007).
 permissions:
