@@ -2,7 +2,7 @@
 # Publication de bout en bout : scripts/publish.sh <version> [--stable] [--yes]
 #   scripts/publish.sh 0.6.1            préversion v0.6.1-preview, non notarisée
 #   scripts/publish.sh 0.6.1 --stable   version stable v0.6.1, signée Developer ID et notarisée (constitution)
-# Prérequis : sur main, propre et à jour ; gh connecté ; xcodegen ; notes rédigées dans
+# Prérequis : sur main, propre (hors fichier de notes) et à jour ; gh connecté ; xcodegen ; notes rédigées dans
 # docs/release-notes/<nom>.md (<nom> = 0.6.1-preview ou 0.6.1) avec le marqueur __SHA256__ à la place du checksum.
 # --stable demande en plus un certificat « Developer ID Application » et le profil notarytool `notchusage` :
 # voir docs/release-signing.md.
@@ -45,7 +45,8 @@ step "Vérifications"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "version attendue au format 1.2.3"
 if [[ "$DRY" != "1" ]]; then
   [[ "$START_BRANCH" == "main" ]] || fail "à lancer depuis main"
-  [[ -z "$(git status --porcelain)" ]] || fail "copie de travail non propre"
+  # Les notes s'écrivent avant le lancement : seul ce fichier peut être nouveau ou modifié, il part dans la PR.
+  [[ -z "$(git status --porcelain -- . ":(exclude)$NOTES")" ]] || fail "copie de travail non propre (hors $NOTES)"
   git fetch -q origin
   [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || fail "main n'est pas à jour avec origin/main"
 fi
