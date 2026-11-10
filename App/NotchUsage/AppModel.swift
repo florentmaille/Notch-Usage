@@ -5,7 +5,8 @@ import Observation
 import SwiftUI
 import os
 
-/// Relie NotchUsageCore à l'UI : réglages, compte, états de relevé, alertes, interaction, écran, énergie.
+/// Relie NotchUsageCore à l'UI : réglages, compte, états de relevé, alertes, interaction, énergie. Les fenêtres
+/// (île, item de barre de menus, pastilles) et le suivi des écrans vivent dans `Surfaces`.
 @MainActor
 @Observable
 final class AppModel {
@@ -18,9 +19,9 @@ final class AppModel {
     @ObservationIgnored private(set) lazy var connection = ConnectionManager(credentials: credentials, claudeCode: ClaudeCodeKeychainReader(), http: http, snapshots: snapshots, defaults: defaults,
                                                                                      log: { Log.auth.notice("\($0, privacy: .public)") })
     @ObservationIgnored private let power = PowerObserver()
-    @ObservationIgnored let screens = ScreenObserver()
-    @ObservationIgnored private let fullscreenObserver = FullscreenObserver()
-    @ObservationIgnored private var panel: NotchPanelController?
+    /// Île, item de barre de menus et pastilles (018) : écrans, réglages d'affichage, une seule surface ouverte à
+    /// la fois. Le modèle lui donne l'état calculé à chaque `recompute()` et y lit l'encoche et la barre active.
+    @ObservationIgnored let surfaces = Surfaces()
     @ObservationIgnored private var coordinator: RefreshCoordinator?
     @ObservationIgnored private var stateTask: Task<Void, Never>?
     @ObservationIgnored private var tickTask: Task<Void, Never>?
@@ -37,7 +38,6 @@ final class AppModel {
     private(set) var display: DisplayState
     /// Ce que l'encoche repliée montre sans survol (005), dérivé de `display`.
     private(set) var signal: NotchSignal
-    private(set) var layout: NotchLayout
     /// Battements du halo (006) : `BeatCounter` sur le tick de 30 s, jamais remis à zéro.
     private var beatCounter = BeatCounter()
     var beat: Int { beatCounter.beats }
@@ -51,14 +51,12 @@ final class AppModel {
             if hover != oldValue { showSettings = false }
             // Au survol, les sessions dont le processus a disparu sont retirées (017, R7) : jamais sur un timer.
             if hover { claude.expireDeadSessions() }
-            if hover { statusItem?.closePopover(); capsules.values.forEach { $0.dismissCard() } }
+            if hover { surfaces.closeOthers(than: .island) }
             recompute()
         }
     }
     var fullscreen = false { didSet { recompute() } }
     var showSettings = false { didSet { recompute() } }
-    /// Hauteur idéale du contenu déplié, mesurée par la vue (hors réglages).
-    @ObservationIgnored private var expandedContentHeight: CGFloat = NotchPanelController.expandedHeight
     var isConnecting = false
     /// Renouvellement de Claude Code en cours (011) : libellé du bouton.
     private(set) var isRenewing = false
@@ -78,20 +76,6 @@ final class AppModel {
     @ObservationIgnored private var lastRecordedAt: Date?
     var claudeCodeAvailable = false
     var launchAtLoginStatus: LaunchAtLogin.Status = .disabled
-    /// Item de barre de menus (014, 018) : automatique (écran sans encoche connecté), toujours ou jamais.
-    private(set) var menuBarIconMode: MenuBarIconMode = AppModel.loadMenuBarIconMode()
-    @ObservationIgnored private var statusItem: StatusItemController?
-    /// Barre active sans item (icône sur « Jamais ») : clic et changement d'app.
-    @ObservationIgnored private let barTracker = ActiveBarTracker()
-    /// Rôle des écrans connectés (018) : île sur l'écran à encoche, item enrichi sur les autres.
-    @ObservationIgnored private(set) var screenRoles: ScreenRoles = .empty
-    /// Écran de la barre de menus active, lu sur la fenêtre de l'item (R4) : compact sur l'écran de l'île.
-    @ObservationIgnored private var activeBarScreenID: String?
-    private(set) var barContent: BarContent?
-    /// Pastille centrée sur les écrans sans encoche d'au moins 1700 pt (018, C′), désactivée par défaut (FR-011).
-    private(set) var showsCenterCapsule = UserDefaults.standard.bool(forKey: AppModel.capsuleKey)
-    @ObservationIgnored private var capsules: [String: CapsulePanelController] = [:]
-    @ObservationIgnored private var screensByID: [String: NSScreen] = [:]
     var now = Date()
     /// Sessions Claude Code en attente (017) : réglage, fil d'événements des hooks, sessions suivies. Le modèle lui
     /// fournit le recalcul et la notification, et lit ses sessions pour l'île, la barre de menus et le panneau.
@@ -101,20 +85,6 @@ final class AppModel {
     private static let legacyPurgeKey = "legacyBrowserDataPurged"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
-    fileprivate static let legacyMenuBarKey = "showsMenuBarIcon"
-    fileprivate static let menuBarModeKey = "menuBarIconMode"
-    fileprivate static let capsuleKey = "showsCenterCapsule"
-
-    /// Lu une fois : l'ancien booléen de la 014 devient un mode, puis disparaît (R8).
-    private static func loadMenuBarIconMode() -> MenuBarIconMode {
-        let defaults = UserDefaults.standard
-        if let raw = defaults.string(forKey: menuBarModeKey), let mode = MenuBarIconMode(rawValue: raw) { return mode }
-        let legacy = defaults.object(forKey: legacyMenuBarKey) == nil ? nil : defaults.bool(forKey: legacyMenuBarKey)
-        let mode = MenuBarIconMode.migrate(legacy: legacy)
-        defaults.set(mode.rawValue, forKey: menuBarModeKey)
-        defaults.removeObject(forKey: legacyMenuBarKey)
-        return mode
-    }
 
     init() {
         let defaults = UserDefaults.standard
@@ -128,10 +98,8 @@ final class AppModel {
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
-        let initialLayout = NotchLayout.fallback
-        layout = initialLayout
         let initialDisplay = DisplayStateReducer.reduce(state: .idle(nil), connected: false, settings: settings, alertLevel: .none,
-                                                        layout: initialLayout, fullscreen: false, hover: false, now: Date())
+                                                        layout: .fallback, fullscreen: false, hover: false, now: Date())
         display = initialDisplay
         signal = NotchSignal.make(display: initialDisplay, now: Date(), language: AppLanguage.current, strings: .app)
     }
@@ -143,9 +111,6 @@ final class AppModel {
     @ObservationIgnored var demoState: FetchState?
     @ObservationIgnored var demoForecasts: [String: Forecast] = [:]
     @ObservationIgnored var demoObservers: [any NSObjectProtocol] = []
-    @ObservationIgnored var demoNoNotch = false
-    @ObservationIgnored var demoNotchOnly = false
-    @ObservationIgnored var demoActiveBar: String?
     @ObservationIgnored var demoHourly: HourlyHistory?
     #endif
 
@@ -169,10 +134,7 @@ final class AppModel {
         snapshots.removeLegacyFiles()
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         hourlyHistory = (try? snapshots.loadHourlyHistory()) ?? HourlyHistory()
-        screens.onChange = { [weak self] snapshot in self?.applyScreens(snapshot) }
-        screens.start()
-        fullscreenObserver.onChange = { [weak self] isFullscreen in self?.fullscreen = isFullscreen }
-        fullscreenObserver.start()
+        surfaces.start(model: self)
         power.onPause = { [weak self] reason in self?.pause(reason) }
         power.onResume = { [weak self] reason in self?.resume(reason) }
         power.start()
@@ -198,11 +160,7 @@ final class AppModel {
     }
 
     func stop() {
-        statusItem?.remove()
-        statusItem = nil
-        barTracker.stop()
-        capsules.values.forEach { $0.close() }
-        capsules = [:]
+        surfaces.stop()
         tickTask?.cancel()
         stateTask?.cancel()
         claude.stop()
@@ -213,135 +171,7 @@ final class AppModel {
         demoObservers = []
         #endif
         power.stop()
-        screens.stop()
-        fullscreenObserver.stop()
-        panel?.close()
-        panel = nil
     }
-
-    /// Configuration d'écrans (018, R1) : l'île sur l'écran à encoche seulement, fermée sans lui ; l'item selon le réglage.
-    func applyScreens(_ snapshot: ScreenObserver.Snapshot) {
-        var snapshot = snapshot
-        #if DEBUG
-        if demoNoNotch { snapshot = Self.withoutNotch(snapshot) }
-        // Démo `notchonly` : comme un MacBook seul, les écrans sans encoche sont ignorés (captures du README).
-        if demoNotchOnly { snapshot = ScreenObserver.Snapshot(roles: ScreenRoles(island: snapshot.roles.island, plain: []), screens: snapshot.screens) }
-        #endif
-        screenRoles = snapshot.roles
-        screensByID = snapshot.screens
-        statusItem?.closePopover()
-        if let target = snapshot.island {
-            layout = target.layout
-            fullscreenObserver.screen = target.screen
-            if let panel {
-                panel.update(target: target)
-            } else {
-                let controller = NotchPanelController(target: target, rootView: AnyView(NotchRootView().environment(self)),
-                                                      cardView: AnyView(NotchCardView().environment(self)))
-                controller.onHoverChange = { [weak self] inside in self?.hover = inside }
-                controller.onDismiss = { [weak self] in self?.dismiss() }
-                panel = controller
-            }
-        } else {
-            // Capot fermé, Mac sans encoche : pas d'île, et plus de pilule (FR-002).
-            hover = false
-            panel?.close()
-            panel = nil
-            fullscreenObserver.screen = nil
-        }
-        syncCapsules()
-        syncStatusItem()
-        recompute()
-    }
-
-    /// Une pastille par écran sans encoche assez large, si l'option est active (FR-012, FR-016).
-    private func syncCapsules() {
-        let wanted = showsCenterCapsule ? screenRoles.plain.filter(\.capsuleEligible).map(\.id) : []
-        for (id, capsule) in capsules where !wanted.contains(id) {
-            capsule.close()
-            capsules[id] = nil
-        }
-        for id in wanted {
-            guard let screen = screensByID[id] else { continue }
-            if let capsule = capsules[id] {
-                capsule.update(screen: screen)
-            } else {
-                let capsule = CapsulePanelController(screenID: id, screen: screen, model: self)
-                capsule.onTap = { [weak self] in self?.claude.clearDone() }
-                capsule.onCardOpen = { [weak self] in
-                    guard let self else { return }
-                    self.hover = false
-                    self.showSettings = false
-                    self.statusItem?.closePopover()
-                    for (other, c) in self.capsules where other != id { c.dismissCard() }
-                }
-                capsules[id] = capsule
-            }
-        }
-    }
-
-    func setShowsCenterCapsule(_ shown: Bool) {
-        showsCenterCapsule = shown
-        defaults.set(shown, forKey: Self.capsuleKey)
-        syncCapsules()
-        syncStatusItem()
-        recompute()
-    }
-
-    /// Apparence de la barre de menus, lue sur l'item quand il existe (R6) ; sinon celle du système.
-    private var menuBarIsDark: Bool {
-        let appearance = statusItem?.buttonAppearance ?? NSApp.effectiveAppearance
-        return appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-    }
-
-    #if DEBUG
-    /// Mode démo `nonotch` : tous les écrans passent sans encoche.
-    static func withoutNotch(_ snapshot: ScreenObserver.Snapshot) -> ScreenObserver.Snapshot {
-        let descriptors = NSScreen.screens.enumerated().map { ScreenObserver.descriptor($1, isMain: $0 == 0, forceNoNotch: true) }
-        return ScreenObserver.Snapshot(roles: ScreenRoles.assign(descriptors), screens: snapshot.screens)
-    }
-    #endif
-
-    /// Crée ou retire l'item selon le réglage et les écrans (FR-018). Sans item (« Jamais ») mais avec pastille ou île
-    /// à adapter (018, 019), `ActiveBarTracker` suit la barre active : aucune sonde, donc aucun trou dans la barre.
-    private func syncStatusItem() {
-        let visible = menuBarIconMode.isVisible(roles: screenRoles)
-        let wantsTracking = !visible && (!capsules.isEmpty || (screenRoles.hasPlainScreen && screenRoles.island != nil))
-        if wantsTracking {
-            barTracker.onChange = { [weak self] id in
-                guard let self else { return }
-                self.activeBarScreenID = id
-                self.recompute()
-            }
-            barTracker.start()
-            activeBarScreenID = barTracker.screenID
-        } else {
-            barTracker.stop()
-        }
-        if !visible, let item = statusItem {
-            item.remove()
-            statusItem = nil
-            if !wantsTracking { activeBarScreenID = nil }
-        }
-        if visible, statusItem == nil {
-            let item = StatusItemController(model: self)
-            item.onActiveScreenChange = { [weak self] id in
-                guard let self else { return }
-                self.activeBarScreenID = id
-                self.recompute()
-            }
-            statusItem = item
-        }
-    }
-
-    #if DEBUG
-    func debugOpenPopover() { statusItem?.openPopover() }
-    func debugItemSnapshot() {
-        statusItem?.debugSnapshot()
-        capsules.values.forEach { $0.debugSnapshot() }
-    }
-    func debugCapsuleHover(_ inside: Bool) { capsules.values.forEach { $0.debugHover(inside) } }
-    #endif
 
     /// Popover de l'item refermé : les sessions « terminé » qu'il listait ont été vues, elles s'effacent comme au clic
     /// sur l'île ou la pastille. Rien si le popover montrait les réglages, où elles ne figurent pas.
@@ -350,11 +180,12 @@ final class AppModel {
         claude.clearDone()
     }
 
-    /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).
-    func popoverWillOpen() {
+    /// Une seule surface ouverte à la fois (FR-010) : le popover ou la carte d'une pastille qui s'ouvre referme l'île
+    /// et ramène aux limites ; l'île qui s'ouvre referme les autres par `hover`.
+    func surfaceWillOpen(_ surface: Surfaces.Surface) {
         hover = false
         showSettings = false
-        capsules.values.forEach { $0.dismissCard() }
+        surfaces.closeOthers(than: surface)
     }
 
     // MARK: Relevés
@@ -655,13 +486,6 @@ final class AppModel {
         recompute()
     }
 
-    func setMenuBarIconMode(_ mode: MenuBarIconMode) {
-        menuBarIconMode = mode
-        defaults.set(mode.rawValue, forKey: Self.menuBarModeKey)
-        syncStatusItem()
-        recompute()
-    }
-
     func setLaunchAtLogin(_ enabled: Bool) {
         launchAtLoginStatus = LaunchAtLogin.set(enabled: enabled)
     }
@@ -681,31 +505,28 @@ final class AppModel {
     func openSettingsFromMenu() {
         // Sans île (capot fermé, Mac sans encoche), les réglages s'ouvrent dans le popover de l'item.
         // L'ouverture ramène aux limites (popover comme île) : les réglages se demandent après.
-        guard let panel else {
-            statusItem?.openPopover()
+        guard surfaces.hasIsland else {
+            surfaces.openPopover()
             showSettings = true
             return
         }
         hover = true
         showSettings = true
-        panel.holdOpen()
+        surfaces.holdIslandOpen()
     }
 
     /// Ouvre le panneau sans survol : app rouverte depuis le Finder ou Spotlight, ou action VoiceOver sur l'île. La
     /// carte prend le clavier. Sans île, le popover de l'item ; sans aucune surface (icône sur « Jamais », ni île
     /// ni pastille), l'icône revient : c'est la seule sortie de cet état depuis l'interface.
     func openPanel() {
-        if let panel {
+        if surfaces.hasIsland {
             hover = true
-            panel.holdOpen()
+            surfaces.holdIslandOpen()
             return
         }
-        if statusItem == nil, capsules.isEmpty, menuBarIconMode == .never {
-            setMenuBarIconMode(.automatic)
-            Log.app.notice("reopened without any surface: menu bar icon restored")
-        }
+        surfaces.restoreIconIfNothingShows()
         // La fenêtre d'un item tout juste créé n'existe qu'au tour suivant de la boucle.
-        DispatchQueue.main.async { [weak self] in self?.statusItem?.openPopover() }
+        DispatchQueue.main.async { [weak self] in self?.surfaces.openPopover() }
     }
 
     /// Échap : referme le panneau ouvert au survol.
@@ -726,7 +547,7 @@ final class AppModel {
         let level = state.snapshot.flatMap { HeadlinePicker.pick(in: $0, forecasts: forecasts, settings: alertSettings, now: now) }
             .map { alertEvaluator.level(for: $0, settings: alertSettings) } ?? .none
         display = DisplayStateReducer.reduce(state: state, connected: connected, settings: refreshSettings, alertLevel: level,
-                                             layout: layout, fullscreen: fullscreen, hover: hover, now: now,
+                                             layout: surfaces.layout, fullscreen: fullscreen, hover: hover, now: now,
                                              forecasts: forecasts, alertSettings: alertSettings)
         #if DEBUG
         if demoState != nil { display.forecasts = demoForecasts }
@@ -746,47 +567,14 @@ final class AppModel {
             weekCurve = nil
         }
         notifier.notifyIfNeeded(signal: base, display: display, enabled: alertSettings.notifications, now: now)
-        // Barre de menus active : écran de l'île ou écran sans encoche (R4). Sert à l'item, à la pastille et à l'île.
-        var activeBar = activeBarScreenID
-        #if DEBUG
-        if let forced = demoActiveBar { activeBar = forced == "notch" ? screenRoles.island?.id : "external" }
-        #endif
-        // 019 : avec un écran sans encoche branché, l'île montre le chiffre quand on travaille sur le Mac et se
-        // replie sur la jauge ailleurs, comme la pastille. Le MacBook seul garde l'île de la 012.
-        var islandBar: NotchSignal.ActiveBar?
-        if screenRoles.hasPlainScreen, screenRoles.island != nil, let activeBar {
-            islandBar = screenRoles.isIsland(activeBar) ? .island : .elsewhere
-        }
-        // Survol de l'encoche : l'île réapparaît au-dessus de la carte, même si la barre active est ailleurs (le
-        // pointeur ne déplace pas la barre de menus, seul un clic le fait ; retour utilisateur).
-        if hover, islandBar == .elsewhere { islandBar = .island }
-        signal = base.adapted(to: islandBar, strings: .app)
-        panel?.contentHeight = expandedContentHeight
-        // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
-        // d'arrivée d'une session Claude (017).
-        panel?.apply(display, ears: (NotchPanelController.earWidth, signal.trailingEarWidth(now: now)))
-        // Item (018) : compact quand la barre active est celle de l'écran de l'île (FR-022). Dérivé du signal avant
-        // adaptation : le point Claude de la 017 et l'échéance restent ceux de la limite.
-        let bar = BarContent.make(signal: base, now: now, strings: .app)
-        barContent = bar
-        statusItem?.update(content: screenRoles.isIsland(activeBar) ? bar.compact : bar.menuBarItem, beat: beat,
-                           reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
-        if !capsules.isEmpty {
-            let dark = menuBarIsDark
-            for capsule in capsules.values {
-                // Comme l'item : anneau seul quand la barre active est celle de l'écran à encoche (retour utilisateur).
-                capsule.apply(content: screenRoles.isIsland(activeBar) ? bar.compact : bar, dark: dark, beat: beat, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
-                capsule.refreshCard()
-            }
-        }
+        // 019 : à côté d'un écran sans encoche, l'île suit la barre de menus active, comme la pastille.
+        signal = base.adapted(to: surfaces.islandBar(hover: hover), strings: .app)
+        surfaces.render(display: display, trailingEar: signal.trailingEarWidth(now: now),
+                        bar: BarContent.make(signal: base, now: now, strings: .app), beat: beat)
     }
 
     func setExpandedContentHeight(_ height: CGFloat) {
-        guard height > 40 else { return }
-        // Hauteur mesurée telle quelle : la carte se borne elle-même à l'écran (`CardLayout`).
-        let measured = height.rounded(.up)
-        guard abs(measured - expandedContentHeight) > 0.5 else { return }
-        expandedContentHeight = measured
+        guard surfaces.setContentHeight(height) else { return }
         // Hors de la passe de mise en page qui a produit la mesure : redimensionner la fenêtre pendant cette passe
         // laissait la vue racine à l'ancienne hauteur (réglages coupés, 013).
         Task { @MainActor [weak self] in self?.recompute() }

@@ -36,23 +36,20 @@ extension AppModel {
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.layout"), object: nil, queue: .main) { [weak self] note in
             let mode = (note.object as? String) ?? "notch"
             MainActor.assumeIsolated {
-                guard let self else { return }
-                self.demoNoNotch = mode == "nonotch"
-                self.demoNotchOnly = mode == "notchonly"
-                self.applyScreens(self.screens.current)
+                self?.surfaces.debugSetLayout(mode)
             }
         })
         // `com.notchusage.debug.menubar` objet "notch" | "external" | "off" (018, R9) : force la barre active.
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.menubar"), object: nil, queue: .main) { [weak self] note in
             let mode = (note.object as? String) ?? "off"
             MainActor.assumeIsolated {
-                self?.demoActiveBar = mode == "off" ? nil : mode
+                self?.surfaces.demoActiveBar = mode == "off" ? nil : mode
                 self?.recompute()
             }
         })
         // `com.notchusage.debug.itemsnapshot` : item en barre sombre et claire, popover s'il est ouvert, dans $TMPDIR.
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.itemsnapshot"), object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.debugItemSnapshot() }
+            MainActor.assumeIsolated { self?.surfaces.debugSnapshot() }
         })
         // `com.notchusage.debug.homebrew` objet "1" | "0" : les Réglages se comportent comme une installation Homebrew (020).
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.homebrew"), object: nil, queue: .main) { [weak self] note in
@@ -65,11 +62,11 @@ extension AppModel {
         // `com.notchusage.debug.capsulehover` objet "1" | "0" : ouvre ou ferme la carte de la pastille (captures).
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.capsulehover"), object: nil, queue: .main) { [weak self] note in
             let inside = (note.object as? String) == "1"
-            MainActor.assumeIsolated { self?.debugCapsuleHover(inside) }
+            MainActor.assumeIsolated { self?.surfaces.debugCapsuleHover(inside) }
         })
         // `com.notchusage.debug.popover` : ouvre le popover de l'item (captures).
         demoObservers.append(center.addObserver(forName: .init("com.notchusage.debug.popover"), object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.debugOpenPopover() }
+            MainActor.assumeIsolated { self?.surfaces.debugOpenPopover() }
         })
     }
 

@@ -333,8 +333,25 @@ struct AppPresentationTests {
         // Sans île : « Réglages » du menu les montre dans le popover, qui s'ouvre sinon sur les limites.
         model.openSettingsFromMenu()
         #expect(model.showSettings)
-        model.popoverWillOpen()
+        model.surfaceWillOpen(.popover)
         #expect(!model.showSettings)
+        // La carte d'une pastille qui s'ouvre referme l'île et ramène aux limites, comme le popover.
+        model.hover = true
+        model.showSettings = true
+        model.surfaceWillOpen(.capsule(screenID: "dell"))
+        #expect(!model.hover && !model.showSettings)
+    }
+
+    /// Surfaces sans fenêtre ni écran : rien à ouvrir, aucune adaptation de l'île, et la hauteur mesurée du contenu
+    /// n'est retenue que si elle change vraiment (une mesure transitoire sous 40 pt est ignorée).
+    @Test func surfacesWithoutScreensHoldNothing() {
+        let surfaces = Surfaces()
+        #expect(!surfaces.hasIsland && surfaces.islandBar(hover: true) == nil)
+        #expect(surfaces.layout == .fallback)
+        #expect(!surfaces.setContentHeight(20))
+        #expect(surfaces.setContentHeight(599.4))
+        #expect(!surfaces.setContentHeight(600))
+        #expect(surfaces.setContentHeight(410))
     }
 
     @Test func arrivalEarIsWiderThanAPlainEarOnlyWhileTheWordShows() {

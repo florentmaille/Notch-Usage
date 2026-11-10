@@ -117,7 +117,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSPopoverDelegate {
 
     private func showPopover(from button: NSStatusBarButton) {
         guard let model else { return }
-        model.popoverWillOpen()
+        model.surfaceWillOpen(.popover)
         let popover = NSPopover()
         popover.behavior = .transient
         popover.delegate = self
