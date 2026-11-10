@@ -25,7 +25,8 @@ enum ClaudeHookScript {
     /// script relancé étant `lockf`.
     /// App fermée, rien n'est écrit : le payload porte le texte des conversations, qui resterait sur disque jusqu'au
     /// prochain lancement. Les événements de cet intervalle sont perdus ; les attentes déjà suivies sont dans
-    /// `claude-sessions.json`.
+    /// `claude-sessions.json`. `-a` : `pgrep` écarte par défaut ses ancêtres, donc l'app quand le hook vient d'un
+    /// processus qu'elle a lancé (son hôte de test, le CLI lancé pour un renouvellement).
     static func contents(eventsPath: String, appProcess: String = appProcessName) -> String {
         let quoted = "'" + eventsPath.replacingOccurrences(of: "'", with: "'\\''") + "'"
         return """
@@ -36,7 +37,7 @@ enum ClaudeHookScript {
         f=\(quoted)
         umask 077
         [ -d "${f%/*}" ] || exit 0
-        /usr/bin/pgrep -x '\(appProcess)' >/dev/null 2>&1 || exit 0
+        /usr/bin/pgrep -a -x '\(appProcess)' >/dev/null 2>&1 || exit 0
         if [ "$1" != locked ] && [ -x /usr/bin/lockf ]; then
           /usr/bin/lockf -k -s -t 2 "$f.lock" "$0" locked "$PPID" 2>/dev/null
           exit 0

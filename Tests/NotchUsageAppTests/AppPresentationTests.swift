@@ -206,7 +206,7 @@ struct AppPresentationTests {
         try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
         #expect(Self.runHook(ClaudeHooksInstaller.command(for: script.path), payload: Self.payload(session: "closed", bytes: 1_000)) == 0)
         #expect(!fm.fileExists(atPath: events.path))
-        #expect(ClaudeHookScript.contents(eventsPath: events.path).contains("/usr/bin/pgrep -x 'NotchUsage' "))
+        #expect(ClaudeHookScript.contents(eventsPath: events.path).contains("/usr/bin/pgrep -a -x 'NotchUsage' "))
     }
 
     /// App en marche mais fichier non vidé (suivi bloqué) : passé le plafond il repart de zéro au lieu de grossir sans fin.
