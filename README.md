@@ -139,7 +139,7 @@ If the browser sign-in is blocked, paste a `claude.ai` session key on the sign-i
 - No telemetry, no analytics, no crash reporting.
 - Secrets live in the macOS Keychain only. They never appear in logs. The browser sign-in window keeps its cookies in memory and discards everything once the session key is captured.
 - The last reading and the last two hours of readings (for the forecast) are cached locally, and wiped on sign-out.
-- With *Follow Claude Code* on, Claude Code runs the app's hook script at each event; the script appends the event to `~/Library/Application Support/NotchUsage/claude-events.jsonl` (mode 600). The app keeps only the event type, session id, working folder, session title and tool name, never the prompts or answers, and empties the file as soon as it has read it; while the app is closed the file is capped at 1 MB. The sessions being followed are saved next to it (`claude-sessions.json`, mode 600, same fields) so that a pending wait survives a restart of the app; the file is removed when nothing is followed. Nothing leaves the machine.
+- With *Follow Claude Code* on, Claude Code runs the app's hook script at each event; the script appends the event to `~/Library/Application Support/NotchUsage/claude-events.jsonl` (mode 600). The app keeps only the event type, session id, working folder, session title and tool name, never the prompts or answers, and empties the file as soon as it has read it; while the app is not running the script writes nothing. The sessions being followed are saved next to it (`claude-sessions.json`, mode 600, same fields) so that a pending wait survives a restart of the app; the file is removed when nothing is followed. Nothing leaves the machine.
 
 ## Rate limits and refresh cadence
 

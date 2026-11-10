@@ -47,6 +47,7 @@ Statut : `absent` (aucun groupe), `installed` (les 7), `partial` (1 à 6), `unre
 f='<dossier de l'app>/claude-events.jsonl'
 umask 077
 [ -d "${f%/*}" ] || exit 0
+/usr/bin/pgrep -x 'NotchUsage' >/dev/null 2>&1 || exit 0
 if [ "$1" != locked ] && [ -x /usr/bin/lockf ]; then
   /usr/bin/lockf -k -s -t 2 "$f.lock" "$0" locked "$PPID" 2>/dev/null
   exit 0
@@ -68,8 +69,13 @@ est tué). Deux hooks simultanés, sessions ou outils en parallèle, n'entremêl
 écritures. Le pid du lanceur passe en argument : le parent du script relancé est `lockf`. Sans `lockf`,
 l'écriture se fait sans verrou.
 
-Plafond : passé 1 Mo, le fichier repart de zéro avant l'écriture. Il ne grossit que lorsque l'app, fermée, ne
-le vide plus ; seuls les derniers événements comptent à la relance.
+App fermée : le script sort sans rien écrire (`pgrep -x NotchUsage`). Le payload porte le texte des
+conversations ; il ne doit pas rester sur disque jusqu'au prochain lancement. Les événements émis app fermée
+sont perdus : une session qui se met en attente pendant ce temps n'apparaît qu'à son événement suivant. L'app
+vide aussi le fichier à l'arrêt du lecteur.
+
+Plafond : passé 1 Mo, le fichier repart de zéro avant l'écriture. Garde-fou pour une app en marche qui ne le
+vide plus (bloquée).
 
 Le lecteur (hors verrou) peut lire une ligne incomplète : il ne consomme une ligne qu'au `\n` final et garde
 le reste pour la lecture suivante.
