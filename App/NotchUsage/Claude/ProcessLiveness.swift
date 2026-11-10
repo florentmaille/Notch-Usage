@@ -21,6 +21,17 @@ enum ProcessLiveness {
         return kill(pid, 0) == 0 || errno == EPERM
     }
 
+    /// Démarrage d'un processus, par `sysctl` ; `nil` s'il n'existe plus ou si le système ne le donne pas.
+    static func startDate(of pid: Int32) -> Date? {
+        var proc = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+        guard pid > 0, sysctl(&mib, 4, &proc, &size, nil, 0) == 0, size > 0 else { return nil }
+        let start = proc.kp_proc.p_un.__p_starttime
+        guard start.tv_sec > 0 else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(start.tv_sec) + TimeInterval(start.tv_usec) / 1_000_000)
+    }
+
     /// Parent et nom court d'un processus, par `sysctl` ; `nil` s'il n'existe plus.
     static func info(of pid: Int32) -> (ppid: Int32, name: String)? {
         var proc = kinfo_proc()

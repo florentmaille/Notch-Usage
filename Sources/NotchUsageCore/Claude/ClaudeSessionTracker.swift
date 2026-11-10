@@ -89,12 +89,19 @@ public struct ClaudeSessionTracker: Sendable, Equatable, Codable {
         events.reduce(self) { $0.reduce($1) }
     }
 
+    /// Marge entre l'heure d'un événement (seconde entière du script) et le démarrage d'un processus.
+    public static let reuseMargin: TimeInterval = 5
+
     /// Retire les sessions dont le processus n'existe plus et, sans processus connu, celles sans événement depuis 8 h.
-    public func expire(now: Date, alive: (Int32) -> Bool) -> Self {
+    /// `startedAt` : démarrage du processus qui porte ce pid. S'il a démarré après le dernier événement de la
+    /// session, le pid a été réattribué (session tuée sans `SessionEnd`) : sans ce contrôle, une approbation
+    /// fantôme restait affichée jusqu'au redémarrage du Mac.
+    public func expire(now: Date, alive: (Int32) -> Bool, startedAt: (Int32) -> Date? = { _ in nil }) -> Self {
         var copy = self
         for (id, s) in sessions {
             if let pid = s.originPID {
-                if !alive(pid) { copy.sessions[id] = nil }
+                let reused = startedAt(pid).map { $0.timeIntervalSince(s.lastEventAt) > Self.reuseMargin } ?? false
+                if !alive(pid) || reused { copy.sessions[id] = nil }
             } else if now.timeIntervalSince(s.lastEventAt) > Self.expiry {
                 copy.sessions[id] = nil
             }
@@ -104,12 +111,12 @@ public struct ClaudeSessionTracker: Sendable, Equatable, Codable {
 
     /// État relu au lancement de l'app. Une session ne survit ni à la fin de son processus, ni à un redémarrage du
     /// Mac : son pid a pu être réattribué à un autre processus, qui la ferait passer pour vivante.
-    public func restored(now: Date, bootedAt: Date, alive: (Int32) -> Bool) -> Self {
+    public func restored(now: Date, bootedAt: Date, alive: (Int32) -> Bool, startedAt: (Int32) -> Date? = { _ in nil }) -> Self {
         var copy = self
         for (id, s) in sessions where s.lastEventAt < bootedAt {
             copy.sessions[id] = nil
         }
-        return copy.expire(now: now, alive: alive)
+        return copy.expire(now: now, alive: alive, startedAt: startedAt)
     }
 
     /// Clic sur l'île : les « terminé » s'effacent, les attentes bloquantes restent.

@@ -15,6 +15,8 @@ final class ClaudeFollowing {
         var now: () -> Date = { Date() }
         var bootDate: () -> Date? = { ProcessLiveness.bootDate }
         var isAlive: (Int32) -> Bool = { ProcessLiveness.isAlive($0) }
+        /// Démarrage du processus : un pid réattribué depuis le dernier événement n'est plus celui de la session.
+        var startedAt: (Int32) -> Date? = { ProcessLiveness.startDate(of: $0) }
         /// Processus de la session à partir de celui qui a lancé le hook (un shell, parfois).
         var sessionProcess: (Int32) -> Int32 = { ProcessLiveness.sessionProcess(from: $0) }
         /// Identifiant de bundle de l'application qui porte la fenêtre de la session.
@@ -78,12 +80,13 @@ final class ClaudeFollowing {
     }
 
     private func startWatcher() {
-        guard watcher == nil else { return }
         do {
             try ClaudeHookScript.ensure()
         } catch {
             Log.app.error("claude hook script: \(error.localizedDescription, privacy: .public)")
         }
+        // Déjà en place (« Réparer ») : le lecteur rouvre le fichier, qui a pu être supprimé puis recréé.
+        if let watcher { watcher.restart(); return }
         restoreSessions()
         let watcher = ClaudeEventsWatcher(url: ClaudeHookScript.eventsURL) { [weak self] events in self?.handle(events) }
         self.watcher = watcher
@@ -94,7 +97,7 @@ final class ClaudeFollowing {
     /// événements écrits pendant la fermeture s'appliquent ensuite par-dessus, au démarrage du lecteur.
     func restoreSessions() {
         guard let saved = ClaudeSessionsFile.load(from: environment.sessionsURL) else { return }
-        sessions = saved.restored(now: environment.now(), bootedAt: environment.bootDate() ?? .distantPast, alive: environment.isAlive)
+        sessions = saved.restored(now: environment.now(), bootedAt: environment.bootDate() ?? .distantPast, alive: environment.isAlive, startedAt: environment.startedAt)
         Log.app.notice("claude sessions restored: \(self.sessions.waiting.count, privacy: .public) waiting")
     }
 
@@ -142,7 +145,7 @@ final class ClaudeFollowing {
             }
         }
         let now = environment.now()
-        sessions = tracker.expire(now: now, alive: environment.isAlive)
+        sessions = tracker.expire(now: now, alive: environment.isAlive, startedAt: environment.startedAt)
         if let arrived = sessions.attention(now: now)?.arrivedAt, arrived != previous, AttentionFormat.showsArrival(arrivedAt: arrived, now: now) {
             arrivalTask?.cancel()
             arrivalTask = Task { [weak self] in
@@ -157,7 +160,7 @@ final class ClaudeFollowing {
 
     /// Au survol : les sessions dont le processus a disparu sont retirées (017, R7), jamais sur un timer.
     func expireDeadSessions() {
-        sessions = sessions.expire(now: environment.now(), alive: environment.isAlive)
+        sessions = sessions.expire(now: environment.now(), alive: environment.isAlive, startedAt: environment.startedAt)
     }
 
     /// Clic sur une ligne du panneau ou du menu : l'application d'où vient la session passe devant ; l'attente reste.

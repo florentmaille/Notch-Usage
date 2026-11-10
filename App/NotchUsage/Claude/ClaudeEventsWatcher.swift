@@ -13,6 +13,7 @@ final class ClaudeEventsWatcher {
     private var offset = 0
     private var pending = Data()
     private(set) var dropped = 0
+    private var retry: DispatchWorkItem?
 
     init(url: URL, onEvents: @escaping @MainActor ([ClaudeHookEvent]) -> Void) {
         self.url = url
@@ -30,12 +31,16 @@ final class ClaudeEventsWatcher {
             Log.app.error("claude events: cannot open \(self.url.path, privacy: .public)")
             return
         }
-        let s = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .extend], queue: .main)
-        s.setEventHandler { [weak self] in
-            MainActor.assumeIsolated { self?.readNew() }
+        let s = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .extend, .delete, .rename], queue: .main)
+        s.setEventHandler { [weak self, weak s] in
+            MainActor.assumeIsolated {
+                // Fichier supprimé ou remplacé (nettoyage, dossier recréé) : le descripteur suit l'ancien fichier, on
+                // rouvre le chemin. Sans cela plus aucun événement n'arrivait jusqu'au relancement de l'app.
+                if let data = s?.data, !data.isDisjoint(with: [.delete, .rename]) { self?.restart() } else { self?.readNew() }
+            }
         }
         let fd = fd
-        s.setCancelHandler { close(fd) }
+        s.setCancelHandler { Darwin.close(fd) }
         source = s
         s.resume()
         // Rattrapage de ce qui s'est accumulé app fermée, puis fichier vidé.
@@ -45,6 +50,18 @@ final class ClaudeEventsWatcher {
     func stop() {
         // Ce qui n'a pas été lu ne le sera plus par cette instance : rien ne reste sur disque après l'arrêt.
         if fd >= 0 { ftruncate(fd, 0) }
+        close()
+    }
+
+    /// Rouvre le fichier à son chemin (recréé s'il manque) et reprend la lecture depuis le début.
+    func restart() {
+        close()
+        start()
+    }
+
+    private func close() {
+        retry?.cancel()
+        retry = nil
         source?.cancel()
         source = nil
         fd = -1
@@ -83,9 +100,26 @@ final class ClaudeEventsWatcher {
         }
         // Tout consommé : le fichier est vidé, pour que le texte des conversations n'y reste pas (R2). La taille est
         // relue juste avant : si le script a écrit entre-temps, on garde le fichier et on le lira au prochain événement.
-        if pending.isEmpty, offset > 0, fstat(fd, &st) == 0, Int(st.st_size) == offset {
-            if ftruncate(fd, 0) == 0 { offset = 0 }
-        }
+        if pending.isEmpty, offset > 0 { truncateIfConsumed() }
         if !events.isEmpty { onEvents(events) }
+    }
+
+    /// Troncature sous le verrou du script (`lockf`, donc `flock`) : hors verrou, un hook qui écrivait entre la
+    /// relecture de la taille et la troncature perdait son événement. Verrou pris par un hook : nouvelle lecture
+    /// un peu plus tard, que ce hook écrive encore ou non.
+    private func truncateIfConsumed() {
+        let lock = open(url.path + ".lock", O_RDWR | O_CREAT, 0o600)
+        guard lock >= 0 else { return }
+        defer { Darwin.close(lock) }
+        guard flock(lock, LOCK_EX | LOCK_NB) == 0 else {
+            retry?.cancel()
+            let work = DispatchWorkItem { [weak self] in self?.readNew() }
+            retry = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+            return
+        }
+        defer { flock(lock, LOCK_UN) }
+        var st = stat()
+        if fstat(fd, &st) == 0, Int(st.st_size) == offset, ftruncate(fd, 0) == 0 { offset = 0 }
     }
 }

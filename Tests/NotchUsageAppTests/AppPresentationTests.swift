@@ -118,6 +118,10 @@ struct AppPresentationTests {
             try "".write(to: dir.appending(path: name), atomically: true, encoding: .utf8)
         }
         #expect(try fm.contentsOfDirectory(atPath: dir.path).count == 6)
+        // Fichiers de données en 600, comme le fil d'événements et les sessions.
+        for name in ["snapshot.json", "history.json", "weekly.json"] {
+            #expect(try fm.attributesOfItem(atPath: dir.appending(path: name).path)[.posixPermissions] as? Int == 0o600)
+        }
 
         try store.wipe()
         #expect(try Set(fm.contentsOfDirectory(atPath: dir.path)) == ["claude-hook.sh", "claude-events.jsonl"])
@@ -261,6 +265,7 @@ struct AppPresentationTests {
         environment.now = { now }
         environment.bootDate = { now.addingTimeInterval(-3600) }
         environment.isAlive = alive
+        environment.startedAt = { _ in nil }
         // 101 : le shell qui a lancé le hook ; 500 : le processus de la session, dans le Terminal.
         environment.sessionProcess = { $0 == 101 ? 500 : $0 }
         environment.originApp = { $0 == 500 ? "com.apple.Terminal" : nil }

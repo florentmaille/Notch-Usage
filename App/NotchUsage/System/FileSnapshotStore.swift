@@ -57,5 +57,7 @@ final class FileSnapshotStore: SnapshotStore {
     private func save<T: Encodable>(_ value: T, to url: URL) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try encoder.encode(value).write(to: url, options: .atomic)
+        // Comme les autres fichiers du dossier : lisible par l'utilisateur seulement.
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
 }

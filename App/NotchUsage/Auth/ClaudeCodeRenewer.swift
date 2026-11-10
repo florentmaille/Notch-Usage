@@ -24,7 +24,7 @@ enum ClaudeCodeRenewer {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: binary)
         process.arguments = ClaudeCLI.renewalArguments
-        process.environment = ClaudeCLI.environment(home: home, user: user)
+        process.environment = ClaudeCLI.environment(home: home, user: user, binary: binary)
         process.currentDirectoryURL = FileManager.default.temporaryDirectory
         let pipe = Pipe()
         process.standardOutput = pipe
