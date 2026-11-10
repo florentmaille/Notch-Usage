@@ -60,7 +60,7 @@ The gauge fill and the number carry the information without colour.
 - **Screens without a notch, without a fake notch.** The island stays on the built-in display, even when an external display is the main one. On a display without a notch (an external display, or with the lid closed), the menu bar takes over:
   - **Menu bar item**: a gauge, plus the time left once a block is forecast (`2:05`, `8′` in red) and the Claude Code glyph with a count. When you work on the notched display, the island already carries the detail and the item shrinks to the gauge. Click it for the same panel as the island; right-click for *Refresh now*, *Settings* and *Quit*.
   - **Centered capsule (optional)**: on displays 1700 pt wide or more, a small dark capsule in the middle of the menu bar shows the same thing. Point at the top of the screen above it to open the panel just below the bar. It keeps its detail whichever display you work on. It hides in full-screen apps, like the island.
-  - **The detail follows you**: with a display without a notch connected, the island shows your usage right of the notch while you work on the Mac, and fades away while you work on the other display, where the menu bar carries the detail.
+  - **Both displays show it**: with a display without a notch connected, the island shows your usage right of the notch and the capsule shows it on the other display, whichever one you work on.
 
 <p align="center">
   <img src="docs/images/external-display.png" alt="Working on the Mac: the island shows 42 % right of the notch and the external display's capsule shows 42 % too. Working on the external display: the capsule and the menu bar icon show 2:05 and three waiting Claude Code sessions, and the panel opens in a card below the bar." width="820">
