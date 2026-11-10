@@ -121,8 +121,10 @@ rate_limit_tier}`. Choisir la première org dont `capabilities` contient `claude
 
 Règles du parseur :
 1. `limits[]` présent et non vide ⇒ seule source ; clés plates ignorées.
-2. `percent` / `utilization` : nombre, borné à 0…100. Valeur ≤ 1 **et** toutes les valeurs
-   ≤ 1 ⇒ suspecter une fraction, multiplier par 100 et journaliser (incertitude cc-pool).
+2. `percent` / `utilization` : nombre, borné à 0…100 ; une clé `null` laisse la main à l'autre.
+   `percent` est toujours un pourcentage. Fraction suspectée (× 100, incertitude cc-pool) seulement si
+   toutes les valeurs viennent de `utilization`, sont ≤ 1, et qu'une au moins est strictement entre 0
+   et 1 : des 0 et 1 entiers sont des pourcentages bas (cas de tout début de semaine).
 3. `resets_at` : ISO 8601 (avec ou sans fraction, `Z` ou offset), epoch secondes (< 10¹¹)
    ou millisecondes. Absent ou invalide ⇒ `nil`.
 4. Clés inconnues, `extra_usage`, `kind` inconnu ⇒ ignorés. `seven_day_cowork`,
@@ -151,6 +153,8 @@ Règles du parseur :
 | `usage-legacy.json` | forme legacy avec `seven_day_sonnet`, `seven_day_opus: null` |
 | `usage-both-forms.json` | `limits[]` + clés plates ⇒ pas de doublon |
 | `usage-fraction.json` | `utilization` en 0…1 |
+| `usage-limits-low.json` | `limits[]` à 0,5 %, 1 % et 0 % ⇒ jamais × 100 |
+| `usage-legacy-low.json` | forme legacy à 1 % et 0 % entiers ⇒ jamais × 100 |
 | `usage-epoch-ms.json` | `resets_at` en epoch ms |
 | `usage-no-limits.json` | compte sans limites ⇒ `unsupported` |
 | `usage-malformed.json` | JSON tronqué |

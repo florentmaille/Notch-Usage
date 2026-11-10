@@ -43,6 +43,21 @@ struct UsageResponseParserTests {
         #expect(limits.map(\.utilization) == [8, 70])
     }
 
+    /// Juste après un reset, toutes les limites valent 0 ou 1 % : `percent` est un pourcentage, jamais une fraction.
+    /// Multipliées par 100, elles annonçaient une limite atteinte en début de semaine.
+    @Test func lowPercentagesAreNotMistakenForFractions() throws {
+        let limits = try UsageResponseParser.parse(Fixture.data("usage-limits-low.json"))
+        #expect(limits.map(\.id) == ["session", "weekly_all", "weekly_scoped:Fable"])
+        #expect(limits.map(\.utilization) == [0.5, 1, 0])
+    }
+
+    /// Forme legacy : des entiers 0 et 1 sont des pourcentages ; seule une valeur strictement entre 0 et 1 trahit
+    /// une fraction.
+    @Test func legacyIntegersAtOnePercentAreNotScaled() throws {
+        let limits = try UsageResponseParser.parse(Fixture.data("usage-legacy-low.json"))
+        #expect(limits.map(\.utilization) == [1, 0])
+    }
+
     @Test func valuesClamped() throws {
         let limits = try UsageResponseParser.parse(Fixture.data("usage-overflow.json"))
         #expect(limits.map(\.utilization) == [100, 0])

@@ -73,6 +73,36 @@ struct AppPresentationTests {
         #expect(ClaudeHookScript.scriptURL.path.contains("/Library/Application Support/NotchUsage/"))
     }
 
+    /// La déconnexion efface les données de consommation, pas le dossier : le script des hooks Claude Code et son
+    /// fil d'événements y vivent aussi, et les hooks restent installés (017).
+    @Test func wipeRemovesUsageDataAndKeepsTheClaudeHookFiles() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notchusage-wipe-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: dir) }
+        let store = FileSnapshotStore(directory: dir)
+        try store.saveSnapshot(UsageSnapshot(limits: [], fetchedAt: Date()))
+        try store.saveLedger(AlertLedger())
+        try store.saveHistory(UsageHistory())
+        try store.saveHourlyHistory(HourlyHistory())
+        for name in ["claude-hook.sh", "claude-events.jsonl"] {
+            try "".write(to: dir.appending(path: name), atomically: true, encoding: .utf8)
+        }
+        #expect(try fm.contentsOfDirectory(atPath: dir.path).count == 6)
+
+        try store.wipe()
+        #expect(try Set(fm.contentsOfDirectory(atPath: dir.path)) == ["claude-hook.sh", "claude-events.jsonl"])
+        #expect(try store.loadSnapshot() == nil && store.loadLedger() == nil && store.loadHistory() == nil && store.loadHourlyHistory() == nil)
+        // Rien à effacer : pas d'erreur.
+        try store.wipe()
+    }
+
+    /// La commande écrite dans `~/.claude/settings.json` cite le chemin réel du script, qui contient une espace.
+    @Test func hookCommandQuotesTheRealScriptPath() {
+        let path = ClaudeHookScript.scriptURL.path
+        #expect(path.contains(" "))
+        #expect(ClaudeHooksInstaller.command(for: path) == "'\(path)'")
+    }
+
     @Test func arrivalEarIsWiderThanAPlainEarOnlyWhileTheWordShows() {
         let now = Date()
         let snapshot = UsageSnapshot(limits: [UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: 42,

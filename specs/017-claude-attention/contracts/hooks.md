@@ -2,8 +2,14 @@
 
 ## Entrées dans `~/.claude/settings.json`
 
-Toutes avec un seul hook : `{"type": "command", "command": "<script>", "timeout": 5}` où `<script>` est
-`~/Library/Application Support/NotchUsage/claude-hook.sh` (chemin absolu, c'est le marqueur de propriété).
+Toutes avec un seul hook : `{"type": "command", "command": "'<script>'", "timeout": 5}` où `<script>` est
+`~/Library/Application Support/NotchUsage/claude-hook.sh` (chemin absolu). La commande, chemin entre
+apostrophes, est le marqueur de propriété : Claude Code la passe à `/bin/sh -c`, et le chemin contient une espace.
+
+Les versions 0.5.4 à 0.6.1 écrivaient le chemin brut : le shell le coupait à l'espace et le script ne tournait
+jamais (code 127 à chaque événement). Ces entrées sont aussi reconnues comme les nôtres : remplacées à
+l'installation et au lancement de l'app quand le réglage est actif, retirées à la désactivation. Tant qu'il en
+reste une, le statut n'est pas « installé ».
 
 | Événement | `matcher` | Rôle |
 |---|---|---|
@@ -16,9 +22,12 @@ Toutes avec un seul hook : `{"type": "command", "command": "<script>", "timeout"
 | `SessionStart` | (absent) | création (pid, dossier), sans attente |
 
 Règles de fusion : ajout d'un groupe à la fin de la liste de chaque événement ; les groupes des autres
-sont intacts, clés et ordre compris ; retrait des seuls groupes portant `<script>` ; clé d'événement
-supprimée si vide ; les autres clés racine (`autoMode`, `model`, `theme`…) ne sont jamais touchées.
-Écriture : relire, modifier, écrire dans un fichier temporaire du même dossier, `rename`. Encodage
+sont intacts, clés et ordre compris ; retrait des seuls hooks portant notre commande, le groupe disparaît
+s'il est vide et garde les hooks de l'utilisateur sinon ; clé d'événement supprimée si vide ; les autres clés
+racine (`autoMode`, `model`, `theme`…) ne sont jamais touchées. Une section `hooks` ou une liste d'événement de
+forme inattendue n'est jamais écrasée : l'installation échoue, le retrait laisse le fichier tel quel.
+Écriture : relire, modifier, écrire dans un fichier temporaire du dossier de la cible (lien symbolique résolu,
+le lien reste en place), `rename`. Encodage
 `prettyPrinted`, `sortedKeys`, `withoutEscapingSlashes`, retour à la ligne final.
 
 Statut : `absent` (aucun groupe), `installed` (les 7), `partial` (1 à 6), `unreadable` (JSON invalide),

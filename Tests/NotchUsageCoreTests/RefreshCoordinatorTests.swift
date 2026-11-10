@@ -29,11 +29,13 @@ struct RefreshCoordinatorTests {
         }
     }
 
-    func makeHarness(_ results: [Result<UsageSnapshot, FetchError>], cached: UsageSnapshot? = nil, interval: Duration = .seconds(180)) -> Harness {
+    func makeHarness(_ results: [Result<UsageSnapshot, FetchError>], cached: UsageSnapshot? = nil, interval: Duration = .seconds(180),
+                     pausedFor reasons: Set<PauseReason> = []) -> Harness {
         let provider = StubUsageProvider(results)
         let store = MemorySnapshotStore(snapshot: cached)
         let clock = TestClock()
-        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings(interval: interval)), store: store, clock: clock)
+        let c = RefreshCoordinator(provider: provider, policy: RefreshPolicy(settings: RefreshSettings(interval: interval)), store: store, clock: clock,
+                                   pausedFor: reasons)
         let collector = StateCollector()
         let stream = c.states
         Task { for await s in stream { await collector.append(s) } }
@@ -110,6 +112,25 @@ struct RefreshCoordinatorTests {
         await h.clock.settle()
         await h.coordinator.pause(reason: .sleep)
         await h.clock.advance(by: 3600)
+        #expect(await h.provider.calls == 1)
+    }
+
+    /// Un coordinateur créé pendant une pause (économie d'énergie au lancement, verrou pendant un changement de
+    /// réglage) montre le cache mais ne relève rien avant la reprise, puis relève aussitôt.
+    @Test func createdPausedWaitsForResume() async throws {
+        let old = makeSnapshot([("session", 10)], fetchedAt: .iso("2026-11-01T09:00:00Z"))
+        let h = makeHarness([.success(snapB)], cached: old, pausedFor: [.lowPower, .screenLocked])
+        await h.coordinator.start()
+        await h.clock.settle()
+        #expect(await h.coordinator.isPaused)
+        #expect(await h.coordinator.state == .idle(old))
+        #expect(await h.provider.calls == 0)
+        // Un motif levé sur deux : toujours en pause.
+        await h.coordinator.resume(reason: .screenLocked)
+        await h.clock.settle()
+        #expect(await h.provider.calls == 0)
+        await h.coordinator.resume(reason: .lowPower)
+        await h.clock.settle()
         #expect(await h.provider.calls == 1)
     }
 

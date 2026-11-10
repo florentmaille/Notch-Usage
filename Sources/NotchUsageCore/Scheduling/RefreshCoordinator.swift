@@ -33,12 +33,16 @@ public actor RefreshCoordinator {
     /// Délai demandé par `resume`/`refreshNow` pour la prochaine itération (court-circuite le délai planifié).
     private var overrideDelay: Duration?
 
+    /// `pausedFor` : motifs de pause déjà en cours à la création (économie d'énergie au lancement, verrou pendant un
+    /// changement de réglage). Sans eux, un coordinateur neuf relevait pendant la pause de l'app.
     public init(provider: any UsageProvider, policy: RefreshPolicy, store: any SnapshotStore, clock: any Clock,
+                pausedFor reasons: Set<PauseReason> = [],
                 alertHook: (@Sendable (UsageSnapshot, AlertLedger?) -> (AlertLedger, [AlertEvent]))? = nil) {
         self.provider = provider
         self.policy = policy
         self.store = store
         self.clock = clock
+        self.pauseReasons = reasons
         self.alertHook = alertHook
         self.lastDelay = policy.delayAfterSuccess()
         (states, stateContinuation) = AsyncStream.makeStream(of: FetchState.self, bufferingPolicy: .unbounded)

@@ -36,10 +36,14 @@ final class FileSnapshotStore: SnapshotStore {
     func loadHourlyHistory() throws -> HourlyHistory? { try load(hourlyURL) }
     func saveHourlyHistory(_ history: HourlyHistory) throws { try save(history, to: hourlyURL) }
 
+    /// Supprime les fichiers de données, pas le dossier : il porte aussi le script et le fil d'événements des hooks
+    /// Claude Code (017), qui restent installés après une déconnexion.
     func wipe() throws {
-        if FileManager.default.fileExists(atPath: directory.path) {
-            try FileManager.default.removeItem(at: directory)
+        var failure: (any Error)?
+        for url in [snapshotURL, ledgerURL, historyURL, hourlyURL] where FileManager.default.fileExists(atPath: url.path) {
+            do { try FileManager.default.removeItem(at: url) } catch { failure = failure ?? error }
         }
+        if let failure { throw failure }
     }
 
     private func load<T: Decodable>(_ url: URL) throws -> T? {

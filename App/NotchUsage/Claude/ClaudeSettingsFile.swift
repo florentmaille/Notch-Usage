@@ -25,6 +25,12 @@ enum ClaudeSettingsFile {
         }
     }
 
+    /// Entrées au chemin brut des versions 0.5.4 à 0.6.1 : le shell les coupait à l'espace, aucune ne s'exécutait.
+    static func hasLegacyEntries(scriptPath: String) -> Bool {
+        guard let data = try? read() else { return false }
+        return ClaudeHooksInstaller.hasLegacyEntries(in: data, scriptPath: scriptPath)
+    }
+
     static func install(scriptPath: String) throws {
         try modify { try ClaudeHooksInstaller.install(into: $0, scriptPath: scriptPath) }
     }
@@ -55,12 +61,14 @@ enum ClaudeSettingsFile {
     }
 
     private static func write(_ data: Data) throws {
-        let temporary = claudeDirectory.appending(path: ".settings.json.notchusage-\(getpid())")
+        // `settings.json` est parfois un lien vers un dépôt de dotfiles : on remplace la cible, le lien reste en place.
+        let target = settingsURL.resolvingSymlinksInPath()
+        let temporary = target.deletingLastPathComponent().appending(path: ".settings.json.notchusage-\(getpid())")
         let fm = FileManager.default
         try data.write(to: temporary, options: .atomic)
-        let permissions = (try? fm.attributesOfItem(atPath: settingsURL.path)[.posixPermissions] as? Int) ?? 0o600
+        let permissions = (try? fm.attributesOfItem(atPath: target.path)[.posixPermissions] as? Int) ?? 0o600
         try fm.setAttributes([.posixPermissions: permissions], ofItemAtPath: temporary.path)
-        guard rename(temporary.path, settingsURL.path) == 0 else {
+        guard rename(temporary.path, target.path) == 0 else {
             try? fm.removeItem(at: temporary)
             throw Failure(message: String(localized: "~/.claude/settings.json could not be written."))
         }

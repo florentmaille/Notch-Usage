@@ -35,11 +35,14 @@ public struct AlertLedger: Codable, Sendable, Equatable {
         public func isSamePeriod(as resetsAt: Date?) -> Bool {
             switch (periodKey, resetsAt) {
             case (nil, nil): return true
-            case let (a?, b?): return abs(a.timeIntervalSince(b)) < 600
+            case let (a?, b?): return abs(a.timeIntervalSince(b)) < AlertLedger.periodTolerance
             default: return false
             }
         }
     }
+
+    /// Écart en dessous duquel deux heures de reset désignent la même période (aussi pour `NotificationGate`).
+    public static let periodTolerance: TimeInterval = 600
 
     public var entries: [String: Entry]
 

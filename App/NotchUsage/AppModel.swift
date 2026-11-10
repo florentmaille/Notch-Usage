@@ -165,7 +165,10 @@ final class AppModel {
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
         refreshClaudeHooksStatus()
-        if followsClaudeCode { startClaudeWatcher() }
+        if followsClaudeCode {
+            migrateLegacyClaudeHooks()
+            startClaudeWatcher()
+        }
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         hourlyHistory = (try? snapshots.loadHourlyHistory()) ?? HourlyHistory()
         screens.onChange = { [weak self] snapshot in self?.applyScreens(snapshot) }
@@ -357,8 +360,9 @@ final class AppModel {
         Task { await old?.stop() }
         let evaluator = alertEvaluator
         let box = alertSettingsBox
+        // Les pauses en cours sont transmises à la création : `pause(_:)` n'a touché que l'ancien coordinateur.
         let c = RefreshCoordinator(provider: connection.makeProvider(for: account), policy: RefreshPolicy(settings: refreshSettings),
-                                   store: snapshots, clock: SystemClock(),
+                                   store: snapshots, clock: SystemClock(), pausedFor: pausedReasons,
                                    alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: box.withLock { $0 }, ledger: ledger ?? AlertLedger()) })
         coordinator = c
         let states = c.states
@@ -672,6 +676,22 @@ final class AppModel {
         let watcher = ClaudeEventsWatcher(url: ClaudeHookScript.eventsURL) { [weak self] events in self?.handleClaudeEvents(events) }
         claudeWatcher = watcher
         watcher.start()
+    }
+
+    /// Les versions 0.5.4 à 0.6.1 écrivaient le chemin du script sans apostrophes : le shell le coupait à l'espace de
+    /// « Application Support » et aucun événement n'arrivait. Le réglage est déjà actif : les entrées sont remplacées
+    /// au lancement, sans clic. En cas d'échec, la note « Réparer » des réglages reste.
+    private func migrateLegacyClaudeHooks() {
+        let path = ClaudeHookScript.scriptURL.path
+        guard ClaudeSettingsFile.hasLegacyEntries(scriptPath: path) else { return }
+        do {
+            try ClaudeHookScript.ensure()
+            try ClaudeSettingsFile.install(scriptPath: path)
+            Log.app.notice("claude hooks migrated to the quoted command")
+        } catch {
+            Log.app.error("claude hooks migration: \(error.localizedDescription, privacy: .public)")
+        }
+        refreshClaudeHooksStatus()
     }
 
     private func stopClaudeWatcher() {
