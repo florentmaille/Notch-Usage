@@ -483,16 +483,6 @@
         }
       }
     },
-    "Connect": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connexion"
-          }
-        }
-      }
-    },
     "Connect your Claude account": {
       "localizations": {
         "fr": {
@@ -1009,16 +999,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Affichée quand un écran sans encoche est branché"
-          }
-        }
-      }
-    },
-    "Sign in": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connexion"
           }
         }
       }

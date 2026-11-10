@@ -304,8 +304,6 @@ extension CompactStrip.Strings {
 
     private static let base = CompactStrip.Strings(
         full: String(localized: "Full"),
-        signIn: String(localized: "Sign in"),
-        connect: String(localized: "Connect"),
         dash: "—",
         percent: { String(localized: "\($0)%") },
         limitLabel: { LimitLabel.text(for: $0) },

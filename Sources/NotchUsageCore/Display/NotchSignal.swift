@@ -1,13 +1,12 @@
 import Foundation
 
-/// Ce que l'encoche repliée montre sans survol (feature 005, contrat notch-signal.md) : la vue dessine,
-/// le panneau lit `isSilent` et `isBand`. Dans l'encoche, seul `band` porte du texte : les autres contenus
-/// se réduisent au liseré autour de l'encoche physique, leurs textes ne servent qu'à la pilule.
-/// La bande complète (`CompactStrip`) reste celle de la 003.
+/// Ce que l'encoche repliée porte sans survol (feature 005, contrat notch-signal.md). Le contenu et le palier
+/// servent aux notifications et au battement ; l'île (012) et la barre de menus (018) en dérivent leur dessin.
+/// L'annonce VoiceOver vient de `CompactStrip`.
 public struct NotchSignal: Sendable, Equatable {
     public enum Content: Sendable, Equatable {
         case silent                                   // rien : ni oreille, ni texte
-        case band(CompactStrip)                       // bande complète : survol, épinglé, gris, session, compte
+        case band                                     // survol, relevé gris, session ou compte : rien à signaler en propre
         case deadline(String)                         // sablier + durée ou heure du blocage, aile droite seule
         case exhausted(full: String, back: String)    // pastille « Full » à gauche, flèche + retour à droite
         case threshold(label: String, percent: String) // libellé court à gauche, pastille à droite
@@ -170,14 +169,6 @@ public struct NotchSignal: Sendable, Equatable {
         }
     }
 
-    public var isSilent: Bool { content == .silent }
-
-    /// Seul contenu qui élargit l'encoche : survol, épinglage, gris, session, compte.
-    public var isBand: Bool {
-        if case .band = content { return true }
-        return false
-    }
-
     public static func make(display: DisplayState, now: Date, language: InterfaceLanguage, strings: CompactStrip.Strings,
                             locale: Locale = .current, timeZone: TimeZone = .current, attention: Attention? = nil) -> NotchSignal {
         let signal = core(display: display, now: now, language: language, strings: strings, locale: locale, timeZone: timeZone)
@@ -196,7 +187,7 @@ public struct NotchSignal: Sendable, Equatable {
     static func core(display: DisplayState, now: Date, language: InterfaceLanguage, strings: CompactStrip.Strings,
                      locale: Locale, timeZone: TimeZone) -> NotchSignal {
         let strip = CompactStrip.make(display: display, now: now, language: language, strings: strings, locale: locale, timeZone: timeZone)
-        let band = NotchSignal(content: .band(strip), edge: nil, accessibility: strip.accessibility)
+        let band = NotchSignal(content: .band, edge: nil, accessibility: strip.accessibility)
         // Survol et épinglage montrent la bande ; un relevé gris, une session ou un compte absent aussi, sans liseré.
         guard display.content == .limits, !display.isExpanded, display.banner == nil, !display.fetchFailed,
               let limit = display.headline?.limit else { return band }

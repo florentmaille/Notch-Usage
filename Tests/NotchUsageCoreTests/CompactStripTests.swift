@@ -2,14 +2,16 @@ import Foundation
 import Testing
 @testable import NotchUsageCore
 
-@Suite("CompactStrip (003)")
+/// Annonce VoiceOver de l'encoche (003, FR-015). Les champs visuels de l'ancienne bande ont disparu avec elle :
+/// l'île (012) et la barre de menus (018) ont leurs propres tests.
+@Suite("CompactStrip, annonce VoiceOver (003)")
 struct CompactStripTests {
     let now = Date.iso("2026-11-01T10:00:00Z")
     let utc = TimeZone(identifier: "UTC")!
     let layout = NotchGeometry.layout(screenWidth: 1512, safeAreaTop: 32, auxLeftWidth: 600, auxRightWidth: 600)!
 
     static let english = CompactStrip.Strings(
-        full: "Full", signIn: "Sign in", connect: "Connect", dash: "—",
+        full: "Full", dash: "—",
         percent: { "\($0)%" },
         limitLabel: { $0.id == "session" ? "5-hour window" : "Weekly, all models" },
         shortLabel: { $0.kind == .rollingFiveHour ? "5h" : ($0.kind == .weeklyAll ? "7d" : ($0.modelName ?? "7d")) },
@@ -18,7 +20,7 @@ struct CompactStripTests {
         stateAnnouncement: { "Notch Usage, \($0)" })
 
     static let french = CompactStrip.Strings(
-        full: "Bloqué", signIn: "Connexion", connect: "Connexion", dash: "—",
+        full: "Bloqué", dash: "—",
         percent: { "\($0)\u{00A0}%" },
         limitLabel: { _ in "Fenêtre de 5 h" },
         shortLabel: { $0.kind == .rollingFiveHour ? "5 h" : "7 j" },
@@ -34,9 +36,9 @@ struct CompactStripTests {
         return d
     }
 
-    func strip(_ d: DisplayState, language: InterfaceLanguage = .english, strings: CompactStrip.Strings = english,
-               locale: String = "en_US") -> CompactStrip {
-        CompactStrip.make(display: d, now: now, language: language, strings: strings, locale: Locale(identifier: locale), timeZone: utc)
+    func announcement(_ d: DisplayState, language: InterfaceLanguage = .english, strings: CompactStrip.Strings = english,
+                      locale: String = "en_US") -> String {
+        CompactStrip.make(display: d, now: now, language: language, strings: strings, locale: Locale(identifier: locale), timeZone: utc).accessibility
     }
 
     func snap(_ pct: Double, reset: TimeInterval = 2 * 3600 + 14 * 60, at: TimeInterval = 0) -> UsageSnapshot {
@@ -49,104 +51,50 @@ struct CompactStripTests {
         #expect(limits.map(Self.french.shortLabel) == ["5 h", "7 j", "7 j"])
     }
 
-    @Test func normal() {
-        let s = strip(display(.idle(snap(42))))
-        #expect(s.left == .holds("2h 14m"))
-        #expect(s.right == .percent("42%"))
-        #expect(s.tone == .normal)
-        #expect(s.accessibility == "5-hour window, 42 percent, resets in 2h 14m")
+    @Test func aLimitIsAnnouncedInOneSentence() {
+        #expect(announcement(display(.idle(snap(42)))) == "5-hour window, 42 percent, resets in 2h 14m")
+        // Seuil, relevé en échec ou ancien : la phrase ne change pas, seule la valeur compte.
+        #expect(announcement(display(.idle(snap(83)), level: .warning)) == "5-hour window, 83 percent, resets in 2h 14m")
+        #expect(announcement(display(.failed(.network(.notConnectedToInternet), previous: snap(42)), level: .warning))
+                == "5-hour window, 42 percent, resets in 2h 14m")
     }
 
-    @Test func warningAndCriticalUseAPill() {
-        let w = strip(display(.idle(snap(83)), level: .warning))
-        #expect(w.right == .pill("83%") && w.tone == .warning && w.left == .holds("2h 14m"))
-        let c = strip(display(.idle(snap(97)), level: .critical))
-        #expect(c.right == .pill("97%") && c.tone == .critical)
+    @Test func aPredictedBlockAddsItsClockTime() {
+        let soon = announcement(display(.idle(snap(55, reset: 4 * 3600)), forecasts: ["session": .blockAt(now.addingTimeInterval(70 * 60))]))
+        #expect(soon.hasPrefix("5-hour window, 55 percent, resets in 4h 0m, at this pace blocked at 11:10"))
+        // Sous une heure aussi : l'annonce donne toujours l'heure, jamais une durée.
+        let underAnHour = announcement(display(.idle(snap(97)), level: .critical, forecasts: ["session": .blockAt(now.addingTimeInterval(40 * 60))]))
+        #expect(underAnHour.contains("at this pace blocked at 10:40"))
     }
 
-    @Test func blockedLimit() {
-        let s = strip(display(.idle(snap(100, reset: 3600 + 2 * 60)), level: .critical))
-        #expect(s.left == .blockedFor("1h 02m"))
-        #expect(s.right == .pill("Full"))
-        #expect(s.tone == .critical)
+    @Test func noPaceWithoutABlockForecastOnTheLimitShown() {
+        let plain = "5-hour window, 42 percent, resets in 2h 14m"
+        #expect(announcement(display(.idle(snap(42)), forecasts: ["weekly_all": .blockAt(now.addingTimeInterval(600))])) == plain)
+        #expect(announcement(display(.idle(snap(42)), forecasts: ["session": .holdsUntilReset])) == plain)
+        #expect(announcement(display(.idle(snap(42)), forecasts: ["session": .unavailable])) == plain)
     }
 
-    @Test func failedReadingIsMutedWithOfflineGlyph() {
-        let s = strip(display(.failed(.network(.notConnectedToInternet), previous: snap(42)), level: .warning))
-        #expect(s.left == .offline("2h 14m"))
-        #expect(s.right == .percent("42%"))
-        #expect(s.tone == .muted)
-    }
-
-    @Test func staleReadingIsMuted() {
-        let later = now.addingTimeInterval(1800)
-        let d = display(.idle(snap(83)), level: .warning, now: later)
-        let s = CompactStrip.make(display: d, now: later, language: .english, strings: Self.english, locale: Locale(identifier: "en_US"), timeZone: utc)
-        #expect(s.left == .holds("1h 44m"))
-        #expect(s.right == .percent("83%"))
-        #expect(s.tone == .muted)
-    }
-
-    @Test func blockedStaysRedEvenOffline() {
-        let s = strip(display(.failed(.server(503), previous: snap(100)), level: .critical))
-        #expect(s.left == .offline("2h 14m"))
-        #expect(s.right == .pill("Full"))
-        #expect(s.tone == .critical)
-    }
-
-    @Test func predictedBlock() {
-        let soon = strip(display(.idle(snap(55, reset: 4 * 3600)), forecasts: ["session": .blockAt(now.addingTimeInterval(70 * 60))]))
-        #expect(soon.left == .blockIn("1h 10m"))
-        #expect(soon.right == .percent("55%"))
-        #expect(soon.tone == .warning)
-        #expect(soon.accessibility.hasPrefix("5-hour window, 55 percent, resets in 4h 0m, at this pace blocked at 11:10"))
-
-        let underAnHour = strip(display(.idle(snap(97)), level: .critical, forecasts: ["session": .blockAt(now.addingTimeInterval(40 * 60))]))
-        #expect(underAnHour.left == .blockIn("10:40 AM") || underAnHour.left == .blockIn("10:40\u{202F}AM"))
-        #expect(underAnHour.right == .pill("97%"))
-        #expect(underAnHour.tone == .critical)
-    }
-
-    @Test func forecastOnAnotherLimitIsIgnored() {
-        let s = strip(display(.idle(snap(42)), forecasts: ["weekly_all": .blockAt(now.addingTimeInterval(600))]))
-        #expect(s.left == .holds("2h 14m"))
-    }
-
-    @Test func holdsAndUnavailableForecastsShowTheCountdown() {
-        #expect(strip(display(.idle(snap(42)), forecasts: ["session": .holdsUntilReset])).left == .holds("2h 14m"))
-        #expect(strip(display(.idle(snap(42)), forecasts: ["session": .unavailable])).left == .holds("2h 14m"))
+    /// Limite atteinte : plus de blocage à prévoir, l'annonce s'arrête au retour.
+    @Test func aReachedLimitHasNoPace() {
+        let blocked = announcement(display(.idle(snap(100, reset: 3600 + 2 * 60)), level: .critical,
+                                           forecasts: ["session": .blockAt(now.addingTimeInterval(600))]))
+        #expect(blocked == "5-hour window, 100 percent, resets in 1h 2m")
     }
 
     @Test func resetPending() {
-        let s = strip(display(.idle(snap(42, reset: -10))))
-        #expect(s.left == .holds("pending"))
+        #expect(announcement(display(.idle(snap(42, reset: -10)))) == "5-hour window, 42 percent, resets reset pending")
     }
 
-    @Test func reauthRequired() {
-        let s = strip(display(.reauthRequired(previous: nil)))
-        #expect(s.left == .locked)
-        #expect(s.right == .signIn("Sign in"))
-        #expect(s.tone == .warning)
-        #expect(s.accessibility == "Notch Usage, reconnectRequired")
-    }
-
-    @Test func notConnected() {
-        let s = strip(display(.idle(nil), connected: false))
-        #expect(s.left == .connect && s.right == .connect("Connect") && s.tone == .muted)
-    }
-
-    @Test func unsupportedAndUnavailable() {
-        let u = strip(display(.unsupported))
-        #expect(u.left == .unsupported && u.right == .dash && u.tone == .muted)
-        let n = strip(display(.failed(.server(503), previous: nil)))
-        #expect(n.left == .unavailable && n.right == .dash && n.tone == .muted)
+    @Test func statesWithoutALimitAreNamed() {
+        #expect(announcement(display(.reauthRequired(previous: nil))) == "Notch Usage, reconnectRequired")
+        #expect(announcement(display(.idle(nil), connected: false)) == "Notch Usage, connect")
+        #expect(announcement(display(.unsupported)) == "Notch Usage, unsupported")
+        #expect(announcement(display(.failed(.server(503), previous: nil))) == "Notch Usage, unavailable")
     }
 
     @Test func french() {
-        let s = strip(display(.idle(snap(42)), forecasts: ["session": .blockAt(now.addingTimeInterval(40 * 60))]),
-                      language: .french, strings: Self.french, locale: "fr_FR")
-        #expect(s.left == .blockIn("10:40"))
-        #expect(s.right == .percent("42\u{00A0}%"))
-        #expect(s.accessibility == "Fenêtre de 5 h, 42 pour cent, réinitialisation dans 2 h 14 min, à ce rythme bloqué à 10:40")
+        let s = announcement(display(.idle(snap(42)), forecasts: ["session": .blockAt(now.addingTimeInterval(40 * 60))]),
+                             language: .french, strings: Self.french, locale: "fr_FR")
+        #expect(s == "Fenêtre de 5 h, 42 pour cent, réinitialisation dans 2 h 14 min, à ce rythme bloqué à 10:40")
     }
 }
