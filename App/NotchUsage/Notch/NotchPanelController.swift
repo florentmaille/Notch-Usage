@@ -53,6 +53,8 @@ final class NotchPanelController {
         self.target = target
         self.cardView = cardView
         panel = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: 10))
+        // L'île ne contient aucun champ de saisie : un clic dessus (effacer les « terminé ») ne prend pas le clavier.
+        panel.becomesKeyOnlyIfNeeded = true
         hoverView = HoverView(frame: panel.contentLayoutRect)
         hosting = FirstMouseHostingView(rootView: rootView)
         // Le contrôleur seul fixe la taille du panneau : sinon la hauteur idéale du contenu,
@@ -98,7 +100,6 @@ final class NotchPanelController {
     /// Redimensionne et repositionne selon l'état d'affichage. Replié dans l'encoche, le cadre couvre l'encoche
     /// physique et les oreilles visibles (012) : la zone de survol et les clics suivent ces oreilles seulement.
     func apply(_ display: DisplayState, ears: (left: CGFloat, right: CGFloat)? = nil) {
-        let previous = self.display
         self.display = display
         // Changement d'écran : les oreilles restent celles du dernier état.
         let ears = ears ?? self.ears
@@ -128,16 +129,18 @@ final class NotchPanelController {
         }
         if !panel.isVisible { panel.orderFrontRegardless() }
 
-        // Ouvert : la carte prend le clavier (champ de clé, Échap) ; fermée, elle disparaît.
+        // Ouverte au survol, la carte ne prend pas le clavier : pointeur posé sur l'encoche, la frappe continuait
+        // d'arriver chez elle au lieu de l'app en cours. Elle le prend au clic (champ de clé, Échap) ou quand elle
+        // est ouverte exprès (`holdOpen`). Fermée, elle disparaît et rend le clavier.
         if !display.isExpanded, heldOpen { releaseHold() }
         if display.isExpanded, !display.fullscreenHidden {
-            showCard(layout: layout, screen: screen, takeKey: previous?.isExpanded != true)
+            showCard(layout: layout, screen: screen)
         } else {
             hideCard()
         }
     }
 
-    private func showCard(layout: NotchLayout, screen: NSRect, takeKey: Bool) {
+    private func showCard(layout: NotchLayout, screen: NSRect) {
         let card: NotchPanel
         if let cardPanel {
             card = cardPanel
@@ -165,7 +168,6 @@ final class NotchPanelController {
                            width: Self.cardWidth, height: contentHeight)
         if card.frame != frame { card.setFrame(frame, display: true) }
         if !card.isVisible { card.orderFrontRegardless() }
-        if takeKey { card.makeKey() }
     }
 
     private func hideCard() {
@@ -198,9 +200,12 @@ final class NotchPanelController {
         panel.close()
     }
 
+    /// Ouverture demandée (menu de la barre, app rouverte, VoiceOver) : le panneau reste ouvert sans survol et
+    /// prend le clavier, pour Échap et la navigation au clavier.
     func holdOpen() {
         heldOpen = true
         hoverWork?.cancel()
+        cardPanel?.makeKey()
         guard outsideClickMonitor == nil else { return }
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             MainActor.assumeIsolated { self?.onDismiss?() }

@@ -93,6 +93,9 @@ struct CompactView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .foregroundStyle(color)
+                // Plafond de largeur : l'appelant fige la taille idéale du texte (fondu de l'oreille), ce qui annulait
+                // la réduction ci-dessus. Un retour long (« ↻3 j 15 h ») débordait de l'oreille et était rogné.
+                .frame(maxWidth: NotchPanelController.earWidth - 4)
         }
     }
 
