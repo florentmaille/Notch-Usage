@@ -37,6 +37,8 @@ final class CapsulePanelController {
         self.screen = screen
         self.model = model
         capsulePanel = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: CapsuleView.height))
+        // Aucun champ de saisie dans la pastille : un clic dessus ne prend pas le clavier.
+        capsulePanel.becomesKeyOnlyIfNeeded = true
         // Pas d'espace plein écran : la barre y est masquée, la pastille aussi (point plein écran : plus tard, R7).
         capsulePanel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         capsuleHover = HoverView(frame: .zero)
@@ -208,8 +210,8 @@ final class CapsulePanelController {
         cardPanel = panel
         cardHover = hover
         layoutCard()
+        // Pas de prise de clavier au survol (voir `NotchPanelController.apply`) : la carte devient clé au clic.
         panel.orderFrontRegardless()
-        panel.makeKey()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard event.keyCode == 53 else { return event } // Échap
             self?.dismissCard()
