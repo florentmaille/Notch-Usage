@@ -31,7 +31,7 @@ It is native Swift, local-first, free of telemetry, and uses about 25 MB of memo
 ## How it reads
 
 <p align="center">
-  <img src="docs/images/states.png" alt="Notch states: all clear, block predicted in 2 h, in 40 min, in 8 min, limit reached, offline" width="820">
+  <img src="docs/images/states.png" alt="Notch states: all clear, block predicted in 2 h, in 40 min, in 8 min, limit reached, offline, Claude Code sessions waiting, Claude waiting during a block" width="820">
 </p>
 
 Like the Dynamic Island: on the left of the notch, a small gauge shows the usage of the limit most likely
