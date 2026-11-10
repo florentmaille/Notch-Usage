@@ -5,8 +5,6 @@ import SwiftUI
 /// Position, taille, survol, épinglage et fermeture du panneau (R5, FR-012, FR-012a).
 @MainActor
 final class NotchPanelController {
-    /// Aile de la bande au survol (003).
-    static let wingWidth: CGFloat = 72
     /// Oreille de l'île repliée (012).
     static let earWidth: CGFloat = 52
     /// Oreille droite le temps du mot d'arrivée d'une session Claude (017) : glyphe + un mot.
@@ -34,8 +32,7 @@ final class NotchPanelController {
     private var target: ScreenObserver.Target
     private var display: DisplayState?
     /// Un menu (Langue) est ouvert : il sort du panneau, qui ne doit pas se refermer pendant le choix.
-    private var menuTracking = false
-    private var menuObservers: [any NSObjectProtocol] = []
+    private let menus = MenuTracking()
     private var localKeyMonitor: Any?
     private var hoverWork: DispatchWorkItem?
     private var shrinkWork: DispatchWorkItem?
@@ -71,15 +68,7 @@ final class NotchPanelController {
         panel.contentView = hoverView
         hoverView.onEnter = { [weak self] in self?.scheduleHover(true) }
         hoverView.onExit = { [weak self] in self?.scheduleHover(false) }
-        let center = NotificationCenter.default
-        menuObservers = [
-            center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.menuTracking = true }
-            },
-            center.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.menuDidEnd() }
-            },
-        ]
+        menus.onEnd = { [weak self] in self?.menuDidEnd() }
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             // Échap referme l'île ouverte ; sinon la touche continue vers le popover ou la fenêtre de connexion.
             guard let self, event.keyCode == 53, self.display?.isExpanded == true else { return event }
@@ -106,15 +95,7 @@ final class NotchPanelController {
         self.ears = ears
         let layout = display.layout
         let screen = target.screen.frame
-        let wideWidth = layout.width + 2 * Self.wingWidth
-        let rect: NSRect
-        if display.fullscreenHidden {
-            rect = Self.centered(CGSize(width: wideWidth, height: Self.hiddenStripHeight), in: screen)
-        } else {
-            let width = layout.width + ears.left + ears.right
-            let x = (screen.midX - layout.width / 2 - ears.left).rounded()
-            rect = NSRect(x: x, y: screen.maxY - layout.height, width: width, height: layout.height)
-        }
+        let rect = Self.islandFrame(layout: layout, ears: ears, screen: screen, hidden: display.fullscreenHidden)
         shrinkWork?.cancel()
         shrinkWork = nil
         // 019 : l'île ne s'agrandit plus au survol, la carte flotte dessous ; seules les oreilles changent le cadre.
@@ -138,6 +119,15 @@ final class NotchPanelController {
         } else {
             hideCard()
         }
+    }
+
+    /// Cadre de l'île repliée : l'encoche et ses oreilles. En plein écran, une bande de 2 pt de la même largeur :
+    /// le pointeur qui la touche se retrouve sur l'île qui réapparaît. Plus large que l'île, elle la faisait
+    /// clignoter (survol, île plus étroite, sortie, bande, survol…).
+    static func islandFrame(layout: NotchLayout, ears: (left: CGFloat, right: CGFloat), screen: NSRect, hidden: Bool) -> NSRect {
+        let height = hidden ? hiddenStripHeight : layout.height
+        let x = (screen.midX - layout.width / 2 - ears.left).rounded()
+        return NSRect(x: x, y: screen.maxY - height, width: layout.width + ears.left + ears.right, height: height)
     }
 
     private func showCard(layout: NotchLayout, screen: NSRect) {
@@ -164,8 +154,9 @@ final class NotchPanelController {
             cardPanel = card
         }
         let top = screen.maxY - layout.height - Self.cardGap
-        let frame = NSRect(x: (screen.midX - Self.cardWidth / 2).rounded(), y: top - contentHeight,
-                           width: Self.cardWidth, height: contentHeight)
+        let height = CardLayout.height(measured: contentHeight, top: top, floor: target.screen.visibleFrame.minY)
+        let frame = NSRect(x: (screen.midX - Self.cardWidth / 2).rounded(), y: top - height,
+                           width: Self.cardWidth, height: height)
         if card.frame != frame { card.setFrame(frame, display: true) }
         if !card.isVisible { card.orderFrontRegardless() }
     }
@@ -183,13 +174,8 @@ final class NotchPanelController {
         panel.setFrame(rect, display: true)
     }
 
-    private static func centered(_ size: CGSize, in screen: NSRect) -> NSRect {
-        NSRect(origin: CGPoint(x: (screen.midX - size.width / 2).rounded(), y: screen.maxY - size.height), size: size)
-    }
-
     func close() {
-        menuObservers.forEach { NotificationCenter.default.removeObserver($0) }
-        menuObservers = []
+        menus.stop()
         if let localKeyMonitor { NSEvent.removeMonitor(localKeyMonitor) }
         localKeyMonitor = nil
         releaseHold()
@@ -220,7 +206,7 @@ final class NotchPanelController {
 
     private func scheduleHover(_ inside: Bool) {
         // Le menu Langue recouvre le pointeur : la sortie n'en est pas une tant qu'il est ouvert.
-        if !inside, menuTracking || heldOpen { return }
+        if !inside, menus.isActive || heldOpen { return }
         if inside, heldOpen { releaseHold() }
         hoverWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.onHoverChange?(inside) }
@@ -230,7 +216,6 @@ final class NotchPanelController {
 
     /// Menu refermé : si le pointeur a quitté le panneau entre-temps, on referme.
     private func menuDidEnd() {
-        menuTracking = false
         let mouse = NSEvent.mouseLocation
         if !panel.frame.contains(mouse), cardPanel?.frame.contains(mouse) != true { scheduleHover(false) }
     }

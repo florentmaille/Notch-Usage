@@ -37,6 +37,29 @@ struct AppPresentationTests {
         #expect(2 * NotchPanelController.earWidth <= 104)
     }
 
+    /// Plein écran : la bande de survol est le haut de l'île qu'elle fait réapparaître. Plus large, le pointeur
+    /// posé au bout de la bande se retrouvait hors de l'île, qui se refermait puis se rouvrait en boucle.
+    @Test func fullscreenStripIsTheTopOfTheIslandItReveals() {
+        let screen = NSRect(x: 0, y: 0, width: 1512, height: 982)
+        let layout = NotchLayout.fallback
+        let widths: [(left: CGFloat, right: CGFloat)] = [(52, 0), (52, 52), (52, 116)]
+        for ears in widths {
+            let island = NotchPanelController.islandFrame(layout: layout, ears: ears, screen: screen, hidden: false)
+            let strip = NotchPanelController.islandFrame(layout: layout, ears: ears, screen: screen, hidden: true)
+            #expect(island.contains(strip))
+            #expect(strip.width == island.width && strip.height == NotchPanelController.hiddenStripHeight && strip.maxY == screen.maxY)
+            #expect(island.width == layout.width + ears.left + ears.right && island.height == layout.height)
+        }
+    }
+
+    /// La carte prend la hauteur de son contenu tant qu'elle tient au-dessus du Dock ; au-delà, elle s'arrête à 8 pt.
+    @Test func cardHeightFollowsItsContentUpToTheScreen() {
+        // Réglages « Avancé » dépliés en français : 600 pt, sous une encoche de 32 pt et 6 pt d'écart.
+        #expect(CardLayout.height(measured: 599.4, top: 944, floor: 70) == 600)
+        #expect(CardLayout.height(measured: 600, top: 500, floor: 70) == 422)
+        #expect(CardLayout.height(measured: 600, top: 100, floor: 70) == CardLayout.minimumHeight)
+    }
+
     @Test func lighteningMovesTowardWhite() {
         let red = NotchSignal.Edge.imminent.rgb
         #expect(red.red == 1.0 && red.green < 0.3)

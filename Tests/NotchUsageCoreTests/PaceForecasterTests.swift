@@ -71,8 +71,11 @@ struct PaceForecasterTests {
         #expect(forecast([(30, 80), (0, 82)], reset: 30 * 60) == .holdsUntilReset)
     }
 
-    @Test func withoutResetTimeHolds() {
-        #expect(forecast([(30, 40), (0, 55)], reset: nil) == .holdsUntilReset)
+    /// Sans heure de reset, rien ne dit que le reset arrive avant le blocage : « tient » éteignait le seuil à 99 %.
+    /// Pas de prévision, les seuils reprennent la main. Sans hausse, la limite tient quel que soit le reset.
+    @Test func withoutResetTimeARisingPaceIsUnavailable() {
+        #expect(forecast([(30, 40), (0, 55)], reset: nil) == .unavailable)
+        #expect(forecast([(30, 42), (15, 42), (0, 42)], reset: nil) == .holdsUntilReset)
     }
 
     @Test func exhaustedLimitIsUnavailable() {
