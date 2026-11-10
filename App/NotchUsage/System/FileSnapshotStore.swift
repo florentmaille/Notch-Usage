@@ -25,6 +25,7 @@ final class FileSnapshotStore: SnapshotStore {
     private var snapshotURL: URL { directory.appending(path: "snapshot.json") }
     private var ledgerURL: URL { directory.appending(path: "alerts.json") }
     private var historyURL: URL { directory.appending(path: "history.json") }
+    private var hourlyURL: URL { directory.appending(path: "weekly.json") }
 
     func loadSnapshot() throws -> UsageSnapshot? { try load(snapshotURL) }
     func saveSnapshot(_ snapshot: UsageSnapshot) throws { try save(snapshot, to: snapshotURL) }
@@ -32,6 +33,8 @@ final class FileSnapshotStore: SnapshotStore {
     func saveLedger(_ ledger: AlertLedger) throws { try save(ledger, to: ledgerURL) }
     func loadHistory() throws -> UsageHistory? { try load(historyURL) }
     func saveHistory(_ history: UsageHistory) throws { try save(history, to: historyURL) }
+    func loadHourlyHistory() throws -> HourlyHistory? { try load(hourlyURL) }
+    func saveHourlyHistory(_ history: HourlyHistory) throws { try save(history, to: hourlyURL) }
 
     func wipe() throws {
         if FileManager.default.fileExists(atPath: directory.path) {

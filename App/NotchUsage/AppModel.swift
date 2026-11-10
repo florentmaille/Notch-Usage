@@ -69,6 +69,10 @@ final class AppModel {
     /// Prévisions affichées (003), stabilisées par l'hystérésis ; recalculées à chaque relevé réussi.
     private(set) var forecasts: [String: Forecast] = [:]
     @ObservationIgnored private var history = UsageHistory()
+    /// Un relevé par heure sur 8 jours (021) : courbe de la semaine.
+    @ObservationIgnored private var hourlyHistory = HourlyHistory()
+    /// Courbe de la limite hebdomadaire (021), `nil` sans limite hebdomadaire toutes modèles.
+    private(set) var weekCurve: WeekCurve.State?
     @ObservationIgnored private var debouncer = ForecastDebouncer()
     @ObservationIgnored private var lastRecordedAt: Date?
     var claudeCodeAvailable = false
@@ -149,6 +153,7 @@ final class AppModel {
     @ObservationIgnored var demoNoNotch = false
     @ObservationIgnored var demoNotchOnly = false
     @ObservationIgnored var demoActiveBar: String?
+    @ObservationIgnored var demoHourly: HourlyHistory?
     #endif
 
     func start() {
@@ -162,6 +167,7 @@ final class AppModel {
         refreshClaudeHooksStatus()
         if followsClaudeCode { startClaudeWatcher() }
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
+        hourlyHistory = (try? snapshots.loadHourlyHistory()) ?? HourlyHistory()
         screens.onChange = { [weak self] snapshot in self?.applyScreens(snapshot) }
         screens.start()
         fullscreenObserver.onChange = { [weak self] isFullscreen in self?.fullscreen = isFullscreen }
@@ -383,6 +389,8 @@ final class AppModel {
         lastRecordedAt = snapshot.fetchedAt
         history = history.appending(snapshot)
         try? snapshots.saveHistory(history)
+        hourlyHistory = hourlyHistory.appending(snapshot)
+        try? snapshots.saveHourlyHistory(hourlyHistory)
         let previous = forecasts
         forecasts = debouncer.push(PaceForecaster.forecasts(history: history, snapshot: snapshot, now: Date()))
         for (id, forecast) in forecasts where previous[id] != forecast {
@@ -570,6 +578,7 @@ final class AppModel {
         coordinator = nil
         connection.signOut()
         history = UsageHistory()
+        hourlyHistory = HourlyHistory()
         debouncer = ForecastDebouncer()
         forecasts = [:]
         lastRecordedAt = nil
@@ -797,6 +806,18 @@ final class AppModel {
         #endif
         let base = NotchSignal.make(display: display, now: now, language: AppLanguage.current, strings: .app,
                                     attention: visibleClaudeSessions.attention(now: now))
+        // Courbe de la semaine (021) : prévision hebdomadaire de la 016, recalculée si le modèle ne l'a pas encore.
+        var hourly = hourlyHistory
+        #if DEBUG
+        if let demo = demoHourly, demoState != nil { hourly = demo }
+        #endif
+        if display.content == .limits, let weekly = display.limits.first(where: { $0.kind == .weeklyAll }) {
+            let forecast = display.forecasts[weekly.id]
+                ?? PaceForecaster.weeklyForecast(utilization: weekly.utilization, resetsAt: weekly.resetsAt, now: now)
+            weekCurve = WeekCurve.make(limit: weekly, history: hourly, forecast: forecast, now: now)
+        } else {
+            weekCurve = nil
+        }
         notifier.notifyIfNeeded(signal: base, display: display, enabled: alertSettings.notifications, now: now)
         // Barre de menus active : écran de l'île ou écran sans encoche (R4). Sert à l'item, à la pastille et à l'île.
         var activeBar = activeBarScreenID

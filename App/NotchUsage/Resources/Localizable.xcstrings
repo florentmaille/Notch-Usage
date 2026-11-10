@@ -113,6 +113,26 @@
         }
       }
     },
+    "%lld%% projected at reset": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% prévus au reset"
+          }
+        }
+      }
+    },
+    "%lld%% used": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% utilisés"
+          }
+        }
+      }
+    },
     ", at this pace blocked at %@": {
       "localizations": {
         "fr": {
@@ -683,6 +703,16 @@
         }
       }
     },
+    "Not enough readings yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore assez de relevés"
+          }
+        }
+      }
+    },
     "Notch Usage shows your Pro or Max limits. Pick how to connect:": {
       "localizations": {
         "fr": {
@@ -1053,6 +1083,68 @@
         }
       }
     },
+    "This week": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine"
+          }
+        }
+      }
+    },
+    "This week: %lld%% used": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine : %lld %% utilisés"
+          }
+        }
+      }
+    },
+    "This week: %lld%% used, %lld%% projected at reset %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This week: %1$lld%% used, %2$lld%% projected at reset %3$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine : %1$lld %% utilisés, %2$lld %% prévus au reset %3$@"
+          }
+        }
+      }
+    },
+    "This week: %lld%% used, blocked expected %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This week: %1$lld%% used, blocked expected %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine : %1$lld %% utilisés, blocage prévu %2$@"
+          }
+        }
+      }
+    },
+    "This week: not enough readings yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine : pas encore assez de relevés"
+          }
+        }
+      }
+    },
     "Thresholds colour the gauge for weekly limits and before a forecast exists. Claude rate-limits usage requests: 3 minutes is a safe refresh.": {
       "localizations": {
         "fr": {
@@ -1219,6 +1311,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "attend une approbation"
+          }
+        }
+      }
+    },
+    "blocked %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bloqué %@"
           }
         }
       }
