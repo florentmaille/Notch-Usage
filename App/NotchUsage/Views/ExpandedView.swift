@@ -76,9 +76,13 @@ struct ExpandedView: View {
     }
 
     private var reauthMessage: String {
-        model.account?.connectionMethod == .claudeCode
-            ? String(localized: "Your Claude Code session has expired. Renew it here: Notch Usage asks Claude Code for a one-word reply, which counts as a tiny request. Or run claude in Terminal, or sign in with your browser.")
-            : String(localized: "Your claude.ai session has expired. Sign in again.")
+        guard model.account?.connectionMethod == .claudeCode else {
+            return String(localized: "Your claude.ai session has expired. Sign in again.")
+        }
+        // Lecture du Trousseau refusée sans dialogue : le jeton est bon, il ne manque que l'accord.
+        return model.claudeCodeAccessNeeded
+            ? String(localized: "macOS asks again before Notch Usage can read the Claude Code session in your Keychain. Allow access to reconnect: nothing is sent to Claude.")
+            : String(localized: "Your Claude Code session has expired. Renew it here: Notch Usage asks Claude Code for a one-word reply, which counts as a tiny request. Or run claude in Terminal, or sign in with your browser.")
     }
 
     private var reconnectButtons: some View {
@@ -87,6 +91,8 @@ struct ExpandedView: View {
                 Button { model.renewClaudeCodeSession() } label: {
                     if model.isRenewing {
                         HStack(spacing: 4) { ProgressView().controlSize(.mini); Text("Renewing…") }
+                    } else if model.claudeCodeAccessNeeded {
+                        Text("Allow access")
                     } else {
                         Text("Renew session")
                     }

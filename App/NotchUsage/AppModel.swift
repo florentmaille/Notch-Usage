@@ -62,6 +62,10 @@ final class AppModel {
     var isConnecting = false
     /// Renouvellement de Claude Code en cours (011) : libellé du bouton.
     private(set) var isRenewing = false
+    /// Motif du « Reconnect required » de la voie Claude Code : vrai quand macOS refuse la lecture silencieuse du
+    /// Trousseau (Claude Code vient de réécrire son entrée) alors que le jeton est bon. Le remède est un accord dans
+    /// le dialogue du Trousseau, pas une requête à Claude.
+    private(set) var claudeCodeAccessNeeded = false
     var connectionError: String?
     /// Prévisions affichées (003), stabilisées par l'hystérésis ; recalculées à chaque relevé réussi.
     private(set) var forecasts: [String: Forecast] = [:]
@@ -193,7 +197,8 @@ final class AppModel {
             if account.connectionMethod == .claudeCode {
                 // Le jeton n'est qu'en mémoire : relecture silencieuse avant le premier relevé.
                 Task {
-                    if await connection.recoverClaudeCodeToken() { startCoordinator(for: account) } else { markExpired() }
+                    let recovery = await connection.recoverClaudeCodeToken()
+                    if recovery == .recovered { startCoordinator(for: account) } else { noteRecovery(recovery); markExpired() }
                 }
             } else {
                 startCoordinator(for: account)
@@ -418,13 +423,22 @@ final class AppModel {
 
     private func handleReauth() async {
         guard var account, account.connectionMethod == .claudeCode else { markExpired(); return }
-        if await connection.recoverClaudeCodeToken() {
+        let recovery = await connection.recoverClaudeCodeToken()
+        if recovery == .recovered {
             account.status = .connected
             setAccount(account)
             startCoordinator(for: account)
         } else {
+            noteRecovery(recovery)
             markExpired()
         }
+    }
+
+    /// Retient pourquoi la relecture silencieuse a échoué ; une relecture trop rapprochée ne dit rien de neuf.
+    private func noteRecovery(_ recovery: ClaudeCodeRecovery) {
+        guard recovery != .throttled else { return }
+        claudeCodeAccessNeeded = recovery == .accessNeeded
+        Log.auth.notice("Claude Code recovery: \(String(describing: recovery), privacy: .public)")
     }
 
     /// Tant que le jeton de Claude Code est expiré, relit le Trousseau sans dialogue à chaque tick (30 s).
@@ -495,28 +509,30 @@ final class AppModel {
         }
     }
 
-    /// Renouvelle la session de Claude Code en lançant son CLI en arrière-plan, puis reconnecte (011).
+    /// Reconnexion à la session de Claude Code (011) : relecture du Trousseau avec dialogue d'abord, qui suffit quand
+    /// seul l'accès manquait. Le CLI n'est lancé en arrière-plan, ce qui coûte une requête, que si le jeton lu est
+    /// réellement expiré.
     func renewClaudeCodeSession() {
         guard !isConnecting else { return }
         isConnecting = true
-        isRenewing = true
         connectionError = nil
         Task {
-            let outcome = await ClaudeCodeRenewer.renew()
-            Log.auth.notice("Claude Code renewal: \(String(describing: outcome), privacy: .public)")
-            isRenewing = false
-            isConnecting = false
-            switch outcome {
-            case .renewed:
-                connectWithClaudeCode()
-            case .notFound:
-                connectionError = String(localized: "Claude Code was not found on this Mac. Run claude in Terminal, or sign in with your browser.")
-            case .notLoggedIn:
-                connectionError = String(localized: "Claude Code is signed out. Run claude in Terminal and sign in, or use your browser.")
-            case .timedOut:
-                connectionError = String(localized: "Claude Code did not answer in time. Try again, or run claude in Terminal.")
-            case .failed:
-                connectionError = String(localized: "Claude Code could not renew its session. Run claude in Terminal, or sign in with your browser.")
+            defer { isConnecting = false; isRenewing = false }
+            do {
+                let account = try await connection.reconnectWithClaudeCode(renew: { [weak self] in
+                    self?.isRenewing = true
+                    let outcome = await ClaudeCodeRenewer.renew()
+                    Log.auth.notice("Claude Code renewal: \(String(describing: outcome), privacy: .public)")
+                    return outcome
+                })
+                setAccount(account)
+                startCoordinator(for: account)
+            } catch ConnectionError.claudeCodeExpired {
+                claudeCodeAccessNeeded = false
+                connectionError = String(localized: "The Claude Code session is still expired. Run claude in Terminal, then try again.")
+            } catch {
+                connectionError = error.localizedDescription
+                Log.auth.error("Claude Code reconnection failed: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -594,7 +610,7 @@ final class AppModel {
 
     private func setAccount(_ account: Account?) {
         self.account = account
-        if account?.status == .connected { connectionError = nil }
+        if account?.status == .connected { connectionError = nil; claudeCodeAccessNeeded = false }
         if let account, let data = try? JSONEncoder().encode(account) {
             defaults.set(data, forKey: Self.accountKey)
         } else {

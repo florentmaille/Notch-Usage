@@ -3,11 +3,32 @@ import Foundation
 /// Échecs de connexion, sans texte : l'app les traduit (`ConnectionError+Messages.swift`).
 public enum ConnectionError: Error, Sendable, Equatable {
     case claudeCodeUnavailable
+    /// L'entrée existe, mais macOS n'a pas laissé l'app la lire (dialogue du Trousseau décliné).
+    case claudeCodeAccessDenied
     case claudeCodeMalformed
     /// Claude Code ne renouvelle son jeton que lorsqu'on l'utilise ; l'app ne le rafraîchit jamais (R1).
     case claudeCodeExpired(SubscriptionType)
+    /// Le jeton était expiré et le CLI n'a pas pu le renouveler.
+    case claudeCodeRenewalFailed(ClaudeCLI.Outcome)
     case invalidSessionKey
     case fetch(FetchError)
+}
+
+/// Relecture silencieuse de l'entrée Trousseau de Claude Code : ce qu'elle a donné, pour proposer le bon remède.
+public enum ClaudeCodeRecovery: Sendable, Equatable {
+    /// Un nouveau jeton valable a été repris.
+    case recovered
+    /// Même jeton qu'avant : rien de neuf à essayer.
+    case unchanged
+    /// Jeton lu, mais expiré : Claude Code doit le renouveler.
+    case expired
+    /// L'entrée existe, macOS refuse la lecture sans dialogue (Claude Code vient de la réécrire) : il faut l'accord
+    /// de l'utilisateur, pas une requête à Claude.
+    case accessNeeded
+    /// Entrée absente, ou contenu illisible.
+    case unavailable
+    /// Relecture trop rapprochée de la précédente (`RecoveryGate`).
+    case throttled
 }
 
 /// Les deux voies de connexion (FR-001, FR-002, FR-002a), la reprise silencieuse et la déconnexion (010 : dans le
@@ -44,7 +65,7 @@ public final class ConnectionManager {
     public func connectWithClaudeCode() async throws(ConnectionError) -> Account {
         let json: Data?
         do { json = try await claudeCode.readRawJSON(interactive: true) } catch { throw .claudeCodeUnavailable }
-        guard let json else { throw .claudeCodeUnavailable }
+        guard let json else { throw claudeCode.entryExists() ? .claudeCodeAccessDenied : .claudeCodeUnavailable }
         let token: ClaudeCodeToken
         do { token = try ClaudeCodeCredentialReader.accessToken(from: json) } catch { throw .claudeCodeMalformed }
         guard !token.isExpired(at: now()) else {
@@ -66,17 +87,35 @@ public final class ConnectionManager {
                        credentialRef: CredentialKey.oauthAccessToken.rawValue, connectedAt: now())
     }
 
-    /// Après un 401 : relit l'entrée de Claude Code sans dialogue. Vrai si un nouveau jeton a été repris.
-    public func recoverClaudeCodeToken() async -> Bool {
-        guard recoveryGate.allow(at: now()) else { return false }
-        guard let json = try? await claudeCode.readRawJSON(interactive: false),
-              let token = try? ClaudeCodeCredentialReader.accessToken(from: json),
-              !token.isExpired(at: now()) else { return false }
+    /// Après un 401 : relit l'entrée de Claude Code sans dialogue. Le résultat distingue un jeton expiré d'une
+    /// lecture refusée : Claude Code réécrit son entrée quand il renouvelle son jeton, et macOS redemande alors
+    /// l'accord de l'utilisateur. Le jeton est bon, seul l'accès manque.
+    public func recoverClaudeCodeToken() async -> ClaudeCodeRecovery {
+        guard recoveryGate.allow(at: now()) else { return .throttled }
+        guard let json = try? await claudeCode.readRawJSON(interactive: false) else {
+            return claudeCode.entryExists() ? .accessNeeded : .unavailable
+        }
+        guard let token = try? ClaudeCodeCredentialReader.accessToken(from: json) else { return .unavailable }
+        guard !token.isExpired(at: now()) else { return .expired }
         let current = try? credentials.read(.oauthAccessToken)
-        guard token.accessToken != current else { return false }
-        guard (try? credentials.write(token.accessToken, for: .oauthAccessToken)) != nil else { return false }
+        guard token.accessToken != current else { return .unchanged }
+        guard (try? credentials.write(token.accessToken, for: .oauthAccessToken)) != nil else { return .unavailable }
         log("recovered a Claude Code token")
-        return true
+        return .recovered
+    }
+
+    /// Reconnexion sur clic (011) : la lecture avec dialogue d'abord, qui suffit quand seul l'accès manquait. Le CLI
+    /// n'est sollicité, ce qui coûte une requête, que si le jeton lu est expiré ou refusé par Claude.
+    public func reconnectWithClaudeCode(renew: @MainActor () async -> ClaudeCLI.Outcome) async throws(ConnectionError) -> Account {
+        do {
+            return try await connectWithClaudeCode()
+        } catch {
+            guard case .claudeCodeExpired = error else { throw error }
+        }
+        let outcome = await renew()
+        guard outcome == .renewed else { throw .claudeCodeRenewalFailed(outcome) }
+        log("Claude Code session renewed by its CLI")
+        return try await connectWithClaudeCode()
     }
 
     // MARK: Voie 2

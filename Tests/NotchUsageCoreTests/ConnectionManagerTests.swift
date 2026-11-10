@@ -42,6 +42,10 @@ struct ConnectionManagerTests {
     @Test func claudeCodeErrorsAreTyped() async {
         let http = StubHTTPClient([])
         await #expect(throws: ConnectionError.claudeCodeUnavailable) {
+            try await manager(source: StubClaudeCodeSource(json: nil, exists: false), http: http).connectWithClaudeCode()
+        }
+        // L'entrée existe mais la lecture est refusée (dialogue du Trousseau décliné) : ce n'est pas « introuvable ».
+        await #expect(throws: ConnectionError.claudeCodeAccessDenied) {
             try await manager(source: StubClaudeCodeSource(json: nil), http: http).connectWithClaudeCode()
         }
         await #expect(throws: ConnectionError.claudeCodeMalformed) {
@@ -65,17 +69,79 @@ struct ConnectionManagerTests {
         let creds = MemoryCredentialStore([.oauthAccessToken: "sk-ant-oat01-OLD"])
         let source = StubClaudeCodeSource(json: credentialsJSON(token: "sk-ant-oat01-NEW"))
         let m = manager(source: source, http: StubHTTPClient([]), creds: creds)
-        #expect(await m.recoverClaudeCodeToken())
+        #expect(await m.recoverClaudeCodeToken() == .recovered)
         #expect(try creds.read(.oauthAccessToken) == "sk-ant-oat01-NEW")
         #expect(source.reads == [false])
         // Le garde-fou limite les relectures rapprochées.
-        #expect(await m.recoverClaudeCodeToken() == false)
+        #expect(await m.recoverClaudeCodeToken() == .throttled)
+    }
+
+    /// Claude Code réécrit son entrée quand il renouvelle son jeton : macOS refuse alors la lecture sans dialogue.
+    /// Ce n'est pas un jeton expiré, et le remède n'est pas le même (un accord, pas une requête à Claude).
+    @Test func recoveryTellsARefusedReadFromAnExpiredToken() async throws {
+        let refused = StubClaudeCodeSource(json: credentialsJSON(token: "sk-ant-oat01-NEW"))
+        refused.deniesSilentReads = true
+        let creds = MemoryCredentialStore()
+        #expect(await manager(source: refused, http: StubHTTPClient([]), creds: creds).recoverClaudeCodeToken() == .accessNeeded)
+        #expect(refused.reads == [false])
+        #expect(try creds.read(.oauthAccessToken) == nil)
+
+        let expired = manager(source: StubClaudeCodeSource(json: credentialsJSON()), http: StubHTTPClient([]), at: Date.iso("2026-01-01T00:00:00Z"))
+        #expect(await expired.recoverClaudeCodeToken() == .expired)
+        let missing = manager(source: StubClaudeCodeSource(json: nil, exists: false), http: StubHTTPClient([]))
+        #expect(await missing.recoverClaudeCodeToken() == .unavailable)
+        let garbled = manager(source: StubClaudeCodeSource(json: Data("{}".utf8)), http: StubHTTPClient([]))
+        #expect(await garbled.recoverClaudeCodeToken() == .unavailable)
+    }
+
+    /// Reconnexion sur clic : la lecture avec dialogue suffit quand le jeton est bon. Aucune requête à Claude Code.
+    @Test func reconnectReadsFirstAndSendsNothingWhenTheTokenIsValid() async throws {
+        let source = StubClaudeCodeSource(json: credentialsJSON())
+        source.deniesSilentReads = true
+        let creds = MemoryCredentialStore()
+        let m = manager(source: source, http: StubHTTPClient([.success(.ok(Fixture.data("usage-limits-fable.json")))]), creds: creds)
+        var renewals = 0
+        let account = try await m.reconnectWithClaudeCode(renew: { renewals += 1; return .renewed })
+        #expect(account.status == .connected && renewals == 0)
+        #expect(source.reads == [true])
+        #expect(try creds.read(.oauthAccessToken) == "sk-ant-oat01-FIXTURE-ACCESS-TOKEN")
+    }
+
+    /// Jeton refusé par Claude : alors seulement le CLI est sollicité, une fois, puis l'entrée est relue.
+    @Test func reconnectRenewsOnlyAnExpiredToken() async throws {
+        let source = StubClaudeCodeSource(json: credentialsJSON(token: "sk-ant-oat01-OLD"))
+        let creds = MemoryCredentialStore()
+        let http = StubHTTPClient([.success(.status(401)), .success(.ok(Fixture.data("usage-limits-fable.json")))])
+        let m = manager(source: source, http: http, creds: creds)
+        var renewals = 0
+        let account = try await m.reconnectWithClaudeCode(renew: {
+            renewals += 1
+            source.json = self.credentialsJSON(token: "sk-ant-oat01-NEW")
+            return .renewed
+        })
+        #expect(account.status == .connected && renewals == 1)
+        #expect(source.reads == [true, true])
+        #expect(try creds.read(.oauthAccessToken) == "sk-ant-oat01-NEW")
+    }
+
+    @Test func reconnectReportsAFailedRenewalAndOtherErrorsUntouched() async throws {
+        let rejected = manager(source: StubClaudeCodeSource(json: credentialsJSON()), http: StubHTTPClient([.success(.status(401))]))
+        await #expect(throws: ConnectionError.claudeCodeRenewalFailed(.notLoggedIn)) {
+            try await rejected.reconnectWithClaudeCode(renew: { .notLoggedIn })
+        }
+        // Entrée introuvable : rien à renouveler, le CLI n'est pas sollicité.
+        var renewals = 0
+        let missing = manager(source: StubClaudeCodeSource(json: nil, exists: false), http: StubHTTPClient([]))
+        await #expect(throws: ConnectionError.claudeCodeUnavailable) {
+            try await missing.reconnectWithClaudeCode(renew: { renewals += 1; return .renewed })
+        }
+        #expect(renewals == 0)
     }
 
     @Test func recoveryIgnoresTheSameToken() async {
         let creds = MemoryCredentialStore([.oauthAccessToken: "sk-ant-oat01-FIXTURE-ACCESS-TOKEN"])
         let m = manager(source: StubClaudeCodeSource(json: credentialsJSON()), http: StubHTTPClient([]), creds: creds)
-        #expect(await m.recoverClaudeCodeToken() == false)
+        #expect(await m.recoverClaudeCodeToken() == .unchanged)
     }
 
     // MARK: Voie 2

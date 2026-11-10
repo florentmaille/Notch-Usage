@@ -184,10 +184,15 @@ final class StubClaudeCodeSource: ClaudeCodeCredentialSource, @unchecked Sendabl
     private let lock = NSLock()
     var json: Data?
     var exists: Bool
+    /// L'entrée a été réécrite par Claude Code : macOS refuse la lecture sans dialogue, l'accorde avec.
+    var deniesSilentReads = false
     private(set) var reads: [Bool] = []
     init(json: Data?, exists: Bool = true) { self.json = json; self.exists = exists }
     func entryExists() -> Bool { exists }
     func readRawJSON(interactive: Bool) async throws -> Data? {
-        lock.withLock { reads.append(interactive); return json }
+        lock.withLock {
+            reads.append(interactive)
+            return !interactive && deniesSilentReads ? nil : json
+        }
     }
 }

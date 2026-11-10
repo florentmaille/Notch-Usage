@@ -106,9 +106,10 @@ Hover the notch and pick one:
 
 1. **Use your Claude Code session.** If Claude Code is installed and signed in, Notch Usage reads its access
    token from the macOS Keychain (macOS asks you once). The token stays in memory, is only used to read usage,
-   and is never refreshed, so Claude Code keeps working. When it expires, click **Renew session** in the panel
-   (it asks `claude` for a one-word reply) or run any `claude` command: Notch Usage picks up the renewed token
-   within a minute.
+   and is never refreshed, so Claude Code keeps working. When Claude Code renews its session, macOS asks again
+   before Notch Usage can read it: click **Allow access** in the panel, then *Always Allow*; nothing is sent to
+   Claude. Only when the token has really expired does the panel offer **Renew session**, which asks `claude`
+   for a one-word reply.
 2. **Sign in with your browser.** A small window opens `claude.ai`. Once you are signed in, the session cookie
    is stored in the app's own Keychain entry and the window closes. Your active organization is used. If the
    window is blocked, paste a `claude.ai` session key instead, under *Other method…*.
@@ -165,7 +166,7 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 | Symptom | What to do |
 |---|---|
 | macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Preview releases and builds from source are not signed with a stable identity, so the prompt returns after each update or rebuild. |
-| "Reconnect required" with the Claude Code session | Click **Renew session** in the panel (it asks `claude` for a one-word reply), or run any `claude` command: Notch Usage picks up the renewed token within a minute. |
+| "Reconnect required" with the Claude Code session | The panel says which case it is. **Allow access**: Claude Code renewed its session and macOS asks again before Notch Usage can read it; click it, then *Always Allow* (nothing is sent to Claude). **Renew session**: the token has expired; the button asks `claude` for a one-word reply, or run any `claude` command. |
 | Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key on the sign-in screen, under *Other method…*. |
 | Nothing shows anywhere (icon set to *Never*, no notched display) | Open Notch Usage again from Applications or Spotlight: the menu bar icon comes back and the panel opens. |
 | Nothing shows on an external display | Displays without a notch use the menu bar: check *Menu bar icon* in Settings (not *Never*), or turn on *Centered capsule on wide screens* (displays 1700 pt wide or more). If the menu bar is full, macOS may hide the icon: the capsule still shows. |

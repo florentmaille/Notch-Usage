@@ -19,9 +19,14 @@ struct AppPresentationTests {
     }
 
     @Test func everyConnectionErrorHasAMessage() {
-        let errors: [ConnectionError] = [.claudeCodeUnavailable, .claudeCodeMalformed, .claudeCodeExpired(.max), .invalidSessionKey,
+        let errors: [ConnectionError] = [.claudeCodeUnavailable, .claudeCodeAccessDenied, .claudeCodeMalformed, .claudeCodeExpired(.max),
+                                         .claudeCodeRenewalFailed(.notFound), .claudeCodeRenewalFailed(.notLoggedIn),
+                                         .claudeCodeRenewalFailed(.timedOut), .claudeCodeRenewalFailed(.failed), .invalidSessionKey,
                                          .fetch(.unauthorized), .fetch(.unsupported), .fetch(.challenge), .fetch(.malformed)]
         for e in errors { #expect(!(e.errorDescription ?? "").isEmpty) }
+        // Accès refusé et session introuvable ne se disent pas de la même façon ; les quatre échecs du CLI non plus.
+        #expect(ConnectionError.claudeCodeAccessDenied.errorDescription != ConnectionError.claudeCodeUnavailable.errorDescription)
+        #expect(Set(errors.compactMap(\.errorDescription)).count == errors.count)
     }
 
     @Test func islandTintsFollowTheEdgeColours() {
