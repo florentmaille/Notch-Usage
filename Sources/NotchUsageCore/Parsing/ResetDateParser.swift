@@ -27,7 +27,7 @@ public enum ResetDateParser {
         case let s as String:
             let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !t.isEmpty else { return nil }
-            if let d = isoDate(t) { return d }
+            if let d = isoDate(t) { return plausible(d) }
             if let n = Double(t) { return fromEpoch(n) }
             return nil
         default:
@@ -38,6 +38,14 @@ public enum ResetDateParser {
     private static func fromEpoch(_ n: Double) -> Date? {
         guard n.isFinite, n > 0 else { return nil }
         let seconds = n >= millisecondsThreshold ? n / 1000 : n
-        return Date(timeIntervalSince1970: seconds)
+        return plausible(Date(timeIntervalSince1970: seconds))
+    }
+
+    /// 2020 à 2100 : hors de là, la valeur est corrompue (ou dans une unité inconnue) et vaut mieux ignorée que
+    /// affichée ou convertie en minutes.
+    private static let plausibleRange = Date(timeIntervalSince1970: 1_577_836_800)...Date(timeIntervalSince1970: 4_102_444_800)
+
+    static func plausible(_ date: Date) -> Date? {
+        plausibleRange.contains(date) ? date : nil
     }
 }

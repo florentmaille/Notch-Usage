@@ -7,6 +7,15 @@ import Foundation
 enum ProcessLiveness {
     private static let shells: Set<String> = ["sh", "bash", "zsh", "dash", "fish"]
 
+    /// Démarrage du Mac (`kern.boottime`), sommeil compris ; `nil` si le système ne le donne pas. Une session suivie
+    /// avant ce moment n'existe plus : son pid a pu être réattribué.
+    static var bootDate: Date? {
+        var time = timeval()
+        var size = MemoryLayout<timeval>.stride
+        guard sysctlbyname("kern.boottime", &time, &size, nil, 0) == 0, time.tv_sec > 0 else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(time.tv_sec) + TimeInterval(time.tv_usec) / 1_000_000)
+    }
+
     static func isAlive(_ pid: Int32) -> Bool {
         guard pid > 0 else { return false }
         return kill(pid, 0) == 0 || errno == EPERM

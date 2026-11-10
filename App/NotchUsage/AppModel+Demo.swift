@@ -5,7 +5,7 @@ import NotchUsageCore
 #if DEBUG
 /// Mode démo (build Debug) : valeurs fictives pour les captures du README, sans compte ni réseau.
 /// `com.notchusage.debug.demo` objet "normal" | "far" | "near" | "imminent25" | "imminent" | "pace" | "warning" | "critical"
-/// | "blocked" | "offline" | "reauth" | "weekblock" | "off" ; `com.notchusage.debug.tick` force un tick de 30 s (006) ;
+/// | "blocked" | "offline" | "reauth" | "weekblock" | "weekfull" | "weekfullwide" | "bothfull" | "off" ; `com.notchusage.debug.tick` force un tick de 30 s (006) ;
 /// `com.notchusage.debug.layout` objet "nonotch" | "notchonly" | "notch" simule l'absence d'écran à encoche (018),
 /// ou un MacBook seul (écrans sans encoche ignorés) ;
 /// `com.notchusage.debug.menubar` objet "notch" | "external" | "off" force la barre active (018).
@@ -112,11 +112,12 @@ extension AppModel {
     func applyDemo(_ mode: String) {
         let now = Date()
         func snapshot(_ session: Double, _ weekly: Double, _ model: Double,
-                      sessionReset: TimeInterval = 2 * 3600 + 14 * 60, age: TimeInterval = 0) -> UsageSnapshot {
+                      sessionReset: TimeInterval = 2 * 3600 + 14 * 60, age: TimeInterval = 0,
+                      weeklyReset: TimeInterval = 3 * 86400 + 5 * 3600) -> UsageSnapshot {
             UsageSnapshot(limits: [
                 UsageLimit(id: "session", kind: .rollingFiveHour, modelName: nil, utilization: session, resetsAt: now.addingTimeInterval(sessionReset)),
-                UsageLimit(id: "weekly_all", kind: .weeklyAll, modelName: nil, utilization: weekly, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
-                UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: model, resetsAt: now.addingTimeInterval(3 * 86400 + 5 * 3600)),
+                UsageLimit(id: "weekly_all", kind: .weeklyAll, modelName: nil, utilization: weekly, resetsAt: now.addingTimeInterval(weeklyReset)),
+                UsageLimit(id: "weekly_scoped:Fable", kind: .weeklyModel, modelName: "Fable", utilization: model, resetsAt: now.addingTimeInterval(weeklyReset)),
             ], fetchedAt: now.addingTimeInterval(-age))
         }
         demoForecasts = [:]
@@ -153,6 +154,12 @@ extension AppModel {
         case "reauth": demoState = .reauthRequired(previous: nil)
         // 021 : semaine en avance, 70 % de la limite hebdomadaire après 3,8 jours (blocage prévu avant le reset).
         case "weekblock": demoState = .idle(snapshot(42, 70, 35))
+        // Limite hebdomadaire atteinte, retour dans 3 j 5 h : l'oreille compte en jours (« ↻3d 5h »), pas en heures.
+        case "weekfull": demoState = .idle(snapshot(30, 100, 35))
+        // Même état, retour le plus long à écrire (« ↻6 j 23 h ») : il doit tenir dans l'oreille.
+        case "weekfullwide": demoState = .idle(snapshot(30, 100, 35, weeklyReset: 6 * 86400 + 22 * 3600 + 1800))
+        // Les deux limites atteintes : c'est celle qui revient le plus tard, la semaine, que l'île annonce.
+        case "bothfull": demoState = .idle(snapshot(100, 100, 71, sessionReset: 3600 + 2 * 60))
         default: demoState = nil
         }
         demoHourly = demoState?.snapshot.map { Self.demoWeek(for: $0, now: now) }

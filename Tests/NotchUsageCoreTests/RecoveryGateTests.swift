@@ -34,4 +34,14 @@ struct RecoveryGateTests {
         let after61s = gate.allow(at: t0.addingTimeInterval(61))
         #expect(after61s)
     }
+
+    /// Horloge reculée (changement de fuseau, synchronisation) : la reprise n'attend pas le temps reculé en plus.
+    @Test func aClockSetBackDoesNotBlockRecovery() {
+        var gate = RecoveryGate()
+        let t = Date.iso("2026-11-01T10:00:00Z")
+        let first = gate.allow(at: t)
+        let afterStepBack = gate.allow(at: t.addingTimeInterval(-3600))
+        let rightAfter = gate.allow(at: t.addingTimeInterval(-3590))
+        #expect(first && afterStepBack && !rightAfter)
+    }
 }

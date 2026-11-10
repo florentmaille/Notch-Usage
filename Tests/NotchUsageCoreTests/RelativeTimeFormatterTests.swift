@@ -108,4 +108,14 @@ struct RelativeTimeFormatterCompactTests {
         #expect(RelativeTimeFormatter.blockLabel(later, now: now, language: .french, locale: Locale(identifier: "fr_FR"), timeZone: utc) == "2 h 14")
         #expect(RelativeTimeFormatter.blockLabel(later, now: now, locale: Locale(identifier: "en_US"), timeZone: utc) == "2h 14m")
     }
+
+    /// Une date aberrante ne fait pas planter la conversion en minutes.
+    @Test func absurdDatesDoNotTrap() {
+        let now = Date(timeIntervalSince1970: 1_762_000_000)
+        let far = Date(timeIntervalSinceReferenceDate: 1e30), past = Date(timeIntervalSinceReferenceDate: -1e30)
+        #expect(!RelativeTimeFormatter.untilReset(far, now: now).isEmpty)
+        #expect(!RelativeTimeFormatter.duration(until: far, now: now).isEmpty)
+        #expect(!RelativeTimeFormatter.age(past, now: now).isEmpty)
+        #expect(!RelativeTimeFormatter.blockLabel(far, now: now, timeZone: TimeZone(identifier: "UTC")!).isEmpty)
+    }
 }

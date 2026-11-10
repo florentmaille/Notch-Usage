@@ -11,7 +11,8 @@ public struct RecoveryGate: Sendable {
     }
 
     public mutating func allow(at now: Date) -> Bool {
-        if let lastAttempt, now.timeIntervalSince(lastAttempt) < minimumInterval { return false }
+        // Écart négatif : l'horloge a reculé, la dernière tentative ne compte plus.
+        if let lastAttempt, (0..<minimumInterval).contains(now.timeIntervalSince(lastAttempt)) { return false }
         lastAttempt = now
         return true
     }

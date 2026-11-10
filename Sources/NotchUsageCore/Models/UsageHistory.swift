@@ -14,14 +14,7 @@ public struct Reading: Codable, Sendable, Equatable {
         self.resetsAt = resetsAt
     }
 
-    /// Même période si les heures de reset diffèrent de moins de 10 min (même règle que le registre d'alertes).
-    func isSamePeriod(as other: Date?) -> Bool {
-        switch (resetsAt, other) {
-        case (nil, nil): return true
-        case let (a?, b?): return abs(a.timeIntervalSince(b)) < 600
-        default: return false
-        }
-    }
+    func isSamePeriod(as other: Date?) -> Bool { ResetPeriod.isSame(resetsAt, other) }
 }
 
 /// Relevés des deux dernières heures, source de la prévision. Persisté avec le cache de relevés.
@@ -35,10 +28,13 @@ public struct UsageHistory: Codable, Sendable, Equatable {
     }
 
     /// Un relevé par limite ; pour chaque limite, les relevés d'une autre période sont écartés ; troncature à deux heures.
+    /// Le même relevé ajouté deux fois ne compte qu'une fois : le cache est republié à chaque lancement.
     public func appending(_ snapshot: UsageSnapshot) -> UsageHistory {
         var kept = readings
         for limit in snapshot.limits {
-            kept.removeAll { $0.limitID == limit.id && !$0.isSamePeriod(as: limit.resetsAt) }
+            kept.removeAll {
+                $0.limitID == limit.id && (!$0.isSamePeriod(as: limit.resetsAt) || abs($0.at.timeIntervalSince(snapshot.fetchedAt)) < 1)
+            }
             kept.append(Reading(limitID: limit.id, at: snapshot.fetchedAt, utilization: limit.utilization, resetsAt: limit.resetsAt))
         }
         let newest = kept.map(\.at).max() ?? snapshot.fetchedAt

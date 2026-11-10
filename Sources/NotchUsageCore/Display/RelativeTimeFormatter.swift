@@ -7,7 +7,7 @@ public enum RelativeTimeFormatter {
         let labels = TimeLabels.for(language)
         let remaining = date.timeIntervalSince(now)
         if remaining <= 0 { return labels.pending }
-        let minutes = Int((remaining / 60).rounded(.up))
+        let minutes = (remaining / 60).rounded(.up).boundedInt
         if minutes < 60 { return labels.until(labels.minutes(max(1, minutes))) }
         let hours = minutes / 60
         if hours < 24 { return labels.until(labels.hoursMinutes(hours, minutes % 60)) }
@@ -19,7 +19,7 @@ public enum RelativeTimeFormatter {
         let labels = TimeLabels.for(language)
         let remaining = date.timeIntervalSince(now)
         if remaining <= 0 { return labels.compactPending }
-        let minutes = Int((remaining / 60).rounded(.up))
+        let minutes = (remaining / 60).rounded(.up).boundedInt
         if minutes < 60 { return labels.minutes(max(1, minutes)) }
         let hours = minutes / 60
         if hours < 24 { return labels.compactHoursMinutes(hours, minutes % 60) }
@@ -39,7 +39,7 @@ public enum RelativeTimeFormatter {
         let labels = TimeLabels.for(language)
         let seconds = now.timeIntervalSince(date)
         if seconds < 60 { return labels.justNow }
-        let minutes = Int(seconds / 60)
+        let minutes = (seconds / 60).boundedInt
         if minutes < 60 { return labels.ago(labels.ageMinutes(minutes)) }
         let hours = minutes / 60
         if hours < 24 { return labels.ago(labels.ageHours(hours)) }

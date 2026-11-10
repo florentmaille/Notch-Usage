@@ -38,24 +38,21 @@ final class MemoryCredentialStore: CredentialStore, @unchecked Sendable {
     func delete(_ key: CredentialKey) throws { _ = lock.withLock { values.removeValue(forKey: key) } }
 }
 
-/// Persistance en mémoire du relevé et du registre d'alertes.
+/// Persistance en mémoire du relevé et des historiques.
 final class MemorySnapshotStore: SnapshotStore, @unchecked Sendable {
     private let lock = NSLock()
     var snapshot: UsageSnapshot?
-    var ledger: AlertLedger?
     var history: UsageHistory?
     var hourly: HourlyHistory?
     private(set) var wiped = false
     init(snapshot: UsageSnapshot? = nil) { self.snapshot = snapshot }
     func loadSnapshot() throws -> UsageSnapshot? { lock.withLock { snapshot } }
     func saveSnapshot(_ s: UsageSnapshot) throws { lock.withLock { snapshot = s } }
-    func loadLedger() throws -> AlertLedger? { lock.withLock { ledger } }
-    func saveLedger(_ l: AlertLedger) throws { lock.withLock { ledger = l } }
     func loadHistory() throws -> UsageHistory? { lock.withLock { history } }
     func saveHistory(_ h: UsageHistory) throws { lock.withLock { history = h } }
     func loadHourlyHistory() throws -> HourlyHistory? { lock.withLock { hourly } }
     func saveHourlyHistory(_ h: HourlyHistory) throws { lock.withLock { hourly = h } }
-    func wipe() throws { lock.withLock { snapshot = nil; ledger = nil; history = nil; hourly = nil; wiped = true } }
+    func wipe() throws { lock.withLock { snapshot = nil; history = nil; hourly = nil; wiped = true } }
 }
 
 /// Fournisseur factice : séquence de résultats, compte les appels.
@@ -72,6 +69,24 @@ actor StubUsageProvider: UsageProvider {
         case .success(let s): return s
         case .failure(let e): throw e
         }
+    }
+}
+
+/// Fournisseur dont la requête reste en vol jusqu'à `release()` : arrêt ou déconnexion pendant un relevé.
+actor GatedUsageProvider: UsageProvider {
+    nonisolated let method: ConnectionMethod = .claudeCode
+    private let snapshot: UsageSnapshot
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private(set) var calls = 0
+    init(_ snapshot: UsageSnapshot) { self.snapshot = snapshot }
+    func fetch() async throws(FetchError) -> UsageSnapshot {
+        calls += 1
+        await withCheckedContinuation { waiters.append($0) }
+        return snapshot
+    }
+    func release() {
+        waiters.forEach { $0.resume() }
+        waiters = []
     }
 }
 
@@ -169,10 +184,15 @@ final class StubClaudeCodeSource: ClaudeCodeCredentialSource, @unchecked Sendabl
     private let lock = NSLock()
     var json: Data?
     var exists: Bool
+    /// L'entrée a été réécrite par Claude Code : macOS refuse la lecture sans dialogue, l'accorde avec.
+    var deniesSilentReads = false
     private(set) var reads: [Bool] = []
     init(json: Data?, exists: Bool = true) { self.json = json; self.exists = exists }
     func entryExists() -> Bool { exists }
     func readRawJSON(interactive: Bool) async throws -> Data? {
-        lock.withLock { reads.append(interactive); return json }
+        lock.withLock {
+            reads.append(interactive)
+            return !interactive && deniesSilentReads ? nil : json
+        }
     }
 }

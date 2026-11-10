@@ -41,6 +41,21 @@ step() { echo; echo "→ $*"; }
 DRY="${DRY_RUN:-}"
 START_BRANCH="$(git branch --show-current)"
 
+# Échec entre la création de la branche et le commit (build, signature, notarisation) : les fichiers de version sont
+# remis et l'on revient sur la branche de départ, pour relancer sans nettoyage à la main. Après le commit, rien
+# n'est défait : la branche et la PR restent pour reprise.
+STAGE=""
+cleanup() {
+  local code=$?
+  [[ $code -ne 0 && "$STAGE" == "local" ]] || return 0
+  echo "✗ échec avant le commit : version remise, retour sur $START_BRANCH" >&2
+  git checkout -q -- project.yml App/NotchUsage/Resources/Info.plist 2>/dev/null || true
+  if [[ "$DRY" != "1" ]]; then
+    git checkout -q "$START_BRANCH" 2>/dev/null && git branch -q -D "$BRANCH" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
 step "Vérifications"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "version attendue au format 1.2.3"
 if [[ "$DRY" != "1" ]]; then
@@ -66,6 +81,7 @@ echo "Version $VERSION, build $BUILD, tag $TAG$([[ -n "$STABLE" ]] && echo ", st
 
 step "Branche et version"
 [[ "$DRY" == "1" ]] || git checkout -q -b "$BRANCH"
+STAGE="local"
 sed -i '' -E "s/(CFBundleShortVersionString: )\"[^\"]+\"/\1\"$VERSION\"/; s/(CFBundleVersion: )\"[^\"]+\"/\1\"$BUILD\"/" project.yml
 /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" -c "Set CFBundleVersion $BUILD" App/NotchUsage/Resources/Info.plist
 
@@ -92,6 +108,7 @@ echo "$SHA  $(basename "$ZIP")" > "$ZIP.sha256"
 echo "SHA-256 : $SHA"
 
 if [[ "$DRY" == "1" ]]; then
+  STAGE=""
   git checkout -q -- project.yml App/NotchUsage/Resources/Info.plist
   echo; echo "DRY_RUN : zip $ZIP construit, rien n'a été committé ni poussé (branche $START_BRANCH)."
   exit 0
@@ -103,6 +120,7 @@ git add project.yml App/NotchUsage/Resources/Info.plist "$NOTES"
 git commit -q -m "release: $NAME
 
 Version $VERSION (build $BUILD), release notes and zip checksum."
+STAGE="committed"
 git push -q -u origin "$BRANCH"
 PR_URL=$(gh pr create --base main --head "$BRANCH" --title "Release $NAME" \
   --body "Version $VERSION (build $BUILD). Release notes: \`$NOTES\`, SHA-256 of the zip included.")
@@ -117,6 +135,9 @@ if [[ "$YES" != "--yes" ]]; then
   [[ "$answer" == "y" || "$answer" == "Y" ]] || fail "arrêt avant le merge : la PR reste ouverte"
 fi
 gh pr merge "$PR_NUMBER" --merge --subject "Merge #$PR_NUMBER: release $NAME"
+# Le tag pointe le commit de merge de cette PR, pas « main » : un autre merge arrivé entre-temps ne déplace pas la release.
+TARGET=$(gh pr view "$PR_NUMBER" --json mergeCommit -q .mergeCommit.oid)
+[[ -n "$TARGET" ]] || fail "commit de merge introuvable pour la PR $PR_NUMBER"
 git checkout -q main
 git pull -q
 git branch -q -d "$BRANCH"
@@ -125,7 +146,7 @@ git push -q origin --delete "$BRANCH"
 step "Release GitHub"
 PRERELEASE=(--prerelease)
 [[ -n "$STABLE" ]] && PRERELEASE=()
-gh release create "$TAG" --repo "$REPO" --target main "${PRERELEASE[@]}" --title "Notch Usage $NAME" \
+gh release create "$TAG" --repo "$REPO" --target "$TARGET" "${PRERELEASE[@]}" --title "Notch Usage $NAME" \
   --notes-file "$NOTES" "$ZIP" "$ZIP.sha256"
 
 step "Vérification du zip publié"

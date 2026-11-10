@@ -23,7 +23,6 @@ final class AppModel {
     @ObservationIgnored private var panel: NotchPanelController?
     @ObservationIgnored private var coordinator: RefreshCoordinator?
     @ObservationIgnored private var stateTask: Task<Void, Never>?
-    @ObservationIgnored private var alertTask: Task<Void, Never>?
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var loginWindow: BrowserLoginWindow?
 
@@ -39,19 +38,17 @@ final class AppModel {
     /// Ce que l'encoche repliée montre sans survol (005), dérivé de `display`.
     private(set) var signal: NotchSignal
     private(set) var layout: NotchLayout
-    /// Incrémenté à chaque alerte émise : déclenche une animation brève (T058).
-    /// Battements du halo (006) : incrémenté sur le tick de 30 s selon `signal.pulse`, jamais remis à zéro.
     /// Battements du halo (006) : `BeatCounter` sur le tick de 30 s, jamais remis à zéro.
     private var beatCounter = BeatCounter()
     var beat: Int { beatCounter.beats }
     /// Raisons de pause en cours (veille, verrou, économie d'énergie) : le tick n'y recalcule rien.
     @ObservationIgnored private var pausedReasons: Set<PauseReason> = []
-    /// Réglages d'alerte lus par le hook du coordinateur à chaque relevé : un changement de seuil ne redémarre rien.
-    @ObservationIgnored private let alertSettingsBox: OSAllocatedUnfairLock<AlertSettings>
     /// Survol de l'encoche (013 : seule façon d'ouvrir le panneau). En le quittant, on revient aux limites.
     var hover = false {
         didSet {
-            if !hover { showSettings = false }
+            // Seul un vrai changement ramène aux limites : `hover = false` sert aussi à refermer l'île quand le
+            // popover ou une carte s'ouvre, et ne doit pas fermer les réglages qu'ils affichent.
+            if hover != oldValue { showSettings = false }
             // Au survol, les sessions dont le processus a disparu sont retirées (017, R7) : jamais sur un timer.
             if hover { claudeSessions = claudeSessions.expire(now: Date(), alive: ProcessLiveness.isAlive) }
             if hover { statusItem?.closePopover(); capsules.values.forEach { $0.dismissCard() } }
@@ -65,6 +62,10 @@ final class AppModel {
     var isConnecting = false
     /// Renouvellement de Claude Code en cours (011) : libellé du bouton.
     private(set) var isRenewing = false
+    /// Motif du « Reconnect required » de la voie Claude Code : vrai quand macOS refuse la lecture silencieuse du
+    /// Trousseau (Claude Code vient de réécrire son entrée) alors que le jeton est bon. Le remède est un accord dans
+    /// le dialogue du Trousseau, pas une requête à Claude.
+    private(set) var claudeCodeAccessNeeded = false
     var connectionError: String?
     /// Prévisions affichées (003), stabilisées par l'hystérésis ; recalculées à chaque relevé réussi.
     private(set) var forecasts: [String: Forecast] = [:]
@@ -95,7 +96,10 @@ final class AppModel {
     // Sessions Claude Code en attente (017) : fil d'événements des hooks, réglages, statut des entrées installées.
     @ObservationIgnored private var claudeWatcher: ClaudeEventsWatcher?
     @ObservationIgnored private var arrivalTask: Task<Void, Never>?
-    private(set) var claudeSessions = ClaudeSessionTracker()
+    /// Écrites sur disque à chaque changement : une attente en cours survit au redémarrage de l'app.
+    private(set) var claudeSessions = ClaudeSessionTracker() {
+        didSet { if claudeSessions != oldValue { ClaudeSessionsFile.save(claudeSessions) } }
+    }
     private(set) var followsClaudeCode = UserDefaults.standard.bool(forKey: AppModel.followsClaudeKey)
     private(set) var notifiesClaudeAttention = UserDefaults.standard.bool(forKey: AppModel.notifiesClaudeKey)
     private(set) var claudeHooksStatus: ClaudeSettingsFile.Status = .absent
@@ -104,6 +108,7 @@ final class AppModel {
     fileprivate static let notifiesClaudeKey = "notifiesClaudeAttention"
 
     private static let accountKey = "account"
+    private static let legacyPurgeKey = "legacyBrowserDataPurged"
     private static let intervalKey = "refreshIntervalSeconds"
     private static let alertsKey = "alertSettings"
     fileprivate static let legacyMenuBarKey = "showsMenuBarIcon"
@@ -130,7 +135,6 @@ final class AppModel {
         refreshSettings = settings
         let storedAlerts = defaults.data(forKey: Self.alertsKey).flatMap { try? JSONDecoder().decode(AlertSettings.self, from: $0) } ?? AlertSettings()
         alertSettings = storedAlerts
-        alertSettingsBox = OSAllocatedUnfairLock(initialState: storedAlerts)
         if let data = defaults.data(forKey: Self.accountKey), let a = try? JSONDecoder().decode(Account.self, from: data) {
             account = a
         }
@@ -160,12 +164,22 @@ final class AppModel {
         #if DEBUG
         installDemoHook()
         #endif
-        // Les versions antérieures à 0.4.1 laissaient le cookie de session sur disque (007).
-        Task { await BrowserLoginWindow.purgeBrowserData() }
+        // Les versions antérieures à 0.4.1 laissaient le cookie de session sur disque (007) : purge une seule fois.
+        // À chaque lancement, elle démarrait WebKit et laissait son processus réseau en vie pour rien.
+        if !defaults.bool(forKey: Self.legacyPurgeKey) {
+            Task { [defaults] in
+                await BrowserLoginWindow.purgeBrowserData()
+                defaults.set(true, forKey: Self.legacyPurgeKey)
+            }
+        }
         claudeCodeAvailable = connection.isClaudeCodeAvailable
         launchAtLoginStatus = LaunchAtLogin.status
         refreshClaudeHooksStatus()
-        if followsClaudeCode { startClaudeWatcher() }
+        if followsClaudeCode {
+            migrateLegacyClaudeHooks()
+            startClaudeWatcher()
+        }
+        snapshots.removeLegacyFiles()
         history = (try? snapshots.loadHistory()) ?? UsageHistory()
         hourlyHistory = (try? snapshots.loadHourlyHistory()) ?? HourlyHistory()
         screens.onChange = { [weak self] snapshot in self?.applyScreens(snapshot) }
@@ -186,7 +200,8 @@ final class AppModel {
             if account.connectionMethod == .claudeCode {
                 // Le jeton n'est qu'en mémoire : relecture silencieuse avant le premier relevé.
                 Task {
-                    if await connection.recoverClaudeCodeToken() { startCoordinator(for: account) } else { markExpired() }
+                    let recovery = await connection.recoverClaudeCodeToken()
+                    if recovery == .recovered { startCoordinator(for: account) } else { noteRecovery(recovery); markExpired() }
                 }
             } else {
                 startCoordinator(for: account)
@@ -203,7 +218,6 @@ final class AppModel {
         capsules = [:]
         tickTask?.cancel()
         stateTask?.cancel()
-        alertTask?.cancel()
         arrivalTask?.cancel()
         claudeWatcher?.stop()
         claudeWatcher = nil
@@ -268,9 +282,11 @@ final class AppModel {
                 capsule.update(screen: screen)
             } else {
                 let capsule = CapsulePanelController(screenID: id, screen: screen, model: self)
+                capsule.onTap = { [weak self] in self?.clearDoneSessions() }
                 capsule.onCardOpen = { [weak self] in
                     guard let self else { return }
                     self.hover = false
+                    self.showSettings = false
                     self.statusItem?.closePopover()
                     for (other, c) in self.capsules where other != id { c.dismissCard() }
                 }
@@ -342,9 +358,17 @@ final class AppModel {
     func debugCapsuleHover(_ inside: Bool) { capsules.values.forEach { $0.debugHover(inside) } }
     #endif
 
+    /// Popover de l'item refermé : les sessions « terminé » qu'il listait ont été vues, elles s'effacent comme au clic
+    /// sur l'île ou la pastille. Rien si le popover montrait les réglages, où elles ne figurent pas.
+    func popoverDidClose() {
+        guard !showSettings else { return }
+        clearDoneSessions()
+    }
+
     /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).
     func popoverWillOpen() {
         hover = false
+        showSettings = false
         capsules.values.forEach { $0.dismissCard() }
     }
 
@@ -352,14 +376,11 @@ final class AppModel {
 
     private func startCoordinator(for account: Account) {
         stateTask?.cancel()
-        alertTask?.cancel()
         let old = coordinator
         Task { await old?.stop() }
-        let evaluator = alertEvaluator
-        let box = alertSettingsBox
+        // Les pauses en cours sont transmises à la création : `pause(_:)` n'a touché que l'ancien coordinateur.
         let c = RefreshCoordinator(provider: connection.makeProvider(for: account), policy: RefreshPolicy(settings: refreshSettings),
-                                   store: snapshots, clock: SystemClock(),
-                                   alertHook: { snapshot, ledger in evaluator.evaluate(snapshot, settings: box.withLock { $0 }, ledger: ledger ?? AlertLedger()) })
+                                   store: snapshots, clock: SystemClock(), pausedFor: pausedReasons)
         coordinator = c
         let states = c.states
         stateTask = Task { [weak self] in
@@ -371,13 +392,6 @@ final class AppModel {
                 self.fetchState = self.fetchState.displayed(next: state)
                 self.recompute()
                 if case .reauthRequired = state { await self.handleReauth() }
-            }
-        }
-        let alerts = c.alerts
-        alertTask = Task { [weak self] in
-            for await event in alerts {
-                guard self != nil else { return }
-                Log.refresh.notice("alert \(event.level.rawValue, privacy: .public) on \(event.limitID, privacy: .public)")
             }
         }
         Task { await c.start() }
@@ -419,13 +433,22 @@ final class AppModel {
 
     private func handleReauth() async {
         guard var account, account.connectionMethod == .claudeCode else { markExpired(); return }
-        if await connection.recoverClaudeCodeToken() {
+        let recovery = await connection.recoverClaudeCodeToken()
+        if recovery == .recovered {
             account.status = .connected
             setAccount(account)
             startCoordinator(for: account)
         } else {
+            noteRecovery(recovery)
             markExpired()
         }
+    }
+
+    /// Retient pourquoi la relecture silencieuse a échoué ; une relecture trop rapprochée ne dit rien de neuf.
+    private func noteRecovery(_ recovery: ClaudeCodeRecovery) {
+        guard recovery != .throttled else { return }
+        claudeCodeAccessNeeded = recovery == .accessNeeded
+        Log.auth.notice("Claude Code recovery: \(String(describing: recovery), privacy: .public)")
     }
 
     /// Tant que le jeton de Claude Code est expiré, relit le Trousseau sans dialogue à chaque tick (30 s).
@@ -446,8 +469,6 @@ final class AppModel {
         Task { await c?.refreshNow() }
     }
 
-    /// Tick de 30 s : avance l'heure, recalcule, puis compte un battement d'après le rythme lu *avant* le recalcul,
-    /// pour que le tick qui fait entrer l'état imminent ne batte pas (006, R3). Une minute = un tick sur deux.
     /// Tick de 30 s : rien pendant une pause (veille, verrou) ; sinon recalcul puis cadence du battement d'après le
     /// rythme lu avant le recalcul (006, R3).
     func tick() {
@@ -498,28 +519,30 @@ final class AppModel {
         }
     }
 
-    /// Renouvelle la session de Claude Code en lançant son CLI en arrière-plan, puis reconnecte (011).
+    /// Reconnexion à la session de Claude Code (011) : relecture du Trousseau avec dialogue d'abord, qui suffit quand
+    /// seul l'accès manquait. Le CLI n'est lancé en arrière-plan, ce qui coûte une requête, que si le jeton lu est
+    /// réellement expiré.
     func renewClaudeCodeSession() {
         guard !isConnecting else { return }
         isConnecting = true
-        isRenewing = true
         connectionError = nil
         Task {
-            let outcome = await ClaudeCodeRenewer.renew()
-            Log.auth.notice("Claude Code renewal: \(String(describing: outcome), privacy: .public)")
-            isRenewing = false
-            isConnecting = false
-            switch outcome {
-            case .renewed:
-                connectWithClaudeCode()
-            case .notFound:
-                connectionError = String(localized: "Claude Code was not found on this Mac. Run claude in Terminal, or sign in with your browser.")
-            case .notLoggedIn:
-                connectionError = String(localized: "Claude Code is signed out. Run claude in Terminal and sign in, or use your browser.")
-            case .timedOut:
-                connectionError = String(localized: "Claude Code did not answer in time. Try again, or run claude in Terminal.")
-            case .failed:
-                connectionError = String(localized: "Claude Code could not renew its session. Run claude in Terminal, or sign in with your browser.")
+            defer { isConnecting = false; isRenewing = false }
+            do {
+                let account = try await connection.reconnectWithClaudeCode(renew: { [weak self] in
+                    self?.isRenewing = true
+                    let outcome = await ClaudeCodeRenewer.renew()
+                    Log.auth.notice("Claude Code renewal: \(String(describing: outcome), privacy: .public)")
+                    return outcome
+                })
+                setAccount(account)
+                startCoordinator(for: account)
+            } catch ConnectionError.claudeCodeExpired {
+                claudeCodeAccessNeeded = false
+                connectionError = String(localized: "The Claude Code session is still expired. Run claude in Terminal, then try again.")
+            } catch {
+                connectionError = error.localizedDescription
+                Log.auth.error("Claude Code reconnection failed: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -572,9 +595,14 @@ final class AppModel {
 
     func signOut() {
         stateTask?.cancel()
-        alertTask?.cancel()
         let c = coordinator
-        Task { await c?.stop() }
+        let store = snapshots
+        // Un relevé en vol peut encore être écrit avant l'arrêt effectif : second effacement une fois le
+        // coordinateur arrêté, sauf si un compte a été reconnecté entre-temps.
+        Task { [weak self] in
+            await c?.stop()
+            if self?.account == nil { try? store.wipe() }
+        }
         coordinator = nil
         connection.signOut()
         history = UsageHistory()
@@ -592,7 +620,7 @@ final class AppModel {
 
     private func setAccount(_ account: Account?) {
         self.account = account
-        if account?.status == .connected { connectionError = nil }
+        if account?.status == .connected { connectionError = nil; claudeCodeAccessNeeded = false }
         if let account, let data = try? JSONEncoder().encode(account) {
             defaults.set(data, forKey: Self.accountKey)
         } else {
@@ -606,7 +634,14 @@ final class AppModel {
     func setRefreshInterval(seconds: Double) {
         refreshSettings.interval = .seconds(seconds)
         defaults.set(refreshSettings.interval.components.seconds, forKey: Self.intervalKey)
-        restartIfConnected()
+        // Le coordinateur garde sa dernière requête : glisser le curseur ne déclenche aucune rafale. Le réglage est
+        // lu à l'exécution, le dernier cran l'emporte quel que soit l'ordre des tâches.
+        let c = coordinator
+        Task { [weak self] in
+            guard let self else { return }
+            await c?.update(policy: RefreshPolicy(settings: self.refreshSettings))
+        }
+        recompute()
     }
 
     func setAlertsEnabled(_ enabled: Bool) {
@@ -629,11 +664,9 @@ final class AppModel {
         saveAlertSettings()
     }
 
-    /// Les nouveaux seuils s'appliquent au relevé suivant (US2 sc. 4) : le hook lit la boîte, sans redémarrage.
+    /// Les nouveaux seuils s'appliquent aussitôt : le recalcul les lit, sans redémarrer le coordinateur.
     private func saveAlertSettings() {
         if let data = try? JSONEncoder().encode(alertSettings) { defaults.set(data, forKey: Self.alertsKey) }
-        let current = alertSettings
-        alertSettingsBox.withLock { $0 = current }
         recompute()
     }
 
@@ -646,10 +679,6 @@ final class AppModel {
 
     func setLaunchAtLogin(_ enabled: Bool) {
         launchAtLoginStatus = LaunchAtLogin.set(enabled: enabled)
-    }
-
-    private func restartIfConnected() {
-        if let account, account.status == .connected { startCoordinator(for: account) }
     }
 
     // MARK: Claude Code (017)
@@ -669,9 +698,31 @@ final class AppModel {
         } catch {
             Log.app.error("claude hook script: \(error.localizedDescription, privacy: .public)")
         }
+        // Attentes d'avant le redémarrage de l'app : relues sans les sessions dont le processus a disparu. Les
+        // événements écrits pendant la fermeture s'appliquent ensuite par-dessus, au démarrage du lecteur.
+        if let saved = ClaudeSessionsFile.load() {
+            claudeSessions = saved.restored(now: Date(), bootedAt: ProcessLiveness.bootDate ?? .distantPast, alive: ProcessLiveness.isAlive)
+            Log.app.notice("claude sessions restored: \(self.claudeSessions.waiting.count, privacy: .public) waiting")
+        }
         let watcher = ClaudeEventsWatcher(url: ClaudeHookScript.eventsURL) { [weak self] events in self?.handleClaudeEvents(events) }
         claudeWatcher = watcher
         watcher.start()
+    }
+
+    /// Les versions 0.5.4 à 0.6.1 écrivaient le chemin du script sans apostrophes : le shell le coupait à l'espace de
+    /// « Application Support » et aucun événement n'arrivait. Le réglage est déjà actif : les entrées sont remplacées
+    /// au lancement, sans clic. En cas d'échec, la note « Réparer » des réglages reste.
+    private func migrateLegacyClaudeHooks() {
+        let path = ClaudeHookScript.scriptURL.path
+        guard ClaudeSettingsFile.hasLegacyEntries(scriptPath: path) else { return }
+        do {
+            try ClaudeHookScript.ensure()
+            try ClaudeSettingsFile.install(scriptPath: path)
+            Log.app.notice("claude hooks migrated to the quoted command")
+        } catch {
+            Log.app.error("claude hooks migration: \(error.localizedDescription, privacy: .public)")
+        }
+        refreshClaudeHooksStatus()
     }
 
     private func stopClaudeWatcher() {
@@ -687,13 +738,12 @@ final class AppModel {
         let previous = claudeSessions.attention(now: Date())?.arrivedAt
         var tracker = claudeSessions
         for event in events {
+            // La vivacité se vérifie sur le processus de la session : si un shell a lancé le hook, on remonte à son
+            // parent avant de réduire (le tracker ignore les événements sans type, on ne peut pas corriger après).
+            let event = event.withPID(event.pid.map(ProcessLiveness.sessionProcess(from:)))
             tracker = tracker.reduce(event)
             if let session = tracker.sessions[event.sessionID], session.originApp == nil, let pid = event.pid {
-                let origin = ProcessLiveness.originApp(of: pid)?.bundleIdentifier
-                tracker = tracker.settingOrigin(app: origin, for: event.sessionID)
-                // Le hook est lancé par un shell : la vivacité se vérifie sur le processus de la session.
-                tracker = tracker.reduce(ClaudeHookEvent(kind: .other, sessionID: event.sessionID, cwd: "", sessionTitle: nil, toolName: nil,
-                                                         promptID: nil, pid: ProcessLiveness.sessionProcess(from: pid), receivedAt: event.receivedAt))
+                tracker = tracker.settingOrigin(app: ProcessLiveness.originApp(of: pid)?.bundleIdentifier, for: event.sessionID)
             }
             if notifiesClaudeAttention, event.kind == .permissionRequest, let session = tracker.sessions[event.sessionID] {
                 notifier.notifyClaude(name: session.displayName(fallback: CompactStrip.Strings.app.claude.sessionFallback),
@@ -771,14 +821,32 @@ final class AppModel {
     /// « Réglages » du menu de la barre : le pointeur est loin de l'encoche, le panneau reste ouvert jusqu'à son survol.
     func openSettingsFromMenu() {
         // Sans île (capot fermé, Mac sans encoche), les réglages s'ouvrent dans le popover de l'item.
+        // L'ouverture ramène aux limites (popover comme île) : les réglages se demandent après.
         guard let panel else {
-            showSettings = true
             statusItem?.openPopover()
+            showSettings = true
             return
         }
-        showSettings = true
         hover = true
+        showSettings = true
         panel.holdOpen()
+    }
+
+    /// Ouvre le panneau sans survol : app rouverte depuis le Finder ou Spotlight, ou action VoiceOver sur l'île. La
+    /// carte prend le clavier. Sans île, le popover de l'item ; sans aucune surface (icône sur « Jamais », ni île
+    /// ni pastille), l'icône revient : c'est la seule sortie de cet état depuis l'interface.
+    func openPanel() {
+        if let panel {
+            hover = true
+            panel.holdOpen()
+            return
+        }
+        if statusItem == nil, capsules.isEmpty, menuBarIconMode == .never {
+            setMenuBarIconMode(.automatic)
+            Log.app.notice("reopened without any surface: menu bar icon restored")
+        }
+        // La fenêtre d'un item tout juste créé n'existe qu'au tour suivant de la boucle.
+        DispatchQueue.main.async { [weak self] in self?.statusItem?.openPopover() }
     }
 
     /// Échap : referme le panneau ouvert au survol.

@@ -28,7 +28,7 @@
 - **FR-002**: Cadence et seuils dans un groupe « Avancé » replié par défaut.
 - **FR-003**: Clé de session sur l'écran de connexion uniquement.
 - **FR-004**: Aucun réglage supprimé ; textes anglais et français.
-- **FR-005**: Plus d'épinglage : le panneau suit le survol seul ; il prend le clavier quand il s'ouvre et le rend en se repliant ; un menu ouvert le garde ouvert ; en se repliant il revient aux limites.
+- **FR-005**: Plus d'épinglage : le panneau suit le survol seul ; il ne prend plus le clavier à l'ouverture au survol (amendé le 2026-11-10 : pointeur posé sur l'encoche, la frappe destinée à l'app en cours était perdue), seulement au clic dans le panneau ou à une ouverture demandée (menu de la barre, app rouverte), et le rend en se repliant ; Échap ne referme donc un panneau ouvert au survol qu'après un clic dedans ; un menu ouvert le garde ouvert ; en se repliant il revient aux limites.
 
 ## Success Criteria *(mandatory)*
 

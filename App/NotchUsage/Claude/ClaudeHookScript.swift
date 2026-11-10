@@ -11,8 +11,15 @@ enum ClaudeHookScript {
     static var scriptURL: URL { directory.appending(path: "claude-hook.sh") }
     static var eventsURL: URL { directory.appending(path: "claude-events.jsonl") }
 
+    /// Au-delà de cette taille, le fichier d'événements repart de zéro : il ne grossit que lorsque l'app, fermée,
+    /// ne le vide plus, et seuls les derniers événements comptent à la relance.
+    static let eventsFileCap = 1_048_576
+
     /// Une ligne par événement : enveloppe (pid du lanceur, heure) puis le payload du hook tel quel, sans ses retours
     /// à la ligne. Muet et toujours en succès : Claude Code ne doit jamais voir une erreur de notre fait.
+    /// Le script se relance sous `lockf` : deux hooks simultanés (sessions ou outils en parallèle) écrivaient
+    /// chacun en trois fois et pouvaient entremêler leurs lignes. Le pid du lanceur passe en argument, le parent du
+    /// script relancé étant `lockf`.
     static func contents(eventsPath: String) -> String {
         let quoted = "'" + eventsPath.replacingOccurrences(of: "'", with: "'\\''") + "'"
         return """
@@ -21,8 +28,14 @@ enum ClaudeHookScript {
         # L'app ne garde que le type, la session, le dossier, le titre et l'outil ; le fichier est vidé à chaque lecture.
         f=\(quoted)
         umask 077
-        [ -d "$(dirname "$f")" ] || exit 0
-        printf '{"ppid":%s,"ts":%s,"event":' "$PPID" "$(date +%s)" >> "$f" 2>/dev/null || exit 0
+        [ -d "${f%/*}" ] || exit 0
+        if [ "$1" != locked ] && [ -x /usr/bin/lockf ]; then
+          /usr/bin/lockf -k -s -t 2 "$f.lock" "$0" locked "$PPID" 2>/dev/null
+          exit 0
+        fi
+        [ "$1" = locked ] && p=$2 || p=$PPID
+        [ "$(/usr/bin/stat -f %z "$f" 2>/dev/null || echo 0)" -gt \(eventsFileCap) ] && : > "$f" 2>/dev/null
+        printf '{"ppid":%s,"ts":%s,"event":' "$p" "$(date +%s)" >> "$f" 2>/dev/null || exit 0
         tr -d '\\n' >> "$f" 2>/dev/null || true
         printf '}\\n' >> "$f" 2>/dev/null || true
         exit 0

@@ -46,6 +46,13 @@ struct RefreshPolicyTests {
         let p = RefreshPolicy(settings: RefreshSettings())
         #expect(p.delay(afterFailure: .unauthorized, previous: .seconds(180)) == nil)
         #expect(p.delay(afterFailure: .credentialsUnavailable, previous: .seconds(180)) == nil)
-        #expect(p.delay(afterFailure: .unsupported, previous: .seconds(180)) == nil)
+    }
+
+    /// Sans limite exploitable, la boucle continue à cadence lente : une heure, quel que soit le délai précédent.
+    @Test func unsupportedRetriesHourly() {
+        let p = RefreshPolicy(settings: RefreshSettings())
+        #expect(p.delay(afterFailure: .unsupported, previous: .seconds(180)) == .seconds(3600))
+        #expect(p.delay(afterFailure: .unsupported, previous: .seconds(900)) == .seconds(3600))
+        #expect(!FetchError.unsupported.isTerminal && FetchError.unauthorized.isTerminal)
     }
 }

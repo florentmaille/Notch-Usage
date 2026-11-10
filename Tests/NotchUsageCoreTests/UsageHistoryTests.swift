@@ -53,4 +53,16 @@ struct UsageHistoryTests {
         let back = try decoder.decode(UsageHistory.self, from: encoder.encode(h))
         #expect(back == h)
     }
+
+    /// Le cache est republié à chaque lancement : le même relevé ajouté deux fois ne compte qu'une fois, sinon un
+    /// point ancien pèse double dans la prévision.
+    @Test func appendingTheSameReadingTwiceIsIdempotent() {
+        let snapshot = makeSnapshot([("session", 40), ("weekly_all", 10)], fetchedAt: .iso("2026-11-01T10:00:00Z"))
+        let once = UsageHistory().appending(snapshot)
+        #expect(once.appending(snapshot) == once)
+        #expect(once.appending(snapshot).appending(snapshot).readings.count == 2)
+        // Un relevé plus récent s'ajoute normalement.
+        let later = makeSnapshot([("session", 45), ("weekly_all", 10)], fetchedAt: .iso("2026-11-01T10:03:00Z"))
+        #expect(once.appending(later).readings.count == 4)
+    }
 }

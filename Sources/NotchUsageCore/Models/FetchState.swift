@@ -11,10 +11,11 @@ public enum FetchError: Error, Sendable, Equatable {
     case credentialsUnavailable
     case unsupported
 
-    /// Erreur qui arrête la boucle de rafraîchissement.
+    /// Erreur qui arrête la boucle de rafraîchissement : seule une reconnexion la relance. `unsupported` n'en est
+    /// pas une, la boucle réessaie à cadence lente (`RefreshPolicy.unsupportedRetry`).
     public var isTerminal: Bool {
         switch self {
-        case .unauthorized, .credentialsUnavailable, .unsupported: return true
+        case .unauthorized, .credentialsUnavailable: return true
         default: return false
         }
     }
@@ -47,9 +48,13 @@ public enum FetchState: Sendable, Equatable {
     }
 
     /// État à afficher quand `next` arrive. Une nouvelle tentative après un échec garde l'échec
-    /// (et son bandeau) jusqu'à son résultat : hors ligne, la tentative dure jusqu'au timeout.
+    /// (et son bandeau) jusqu'à son résultat : hors ligne, la tentative dure jusqu'au timeout. De même pour
+    /// l'essai horaire d'un plan non pris en charge.
     public func displayed(next: FetchState) -> FetchState {
-        if case .failed = self, case .loading = next { return self }
-        return next
+        guard case .loading = next else { return next }
+        switch self {
+        case .failed, .unsupported: return self
+        default: return next
+        }
     }
 }

@@ -10,6 +10,8 @@ struct CompactView: View {
     var now: Date = Date()
     /// Clic sur l'île : efface les sessions Claude « terminé » (017).
     var onTap: (() -> Void)? = nil
+    /// Action VoiceOver : ouvre le panneau, qui ne s'ouvre sinon qu'au survol.
+    var onOpen: (() -> Void)? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -35,6 +37,8 @@ struct CompactView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityHidden(false)
         .accessibilityLabel(signal.accessibility)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { onOpen?() }
     }
 
     private var isFolded: Bool { signal.island.folded && !display.isExpanded }
@@ -89,6 +93,9 @@ struct CompactView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .foregroundStyle(color)
+                // Plafond de largeur : l'appelant fige la taille idéale du texte (fondu de l'oreille), ce qui annulait
+                // la réduction ci-dessus. Un retour long (« ↻3 j 15 h ») débordait de l'oreille et était rogné.
+                .frame(maxWidth: NotchPanelController.earWidth - 4)
         }
     }
 

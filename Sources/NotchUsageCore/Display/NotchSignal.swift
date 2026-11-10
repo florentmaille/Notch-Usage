@@ -236,7 +236,7 @@ public struct NotchSignal: Sendable, Equatable {
             return Island(leading: .glyph(.offline), trailing: .muted(strings.percent(Int(usage.rounded()))))
         }
         if limit.isBlocked {
-            let back = limit.resetsAt.map { IslandFormat.deadline(remaining: $0.timeIntervalSince(now)) } ?? strings.dash
+            let back = limit.resetsAt.map { IslandFormat.back(remaining: $0.timeIntervalSince(now), language: language) } ?? strings.dash
             return Island(leading: .gauge(value: 100, tint: .exhausted), trailing: .back(back))
         }
         switch display.forecasts.notch(for: limit) {
@@ -256,8 +256,21 @@ public struct NotchSignal: Sendable, Equatable {
 /// entamée comptée, comme un compte à rebours : 7 min 30 s affichent « 8′ ».
 public enum IslandFormat {
     public static func deadline(remaining: TimeInterval) -> String {
-        let minutes = max(0, Int((remaining / 60).rounded(.up)))
+        let minutes = wholeMinutes(remaining)
         if minutes >= 60 { return "\(minutes / 60):" + String(format: "%02d", minutes % 60) }
         return "\(minutes)\u{2032}"
+    }
+
+    /// Retour d'une limite atteinte : comme `deadline` sous 24 h ; au-delà (limite hebdomadaire), jours et heures
+    /// (« 3d 5h », « 3 j 5 h ») plutôt que « 77:00 ».
+    public static func back(remaining: TimeInterval, language: InterfaceLanguage) -> String {
+        let hours = wholeMinutes(remaining) / 60
+        guard hours >= 24 else { return deadline(remaining: remaining) }
+        return TimeLabels.for(language).daysHours(hours / 24, hours % 24)
+    }
+
+    /// Minute entamée comptée ; jamais négatif, et sans plantage sur une date de reset aberrante.
+    private static func wholeMinutes(_ remaining: TimeInterval) -> Int {
+        max(0, (remaining / 60).rounded(.up).boundedInt)
     }
 }

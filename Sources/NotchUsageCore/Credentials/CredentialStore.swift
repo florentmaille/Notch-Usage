@@ -19,12 +19,10 @@ public protocol ClaudeCodeCredentialSource: Sendable {
     func readRawJSON(interactive: Bool) async throws -> Data?
 }
 
-/// Dernier relevé et registre d'alertes.
+/// Dernier relevé et historiques.
 public protocol SnapshotStore: Sendable {
     func loadSnapshot() throws -> UsageSnapshot?
     func saveSnapshot(_ snapshot: UsageSnapshot) throws
-    func loadLedger() throws -> AlertLedger?
-    func saveLedger(_ ledger: AlertLedger) throws
     /// Relevés des deux dernières heures (003), supprimés par `wipe()`.
     func loadHistory() throws -> UsageHistory?
     func saveHistory(_ history: UsageHistory) throws

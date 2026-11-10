@@ -49,7 +49,7 @@ public enum AttentionFormat {
 
     /// Durée depuis l'événement : « 45 s », « 2 min », « 1h 10m » / « 1 h 10 ».
     public static func since(_ from: Date, now: Date, language: InterfaceLanguage) -> String {
-        let seconds = max(0, Int(now.timeIntervalSince(from)))
+        let seconds = max(0, now.timeIntervalSince(from).boundedInt)
         if seconds < 60 { return "\(seconds) s" }
         let minutes = seconds / 60
         if minutes < 60 { return "\(minutes) min" }

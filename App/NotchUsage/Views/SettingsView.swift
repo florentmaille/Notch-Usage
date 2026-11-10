@@ -89,6 +89,10 @@ struct SettingsView: View {
                     Text("Shown when a screen without a notch is connected")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                if model.menuBarIconMode == .never {
+                    Text("If nothing shows, reopen Notch Usage from Applications: the icon comes back.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
                 row("Centered capsule on wide screens", isOn: Binding(
                     get: { model.showsCenterCapsule },
                     set: { model.setShowsCenterCapsule($0) }))
@@ -124,6 +128,7 @@ struct SettingsView: View {
                     } label: { EmptyView() }
                         .pickerStyle(.menu)
                         .fixedSize()
+                        .accessibilityLabel(Text("Language"))
                         .onChange(of: language) { _, v in AppLanguage.store(v) }
                 }
                 if language != AppLanguage.launchedChoice {
@@ -168,6 +173,8 @@ struct SettingsView: View {
                 Text(intervalLabel).monospacedDigit().foregroundStyle(.secondary)
             }
             Slider(value: $intervalMinutes, in: 1...15, step: 1) { EmptyView() }
+                .accessibilityLabel(Text("Refresh every"))
+                .accessibilityValue(Text(intervalLabel))
                 .onChange(of: intervalMinutes) { _, v in model.setRefreshInterval(seconds: v * 60) }
             Divider().padding(.vertical, 2)
             Toggle("Use thresholds when no forecast exists", isOn: Binding(

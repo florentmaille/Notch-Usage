@@ -58,6 +58,13 @@ public struct BarContent: Sendable, Equatable {
         self.textIsPercent = textIsPercent
     }
 
+    /// Même dessin : tout sauf l'annonce VoiceOver, qui change chaque minute (« resets in 2h 14m ») sans qu'un pixel
+    /// ne bouge. Sert à ne redessiner que si le contenu visible change (FR-021).
+    public func looksLike(_ other: BarContent) -> Bool {
+        gauge == other.gauge && text == other.text && textEmphasis == other.textEmphasis && attention == other.attention
+            && attentionAsBadge == other.attentionAsBadge && isCompact == other.isCompact && textIsPercent == other.textIsPercent
+    }
+
     /// Variante de la barre de l'écran à encoche (FR-022) : jauge seule, l'île porte le détail.
     public var compact: BarContent {
         BarContent(gauge: gauge, text: nil, accessibility: accessibility, isCompact: true)

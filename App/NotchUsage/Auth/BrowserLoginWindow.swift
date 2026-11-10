@@ -88,11 +88,11 @@ final class BrowserLoginWindow: NSObject, WKNavigationDelegate, WKHTTPCookieStor
         guard !captured, let store = webView?.configuration.websiteDataStore.httpCookieStore else { return }
         store.getAllCookies { [weak self] cookies in
             guard let self, !self.captured else { return }
-            if let session = cookies.first(where: { $0.name == "sessionKey" && $0.domain.hasSuffix("claude.ai") && SessionKeyFormat.isValid($0.value) }) {
+            if let session = cookies.first(where: { $0.name == "sessionKey" && SessionKeyFormat.isClaudeCookieDomain($0.domain) && SessionKeyFormat.isValid($0.value) }) {
                 self.captured = true
                 Log.auth.notice("sessionKey captured from browser sign-in")
                 let value = session.value
-                let org = cookies.first { $0.name == "lastActiveOrg" && $0.domain.hasSuffix("claude.ai") }?.value
+                let org = cookies.first { $0.name == "lastActiveOrg" && SessionKeyFormat.isClaudeCookieDomain($0.domain) }?.value
                 // Le magasin est en mémoire ; on le vide quand même pour ne rien garder des fournisseurs d'identité.
                 let dataStore = self.webView?.configuration.websiteDataStore
                 self.close()

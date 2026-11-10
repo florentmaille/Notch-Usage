@@ -43,6 +43,12 @@ public struct ClaudeHookEvent: Sendable, Equatable {
 
     public var isQuestion: Bool { kind == .permissionRequest && toolName == Self.questionTool }
 
+    /// Même événement, rattaché à un autre processus : l'app remplace le lanceur du hook par le processus de la session.
+    public func withPID(_ pid: Int32?) -> ClaudeHookEvent {
+        ClaudeHookEvent(kind: kind, sessionID: sessionID, cwd: cwd, sessionTitle: sessionTitle, toolName: toolName, promptID: promptID,
+                        pid: pid, receivedAt: receivedAt)
+    }
+
     /// Décode une ligne ; `nil` pour une ligne vide, illisible ou sans `session_id`. Sans enveloppe (ligne écrite à la
     /// main), le payload nu est accepté : pas de pid, heure de lecture.
     public static func decode(line: Substring, readAt: Date) -> ClaudeHookEvent? {
@@ -50,7 +56,9 @@ public struct ClaudeHookEvent: Sendable, Equatable {
         guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8) else { return nil }
         let decoder = JSONDecoder()
         if let envelope = try? decoder.decode(Envelope.self, from: data) {
-            return make(envelope.event, pid: envelope.ppid, at: envelope.ts.map { Date(timeIntervalSince1970: $0) } ?? readAt)
+            // Heure aberrante (ligne abîmée) : l'heure de lecture la remplace.
+            let at = envelope.ts.flatMap { ResetDateParser.plausible(Date(timeIntervalSince1970: $0)) } ?? readAt
+            return make(envelope.event, pid: envelope.ppid, at: at)
         }
         if let payload = try? decoder.decode(Payload.self, from: data) {
             return make(payload, pid: nil, at: readAt)

@@ -6,7 +6,7 @@ import SwiftUI
 /// barre de l'écran à encoche. Clic gauche : popover avec le contenu du panneau de l'île ; clic droit : le menu
 /// des limites, « Actualiser », « Réglages » et « Quitter ».
 @MainActor
-final class StatusItemController: NSObject, NSMenuDelegate {
+final class StatusItemController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     private let item: NSStatusItem
     private weak var model: AppModel?
     private let menu = NSMenu()
@@ -72,8 +72,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let beatChanged = lastBeat != nil && lastBeat != beat
         lastBeat = beat
         if content != drawn {
+            // L'annonce VoiceOver change chaque minute : l'image n'est régénérée que si le dessin change (FR-021).
+            let redraw = drawn.map { !$0.looksLike(content) } ?? true
             drawn = content
-            item.button?.image = BarContentImage.image(content)
+            if redraw { item.button?.image = BarContentImage.image(content) }
             item.button?.setAccessibilityLabel(content.accessibility)
             // La fenêtre peut n'apparaître qu'après ce premier dessin : nouvelle tentative au tour suivant.
             if observedWindow == nil { DispatchQueue.main.async { [weak self] in self?.observeButtonWindow() } }
@@ -118,6 +120,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         model.popoverWillOpen()
         let popover = NSPopover()
         popover.behavior = .transient
+        popover.delegate = self
         popover.animates = true
         // Même fond noir que l'île : le contenu est écrit en blanc, le matériau du popover suit sinon la barre.
         popover.appearance = NSAppearance(named: .vibrantDark)
@@ -136,7 +139,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Réglages depuis le menu sans île, ou capture : ouvre le popover s'il ne l'est pas.
     func openPopover() {
-        guard popover?.isShown != true, let button = item.button else { return }
+        // Sans fenêtre (item pas encore dessiné, ou masqué par une barre pleine), `NSPopover.show` lèverait une exception.
+        guard popover?.isShown != true, let button = item.button, button.window != nil else { return }
         showPopover(from: button)
     }
 
@@ -150,6 +154,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func closePopover() {
         popover?.performClose(nil)
         popover = nil
+    }
+
+    /// Fermeture effective, quelle qu'en soit la cause (clic ailleurs, second clic sur l'item, autre surface ouverte).
+    func popoverDidClose(_ notification: Notification) {
+        model?.popoverDidClose()
     }
 
     // MARK: Menu

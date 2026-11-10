@@ -223,6 +223,16 @@
         }
       }
     },
+    "Allow access": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriser l'accès"
+          }
+        }
+      }
+    },
     "Always": {
       "localizations": {
         "fr": {
@@ -609,6 +619,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les hooks ont été retirés hors de l’app."
+          }
+        }
+      }
+    },
+    "If nothing shows, reopen Notch Usage from Applications: the icon comes back.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si rien ne s'affiche, rouvrez Notch Usage depuis Applications : l'icône revient."
           }
         }
       }
@@ -1351,6 +1371,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "a terminé"
+          }
+        }
+      }
+    },
+    "macOS asks again before Notch Usage can read the Claude Code session in your Keychain. Allow access to reconnect: nothing is sent to Claude.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS redemande votre accord avant que Notch Usage puisse lire la session de Claude Code dans le Trousseau. Autorisez l'accès pour vous reconnecter : rien n'est envoyé à Claude."
+          }
+        }
+      }
+    },
+    "macOS did not let Notch Usage read the Claude Code session. Choose Always Allow in the Keychain dialog, or sign in with your browser.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS n'a pas laissé Notch Usage lire la session de Claude Code. Choisissez « Toujours autoriser » dans le dialogue du Trousseau, ou connectez-vous avec le navigateur."
           }
         }
       }

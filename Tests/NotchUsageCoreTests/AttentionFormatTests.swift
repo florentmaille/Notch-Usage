@@ -34,4 +34,11 @@ struct AttentionFormatTests {
         #expect(AttentionFormat.since(t0, now: t0.addingTimeInterval(2 * 3600), language: .french) == "2 h")
         #expect(AttentionFormat.since(t0.addingTimeInterval(5), now: t0, language: .english) == "0 s")
     }
+
+    /// Heure d'événement aberrante : la durée ne fait pas planter la conversion en secondes.
+    @Test func absurdEventTimesDoNotTrap() {
+        let now = Date(timeIntervalSince1970: 1_762_000_000)
+        #expect(AttentionFormat.since(Date(timeIntervalSince1970: 1e300), now: now, language: .english) == "0 s")
+        #expect(!AttentionFormat.since(Date(timeIntervalSince1970: -1e300), now: now, language: .french).isEmpty)
+    }
 }

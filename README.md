@@ -26,7 +26,7 @@ Ever been cut off by Claude in the middle of a task? Notch Usage keeps your subs
 glance away: the **5-hour window**, the **weekly limit** and the **per-model weekly limits**, each
 with its reset time and a forecast of when you will hit the wall.
 
-It is native Swift, local-first, free of telemetry, and uses about 25 MB of memory.
+It is native Swift, local-first, free of telemetry, and uses 20 to 40 MB of memory depending on the displays connected.
 
 ## How it reads
 
@@ -68,8 +68,8 @@ The gauge fill and the number carry the information without colour.
 
 - **Two ways to connect.** Reuse your Claude Code session, or sign in to claude.ai in a small window.
 - **Frugal.** Refreshes every 3 minutes, backs off on errors, pauses during sleep, screen lock and Low Power Mode. Under 1 % CPU.
-- **Private.** Talks only to `api.anthropic.com` and `claude.ai`. No analytics, no crash reporting, secrets in the macOS Keychain only.
-- **Accessible.** VoiceOver announces every limit in one sentence, whatever the notch shows; the gauge fill and the number carry the information without colour, and Reduce Motion stops the beat.
+- **Private.** Talks only to `api.anthropic.com` and `claude.ai`, and never follows a redirect to another host. No analytics, no crash reporting, secrets in the macOS Keychain only. To report a security issue, see [SECURITY.md](SECURITY.md).
+- **Accessible.** VoiceOver announces every limit in one sentence, whatever the notch shows; the gauge fill and the number carry the information without colour, and Reduce Motion stops the beat. No pointer needed: open Notch Usage again (Spotlight, Finder) and the panel opens with keyboard focus.
 - **English and French.** Follows your Mac's language, or pick one in Settings.
 
 ## Install
@@ -106,9 +106,10 @@ Hover the notch and pick one:
 
 1. **Use your Claude Code session.** If Claude Code is installed and signed in, Notch Usage reads its access
    token from the macOS Keychain (macOS asks you once). The token stays in memory, is only used to read usage,
-   and is never refreshed, so Claude Code keeps working. When it expires, click **Renew session** in the panel
-   (it asks `claude` for a one-word reply) or run any `claude` command: Notch Usage picks up the renewed token
-   within a minute.
+   and is never refreshed, so Claude Code keeps working. When Claude Code renews its session, macOS asks again
+   before Notch Usage can read it: click **Allow access** in the panel, then *Always Allow*; nothing is sent to
+   Claude. Only when the token has really expired does the panel offer **Renew session**, which asks `claude`
+   for a one-word reply.
 2. **Sign in with your browser.** A small window opens `claude.ai`. Once you are signed in, the session cookie
    is stored in the app's own Keychain entry and the window closes. Your active organization is used. If the
    window is blocked, paste a `claude.ai` session key instead, under *Other method…*.
@@ -123,7 +124,7 @@ Sign out from the panel at any time: credentials and cached data are deleted.
 - **Menu bar icon**: *Automatic* (default: shown while a display without a notch is connected), *Always* or *Never*.
 - **Centered capsule on wide screens**: the capsule in the middle of the menu bar on displays without a notch, 1700 pt wide or more. Off by default.
 - **Notify me before a block**: a macOS notification under 30 minutes, at the critical threshold and when a limit is reached.
-- **Follow Claude Code**: adds seven hook entries to `~/.claude/settings.json` (all pointing at a small shell script in the app's container), and removes exactly those when turned off; your own hooks are left untouched. Takes effect at once, even in sessions already open. *Notify me when Claude waits* adds a macOS notification for approvals and questions.
+- **Follow Claude Code**: adds seven hook entries to `~/.claude/settings.json` (all pointing at a small shell script in the app's support folder), and removes exactly those when turned off; your own hooks are left untouched. If the app is removed without turning it off, the leftover entries do nothing. Takes effect at once, even in sessions already open. *Notify me when Claude waits* adds a macOS notification for approvals and questions.
 - **Language**: system, English or French.
 - **Advanced**: refresh interval (1 to 15 minutes, 3 by default) and the fallback thresholds (80 % / 95 %) used when no forecast exists.
 - **Version and Check for updates**: shows the installed version. Installed with Homebrew, the button opens Terminal to update and reopen the app; otherwise it opens the releases page. The app itself never goes online for this.
@@ -138,7 +139,7 @@ If the browser sign-in is blocked, paste a `claude.ai` session key on the sign-i
 - No telemetry, no analytics, no crash reporting.
 - Secrets live in the macOS Keychain only. They never appear in logs. The browser sign-in window keeps its cookies in memory and discards everything once the session key is captured.
 - The last reading and the last two hours of readings (for the forecast) are cached locally, and wiped on sign-out.
-- With *Follow Claude Code* on, Claude Code runs the app's hook script at each event; the script appends the event to `~/Library/Application Support/NotchUsage/claude-events.jsonl` (mode 600). The app keeps only the event type, session id, working folder, session title and tool name, never the prompts or answers, and empties the file as soon as it has read it. Nothing leaves the machine.
+- With *Follow Claude Code* on, Claude Code runs the app's hook script at each event; the script appends the event to `~/Library/Application Support/NotchUsage/claude-events.jsonl` (mode 600). The app keeps only the event type, session id, working folder, session title and tool name, never the prompts or answers, and empties the file as soon as it has read it; while the app is closed the file is capped at 1 MB. The sessions being followed are saved next to it (`claude-sessions.json`, mode 600, same fields) so that a pending wait survives a restart of the app; the file is removed when nothing is followed. Nothing leaves the machine.
 
 ## Rate limits and refresh cadence
 
@@ -165,8 +166,9 @@ Notch Usage is an independent project, not affiliated with or endorsed by Anthro
 | Symptom | What to do |
 |---|---|
 | macOS asks for your Keychain password | That is the Claude Code credential entry. Click **Always Allow**. Preview releases and builds from source are not signed with a stable identity, so the prompt returns after each update or rebuild. |
-| "Reconnect required" with the Claude Code session | Click **Renew session** in the panel (it asks `claude` for a one-word reply), or run any `claude` command: Notch Usage picks up the renewed token within a minute. |
+| "Reconnect required" with the Claude Code session | The panel says which case it is. **Allow access**: Claude Code renewed its session and macOS asks again before Notch Usage can read it; click it, then *Always Allow* (nothing is sent to Claude). **Renew session**: the token has expired; the button asks `claude` for a one-word reply, or run any `claude` command. |
 | Browser sign-in shows a "Just a moment" check | Complete it in the sign-in window, or paste your session key on the sign-in screen, under *Other method…*. |
+| Nothing shows anywhere (icon set to *Never*, no notched display) | Open Notch Usage again from Applications or Spotlight: the menu bar icon comes back and the panel opens. |
 | Nothing shows on an external display | Displays without a notch use the menu bar: check *Menu bar icon* in Settings (not *Never*), or turn on *Centered capsule on wide screens* (displays 1700 pt wide or more). If the menu bar is full, macOS may hide the icon: the capsule still shows. |
 
 ## Development
@@ -191,7 +193,8 @@ Debug builds with it and keep Keychain access across builds.
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
 [`specs/`](specs), from the first notch (001) and the forecast (003) to the island (012), the menu bar icon (014), Claude Code
 sessions (017), displays without a notch (018), the island following the active menu bar (019) and updates without
-network access (020). `scripts/publish.sh <version>` publishes a preview end to end. It bumps the version and build, builds the zip,
+network access (020). `scripts/measure-budgets.py` checks the CPU and memory budgets on the running app over 10 minutes; run it before a release.
+`scripts/publish.sh <version>` publishes a preview end to end. It bumps the version and build, builds the zip,
 writes its checksum into the release notes, opens one PR and merges it once CI passes and you confirm, creates the
 GitHub pre-release, checks the published zip and updates the Homebrew cask. Write
 `docs/release-notes/<version>-preview.md` first, with `__SHA256__` where the checksum goes; `DRY_RUN=1` stops

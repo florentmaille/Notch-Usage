@@ -120,4 +120,15 @@ struct BarContentTests {
         let d = display(.idle(snap(42)))
         #expect(content(d) == content(d))
     }
+
+    /// L'annonce VoiceOver change chaque minute sans que le dessin change : ce n'est pas un motif de redessin.
+    @Test func looksLikeIgnoresTheAnnouncementOnly() {
+        let gauge = BarContent.Gauge(fraction: 0.42, tint: .calm, beats: false)
+        let a = BarContent(gauge: gauge, text: "42%", accessibility: "5-hour window 42 percent, resets in 2h 14m", textIsPercent: true)
+        let b = BarContent(gauge: gauge, text: "42%", accessibility: "5-hour window 42 percent, resets in 2h 13m", textIsPercent: true)
+        #expect(a != b && a.looksLike(b))
+        let c = BarContent(gauge: gauge, text: "43%", accessibility: a.accessibility, textIsPercent: true)
+        #expect(!a.looksLike(c))
+        #expect(!a.looksLike(a.compact))
+    }
 }

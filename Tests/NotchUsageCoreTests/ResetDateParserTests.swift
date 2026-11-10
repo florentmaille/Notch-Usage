@@ -37,4 +37,16 @@ struct ResetDateParserTests {
         #expect(ResetDateParser.parse(NSNull()) == nil)
         #expect(ResetDateParser.parse("not a date") == nil)
     }
+
+    /// Une date hors de toute plausibilité (réponse corrompue) est ignorée : affichages et calculs n'ont pas à s'en
+    /// protéger un par un.
+    @Test func implausibleDatesAreRejected() {
+        #expect(ResetDateParser.parse(1e30) == nil)
+        #expect(ResetDateParser.parse("1e30") == nil)
+        #expect(ResetDateParser.parse("9999-12-31T23:59:59Z") == nil)
+        #expect(ResetDateParser.parse("1999-12-31T23:59:59Z") == nil)
+        #expect(ResetDateParser.parse(12) == nil)
+        #expect(ResetDateParser.parse("2026-11-06T00:00:00Z") != nil)
+        #expect(ResetDateParser.parse(1_762_387_200_000) == Date(timeIntervalSince1970: 1_762_387_200))
+    }
 }
