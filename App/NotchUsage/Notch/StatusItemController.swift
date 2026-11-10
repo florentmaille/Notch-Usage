@@ -6,7 +6,7 @@ import SwiftUI
 /// barre de l'écran à encoche. Clic gauche : popover avec le contenu du panneau de l'île ; clic droit : le menu
 /// des limites, « Actualiser », « Réglages » et « Quitter ».
 @MainActor
-final class StatusItemController: NSObject, NSMenuDelegate {
+final class StatusItemController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     private let item: NSStatusItem
     private weak var model: AppModel?
     private let menu = NSMenu()
@@ -120,6 +120,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         model.popoverWillOpen()
         let popover = NSPopover()
         popover.behavior = .transient
+        popover.delegate = self
         popover.animates = true
         // Même fond noir que l'île : le contenu est écrit en blanc, le matériau du popover suit sinon la barre.
         popover.appearance = NSAppearance(named: .vibrantDark)
@@ -153,6 +154,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func closePopover() {
         popover?.performClose(nil)
         popover = nil
+    }
+
+    /// Fermeture effective, quelle qu'en soit la cause (clic ailleurs, second clic sur l'item, autre surface ouverte).
+    func popoverDidClose(_ notification: Notification) {
+        model?.popoverDidClose()
     }
 
     // MARK: Menu

@@ -355,6 +355,13 @@ final class AppModel {
     func debugCapsuleHover(_ inside: Bool) { capsules.values.forEach { $0.debugHover(inside) } }
     #endif
 
+    /// Popover de l'item refermé : les sessions « terminé » qu'il listait ont été vues, elles s'effacent comme au clic
+    /// sur l'île ou la pastille. Rien si le popover montrait les réglages, où elles ne figurent pas.
+    func popoverDidClose() {
+        guard !showSettings else { return }
+        clearDoneSessions()
+    }
+
     /// Ouvrir le popover referme l'île ; ouvrir l'île referme le popover (FR-010).
     func popoverWillOpen() {
         hover = false
