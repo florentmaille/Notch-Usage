@@ -7,7 +7,8 @@ public struct SurfacePlan: Sendable, Equatable {
     /// Écrans sans encoche qui portent une pastille.
     public let capsuleScreens: [String]
     /// L'item lit la barre active sur sa propre fenêtre. Sans lui, elle se suit au clic et au changement d'app,
-    /// seulement si une surface s'y adapte : une pastille, ou l'île à côté d'un écran sans encoche (019).
+    /// seulement si une surface s'y adapte : l'île à côté d'un écran sans encoche (019). La pastille, elle, garde
+    /// son détail quelle que soit la barre active.
     public let tracksActiveBar: Bool
 
     public init(showsItem: Bool, capsuleScreens: [String], tracksActiveBar: Bool) {
@@ -19,8 +20,8 @@ public struct SurfacePlan: Sendable, Equatable {
     public static func make(roles: ScreenRoles, iconMode: MenuBarIconMode, capsule: Bool) -> SurfacePlan {
         let showsItem = iconMode.isVisible(roles: roles)
         let capsules = capsule ? roles.plain.filter(\.capsuleEligible).map(\.id) : []
-        let adapts = !capsules.isEmpty || (roles.hasPlainScreen && roles.island != nil)
-        return SurfacePlan(showsItem: showsItem, capsuleScreens: capsules, tracksActiveBar: !showsItem && adapts)
+        let islandAdapts = roles.hasPlainScreen && roles.island != nil
+        return SurfacePlan(showsItem: showsItem, capsuleScreens: capsules, tracksActiveBar: !showsItem && islandAdapts)
     }
 }
 

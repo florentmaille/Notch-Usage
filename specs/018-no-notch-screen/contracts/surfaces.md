@@ -28,7 +28,7 @@ Référence visuelle : [external-screen.png](../../../docs/design/external-scree
 | Élargissement | symétrique autour du centre, fondu 0,3 s (aucun en Réduire les animations) |
 | Carte | largeur 380, hauteur du contenu, 6 sous la barre, rayon 12 sur les quatre coins, fond noir 94 % ; survol 0,15 s, fermeture 0,10 s après sortie, Échap |
 | Plein écran | rien : la pastille n'apparaît pas dans les espaces plein écran (pas de `fullScreenAuxiliary`), comme l'île depuis la 016 |
-| Barre active sur l'écran à encoche | anneau seul, comme l'item compact (retour 2026-11-09) ; sonde invisible si l'icône est sur « Jamais » |
+| Barre active sur l'écran à encoche | détail complet, comme ailleurs (retour 2026-11-10 ; du 2026-11-09 à la 0.6.2 : anneau seul, comme l'item compact) |
 | Non affichée si | option désactivée, écran < 1700, barre masquée automatiquement, écran à encoche |
 
 ## Contenu par état

@@ -33,11 +33,13 @@ struct SurfacePlanTests {
     }
 
     /// Avec l'item, la barre active se lit sur sa fenêtre. Sans lui, elle n'est suivie que si une surface s'y
-    /// adapte : une pastille, ou l'île quand un écran sans encoche est branché (019).
-    @Test func theActiveBarIsTrackedOnlyWithoutTheItemAndWithSomethingToAdapt() {
+    /// adapte : l'île, quand un écran sans encoche est branché (019). La pastille garde son détail partout : seule,
+    /// elle ne demande aucun suivi (ni moniteur de souris ni observateur d'app).
+    @Test func theActiveBarIsTrackedOnlyWithoutTheItemAndForTheIsland() {
         #expect(!plan(plain: [wide], capsule: true).tracksActiveBar)
         #expect(plan(plain: [wide], .never).tracksActiveBar)
-        #expect(plan(island: false, plain: [wide], .never, capsule: true).tracksActiveBar)
+        #expect(plan(plain: [wide], .never, capsule: true).tracksActiveBar)
+        #expect(!plan(island: false, plain: [wide], .never, capsule: true).tracksActiveBar)
         #expect(!plan(island: false, plain: [wide], .never).tracksActiveBar)
         #expect(!plan(island: false, plain: [narrow], .never, capsule: true).tracksActiveBar)
         #expect(!plan(.never).tracksActiveBar)

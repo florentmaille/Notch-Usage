@@ -150,8 +150,8 @@ final class Surfaces {
         }
     }
 
-    /// Crée ou retire l'item selon le plan (FR-018). Sans item mais avec une pastille ou une île à adapter (018, 019),
-    /// `ActiveBarTracker` suit la barre active : aucune sonde, donc aucun trou dans la barre.
+    /// Crée ou retire l'item selon le plan (FR-018). Sans item mais avec une île à adapter (019), `ActiveBarTracker`
+    /// suit la barre active : aucune sonde, donc aucun trou dans la barre.
     private func syncStatusItem(_ plan: SurfacePlan) {
         if plan.tracksActiveBar {
             barTracker.onChange = { [weak self] id in self?.activeBarChanged(id) }
@@ -217,14 +217,15 @@ final class Surfaces {
         // Île repliée (012) : oreille gauche toujours, droite seulement avec une donnée ; élargie le temps du mot
         // d'arrivée d'une session Claude (017).
         island?.apply(display, ears: (NotchPanelController.earWidth, trailingEar))
-        // Item et pastille : anneau seul quand la barre active est celle de l'écran de l'île (FR-022).
-        let onIslandBar = roles.isIsland(activeBar)
+        // Item : anneau seul quand la barre active est celle de l'écran de l'île, qui porte le détail (FR-022).
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        statusItem?.update(content: onIslandBar ? bar.compact : bar.menuBarItem, beat: beat, reduceMotion: reduceMotion)
+        statusItem?.update(content: roles.isIsland(activeBar) ? bar.compact : bar.menuBarItem, beat: beat, reduceMotion: reduceMotion)
         guard !capsules.isEmpty else { return }
         let dark = menuBarIsDark
         for capsule in capsules.values {
-            capsule.apply(content: onIslandBar ? bar.compact : bar, dark: dark, beat: beat, reduceMotion: reduceMotion)
+            // Pastille : détail complet quel que soit l'écran où l'on travaille (retour utilisateur, 2026-11-10) ;
+            // elle se réduisait à l'anneau quand la barre active était celle du Mac.
+            capsule.apply(content: bar, dark: dark, beat: beat, reduceMotion: reduceMotion)
             capsule.refreshCard()
         }
     }
