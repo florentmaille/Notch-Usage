@@ -57,9 +57,10 @@ The gauge fill and the number carry the information without colour.
 - **One notification when it matters.** A macOS notification when a block is under 30 minutes, when a limit crosses the critical threshold without a forecast, and when a limit is reached: one per limit and per reset period, off in a click.
 - **Claude Code waits, the notch tells you.** Turn on *Follow Claude Code* and the island shows when a Claude Code session, in the terminal or in the Claude app, asks for an approval, asks a question or finishes a turn: a violet hand, a violet question bubble or a white check on the right of the notch, until you answer. Several sessions: one glyph and a count. Hover: a *Claude Code* section lists each waiting session (title or project folder, what it waits for, since when); click one to bring its app to the front. When a block is under 30 minutes or a limit is reached, the limit keeps the right side and the session becomes a violet dot on the gauge. Optional macOS notification. Off by default.
 - **Every limit, one hover away.** 5-hour window, weekly, per model, with "resets in 2h 14m" and the exact time.
+- **Your week at a glance.** Under the limits, a collapsible *This week* section draws the weekly limit since its last reset, then its projection at the current pace up to the next reset, with the projected percentage.
 - **Screens without a notch, without a fake notch.** The island stays on the built-in display, even when an external display is the main one. On a display without a notch (an external display, or with the lid closed), the menu bar takes over:
-  - **Menu bar item**: a gauge, plus the time left once a block is forecast (`2:05`, `8′` in red) and the Claude Code glyph with a count. When you work on the notched display, the island already carries the detail and the item shrinks to the gauge. Click it for the same panel as the island; right-click for *Refresh now*, *Settings* and *Quit*.
-  - **Centered capsule (optional)**: on displays 1700 pt wide or more, a small dark capsule in the middle of the menu bar shows the same thing. Point at the top of the screen above it to open the panel just below the bar. It keeps its detail whichever display you work on. It hides in full-screen apps, like the island.
+  - **Menu bar item**: a gauge, plus the time left once a block is forecast (`2:05`, `8′` in red) and the Claude Code glyph with a count. When you work on the notched display, the island already carries the detail and the item shrinks to the gauge. Click it for the same panel as the island; right-click for the limits, *Refresh now*, *Settings*, *Check for Updates…* and *Quit*.
+  - **Centered capsule (optional)**: on displays 1700 pt wide or more, a small dark capsule in the middle of the menu bar shows the same thing. Point at the top of the screen above it to open the panel just below the bar. It keeps its detail whichever display you work on. In a full-screen app it hides, like the island, and comes back when you point at the top edge.
   - **Both displays show it**: with a display without a notch connected, the island shows your usage right of the notch and the capsule shows it on the other display, whichever one you work on.
 
 <p align="center">
@@ -138,7 +139,7 @@ If the browser sign-in is blocked, paste a `claude.ai` session key on the sign-i
 - The only hosts the app talks to are `api.anthropic.com` and `claude.ai`.
 - No telemetry, no analytics, no crash reporting.
 - Secrets live in the macOS Keychain only. They never appear in logs. The browser sign-in window keeps its cookies in memory and discards everything once the session key is captured.
-- The last reading and the last two hours of readings (for the forecast) are cached locally, and wiped on sign-out.
+- The last reading, the last two hours of readings (for the forecast) and one reading per hour over eight days (for the *This week* curve) are cached locally (mode 600), and wiped on sign-out.
 - With *Follow Claude Code* on, Claude Code runs the app's hook script at each event; the script appends the event to `~/Library/Application Support/NotchUsage/claude-events.jsonl` (mode 600). The app keeps only the event type, session id, working folder, session title and tool name, never the prompts or answers, and empties the file as soon as it has read it; while the app is not running the script writes nothing. The sessions being followed are saved next to it (`claude-sessions.json`, mode 600, same fields) so that a pending wait survives a restart of the app; the file is removed when nothing is followed. Nothing leaves the machine.
 
 ## Rate limits and refresh cadence
@@ -192,8 +193,8 @@ Debug builds with it and keep Keychain access across builds.
 
 Each feature is specified, planned and validated with [GitHub Spec Kit](https://github.com/github/spec-kit) in
 [`specs/`](specs), from the first notch (001) and the forecast (003) to the island (012), the menu bar icon (014), Claude Code
-sessions (017), displays without a notch (018), the island following the active menu bar (019) and updates without
-network access (020). `scripts/measure-budgets.py` checks the CPU and memory budgets on the running app over 10 minutes; run it before a release.
+sessions (017), displays without a notch (018), the island following the active menu bar (019), updates without
+network access (020) and the weekly curve (021). `scripts/measure-budgets.py` checks the CPU and memory budgets on the running app over 10 minutes; run it before a release.
 `scripts/publish.sh <version>` publishes a preview end to end. It bumps the version and build, builds the zip,
 writes its checksum into the release notes, opens one PR and merges it once CI passes and you confirm, creates the
 GitHub pre-release, checks the published zip and updates the Homebrew cask. Write
