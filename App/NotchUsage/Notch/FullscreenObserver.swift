@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import NotchUsageCore
 
-/// Suit l'état plein écran de l'écran du panneau (R6). La règle est dans `FullscreenHeuristic`.
+/// Suit l'état plein écran d'un écran : celui de l'île ou d'une pastille (R6). La règle est dans `FullscreenHeuristic`.
 @MainActor
 final class FullscreenObserver {
     var onChange: ((Bool) -> Void)?
@@ -44,7 +44,7 @@ final class FullscreenObserver {
     }
 
     func evaluate() {
-        // Sans île, personne ne lit cet état : pas de relevé des fenêtres à chaque changement d'app ou d'espace.
+        // Sans écran suivi, personne ne lit cet état : pas de relevé des fenêtres à chaque changement d'app ou d'espace.
         let result = screen.map { Self.frontmostAppCoversScreen($0) } ?? false
         guard result != isFullscreen else { return }
         isFullscreen = result
@@ -72,15 +72,21 @@ final class FullscreenObserver {
     }
 
     private static func frontmostAppCoversScreen(_ screen: NSScreen?) -> Bool {
-        guard let screen, let app = NSWorkspace.shared.frontmostApplication,
-              app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
-              app.bundleIdentifier != "com.apple.finder",
-              let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
-        else { return false }
+        guard let screen else { return false }
         // CGWindowList : origine en haut à gauche de l'écran principal ; NSScreen : en bas à gauche.
         let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
         let target = WindowFrame(x: screen.frame.minX, y: primaryHeight - screen.frame.maxY,
                                  width: screen.frame.width, height: screen.frame.height)
+        // Les fenêtres système de l'écran tranchent seules : l'app au premier plan peut être sur un autre écran
+        // (plein écran sur le second écran, travail sur le Mac).
+        let signals = spaceSignals(on: target)
+        if signals.fullscreenBackdrop { return true }
+        if signals.windowManagerWallpaper || signals.desktopShown { return false }
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+              app.bundleIdentifier != "com.apple.finder",
+              let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
+        else { return false }
         var frontmost: [WindowFrame] = []
         var others: [WindowFrame] = []
         for info in windows {
@@ -92,7 +98,6 @@ final class FullscreenObserver {
             let frame = WindowFrame(x: b.minX, y: b.minY, width: b.width, height: b.height)
             if pid == app.processIdentifier { frontmost.append(frame) } else { others.append(frame) }
         }
-        return FullscreenHeuristic.isFullscreen(screen: target, frontmost: frontmost, others: others,
-                                                 signals: spaceSignals(on: target))
+        return FullscreenHeuristic.isFullscreen(screen: target, frontmost: frontmost, others: others, signals: signals)
     }
 }

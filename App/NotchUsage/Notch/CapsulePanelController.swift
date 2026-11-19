@@ -26,6 +26,11 @@ final class CapsulePanelController {
     private var unlightWork: DispatchWorkItem?
     private var hoverWork: DispatchWorkItem?
     private var inside: (capsule: Bool, card: Bool) = (false, false)
+    /// Plein écran sur cet écran : la pastille s'efface, sa zone reste au bord haut et la rouvre au survol (comme l'île).
+    private let fullscreenObserver = FullscreenObserver()
+    private var fullscreen = false
+    /// Hauteur de barre vue hors plein écran : la barre y est masquée (`visibleFrame` couvre tout l'écran).
+    private var lastBar: CGFloat = 0
     private var keyMonitor: Any?
     /// Menu ouvert depuis la carte (Langue, icône de barre) : elle ne se referme pas pendant le choix, comme l'île.
     private let menus = MenuTracking()
@@ -41,7 +46,7 @@ final class CapsulePanelController {
         capsulePanel = NotchPanel(contentRect: NSRect(x: 0, y: 0, width: 10, height: CapsuleView.height))
         // Aucun champ de saisie dans la pastille : un clic dessus ne prend pas le clavier.
         capsulePanel.becomesKeyOnlyIfNeeded = true
-        // Pas d'espace plein écran : la barre y est masquée, la pastille aussi (point plein écran : plus tard, R7).
+        // macOS l'affiche quand même dans un espace plein écran : `fullscreenObserver` la masque.
         capsulePanel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         capsuleHover = HoverView(frame: .zero)
         // Premier clic accepté sans que la fenêtre ait le clavier, comme pour l'île.
@@ -59,6 +64,24 @@ final class CapsulePanelController {
         capsuleHover.onEnter = { [weak self] in self?.pointer(capsule: true) }
         capsuleHover.onExit = { [weak self] in self?.pointer(capsule: false) }
         menus.onEnd = { [weak self] in self?.menuDidEnd() }
+        lastBar = Self.menuBarHeight(screen)
+        fullscreenObserver.onChange = { [weak self] value in self?.setFullscreen(value) }
+        fullscreenObserver.screen = screen
+        fullscreenObserver.start()
+    }
+
+    private func setFullscreen(_ value: Bool) {
+        guard value != fullscreen else { return }
+        fullscreen = value
+        if value { dismissCard() }
+        render(animated: false)
+    }
+
+    /// Hauteur utile de la barre : en plein écran, celle d'avant, pour garder la zone de survol.
+    private var barHeight: CGFloat {
+        let bar = Self.menuBarHeight(screen)
+        if bar > 0, !fullscreen { lastBar = bar }
+        return fullscreen ? (lastBar > 0 ? lastBar : NSStatusBar.system.thickness) : bar
     }
 
     /// Hauteur de la barre de menus de l'écran ; 0 si elle est masquée automatiquement (pas de pastille).
@@ -68,6 +91,7 @@ final class CapsulePanelController {
 
     func update(screen: NSScreen) {
         self.screen = screen
+        fullscreenObserver.screen = screen
         layout(animated: false)
     }
 
@@ -107,7 +131,9 @@ final class CapsulePanelController {
             hostsState = true
             capsuleHost.rootView = AnyView(CapsuleRoot(state: state, onTap: { [weak self] in self?.onTap?() }))
         }
+        let concealed = fullscreen && !hovered
         let update = { [state, dark, hovered, lit] in
+            state.concealed = concealed
             state.content = content
             state.dark = dark
             state.hovered = hovered
@@ -133,7 +159,7 @@ final class CapsulePanelController {
 
     /// Centrée sur l'écran, élargie des deux côtés à la fois (FR-014).
     private func layout(animated: Bool) {
-        let bar = Self.menuBarHeight(screen)
+        let bar = barHeight
         guard bar >= CapsuleView.height + 2, content != nil, capsuleWidth > 0 else {
             capsulePanel.orderOut(nil)
             closeCard()
@@ -162,6 +188,8 @@ final class CapsulePanelController {
     }
 
     func close() {
+        fullscreenObserver.stop()
+        fullscreenObserver.screen = nil
         menus.stop()
         shrinkWork?.cancel()
         unlightWork?.cancel()
@@ -239,7 +267,7 @@ final class CapsulePanelController {
         // Hauteur idéale : proposer 2000 pt laissait le contenu (`maxHeight: .infinity`) tout prendre.
         let measured = NSHostingController(rootView: CapsuleCardView().fixedSize(horizontal: false, vertical: true).environment(model))
             .sizeThatFits(in: CGSize(width: CapsuleCardView.width, height: 2000)).height
-        let top = screen.frame.maxY - Self.menuBarHeight(screen) - Self.cardGap
+        let top = screen.frame.maxY - barHeight - Self.cardGap
         let height = CardLayout.height(measured: measured, top: top, floor: screen.visibleFrame.minY)
         panel.setFrame(NSRect(x: (screen.frame.midX - CapsuleCardView.width / 2).rounded(), y: top - height,
                               width: CapsuleCardView.width, height: height), display: true)
@@ -275,6 +303,7 @@ final class CapsuleState {
     var dark = true
     var hovered = false
     var lit = false
+    var concealed = false
 }
 
 /// Racine stable de la fenêtre : toute la hauteur de la barre (survol dès le bord de l'écran), un fond quasi
@@ -288,6 +317,7 @@ private struct CapsuleRoot: View {
             Color.black.opacity(0.001)
             if let content = state.content {
                 CapsuleView(content: content, dark: state.dark, hovered: state.hovered, lit: state.lit)
+                    .opacity(state.concealed ? 0 : 1)
             }
         }
         .contentShape(Rectangle())
