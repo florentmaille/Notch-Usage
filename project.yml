@@ -38,8 +38,8 @@ targets:
       properties:
         CFBundleName: Notch Usage
         CFBundleDisplayName: Notch Usage
-        CFBundleShortVersionString: "0.6.6"
-        CFBundleVersion: "24"
+        CFBundleShortVersionString: "0.6.7"
+        CFBundleVersion: "25"
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
         NSHumanReadableCopyright: "© 2026 Florent Maille. MIT License."
