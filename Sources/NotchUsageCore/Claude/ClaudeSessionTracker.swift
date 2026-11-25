@@ -34,6 +34,13 @@ public struct ClaudeSession: Sendable, Equatable, Identifiable, Codable {
     public var originApp: String?
     public var waiting: Waiting?
     public var lastEventAt: Date
+    /// Conversation de l'onglet Code de l'app Claude (`local_…`) ; absent en CLI.
+    public var hostSessionID: String? = nil
+
+    /// Lien qui ouvre la conversation dans l'onglet Code de l'app Claude ; `nil` hors de l'app.
+    public var codeURL: URL? {
+        hostSessionID.flatMap { URL(string: "claude://code/continue?session=\($0)") }
+    }
 
     /// Titre, sinon dernier composant du dossier, sinon « Session » + 4 caractères de l'identifiant (R8).
     public func displayName(fallback: String) -> String {
@@ -68,6 +75,7 @@ public struct ClaudeSessionTracker: Sendable, Equatable, Codable {
         if !e.cwd.isEmpty { s.cwd = e.cwd }
         if let pid = e.pid { s.originPID = pid }
         if let title = e.sessionTitle, !title.isEmpty { s.title = title }
+        if let host = e.hostSessionID { s.hostSessionID = host }
         s.lastEventAt = e.receivedAt
         switch e.kind {
         case .permissionRequest:
@@ -125,6 +133,14 @@ public struct ClaudeSessionTracker: Sendable, Equatable, Codable {
         for (id, s) in sessions where s.waiting?.kind == .done {
             copy.sessions[id]?.waiting = nil
         }
+        return copy
+    }
+
+    /// Retire l'attente « terminé » d'une seule session (ouverte depuis l'île) ; les autres restent.
+    public func clearDone(id: String) -> Self {
+        guard sessions[id]?.waiting?.kind == .done else { return self }
+        var copy = self
+        copy.sessions[id]?.waiting = nil
         return copy
     }
 

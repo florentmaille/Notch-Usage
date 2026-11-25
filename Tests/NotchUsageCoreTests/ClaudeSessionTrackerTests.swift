@@ -97,6 +97,24 @@ struct ClaudeSessionTrackerTests {
         #expect(Set(t.restored(now: t0.addingTimeInterval(7200), bootedAt: .distantPast, alive: { _ in true }, startedAt: { starts[$0] }).sessions.keys) == ["s2"])
     }
 
+    @Test func hostSessionGivesTheCodeLinkAndSurvivesLaterEvents() throws {
+        let start = ClaudeHookEvent(kind: .userPromptSubmit, sessionID: "s1", cwd: "/p", sessionTitle: nil, toolName: nil, promptID: "p1",
+                                    pid: 100, receivedAt: t0, hostSessionID: "local_abc-123")
+        let t = ClaudeSessionTracker().reduce(start).reduce(event(.stop, at: 5))
+        #expect(t.sessions["s1"]?.codeURL == URL(string: "claude://code/continue?session=local_abc-123"))
+        #expect(ClaudeSessionTracker().reduce(event(.stop)).sessions["s1"]?.codeURL == nil)
+        // Fichier d'une version précédente, sans le champ : relu tel quel.
+        let data = try JSONEncoder().encode(ClaudeSessionTracker().reduce(event(.stop)))
+        let legacy = String(decoding: data, as: UTF8.self).replacingOccurrences(of: #","hostSessionID":null"#, with: "")
+        #expect(try JSONDecoder().decode(ClaudeSessionTracker.self, from: Data(legacy.utf8)).sessions["s1"]?.waiting?.kind == .done)
+    }
+
+    @Test func clearDoneForOneSessionLeavesTheOthers() {
+        let t = ClaudeSessionTracker().reduce(event(.stop)).reduce(event(.stop, session: "s2", at: 1))
+            .reduce(event(.permissionRequest, session: "s3", tool: "Bash")).clearDone(id: "s1").clearDone(id: "s3")
+        #expect(t.sessions["s1"]?.waiting == nil && t.sessions["s2"]?.waiting?.kind == .done && t.sessions["s3"]?.waiting?.kind == .approval)
+    }
+
     @Test func clearDoneKeepsBlockingWaits() {
         let t = ClaudeSessionTracker().reduce(event(.stop)).reduce(event(.permissionRequest, session: "s2", tool: "Bash")).clearDone()
         #expect(t.sessions["s1"]?.waiting == nil && t.sessions["s2"]?.waiting?.kind == .approval)

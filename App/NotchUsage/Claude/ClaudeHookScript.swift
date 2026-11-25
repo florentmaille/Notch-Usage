@@ -18,7 +18,7 @@ enum ClaudeHookScript {
     /// Nom du processus de l'app, cherché par le script avant d'écrire.
     static let appProcessName = "NotchUsage"
 
-    /// Une ligne par événement : enveloppe (pid du lanceur, heure) puis le payload du hook tel quel, sans ses retours
+    /// Une ligne par événement : enveloppe (pid du lanceur, heure, conversation de l'app Claude) puis le payload du hook tel quel, sans ses retours
     /// à la ligne. Muet et toujours en succès : Claude Code ne doit jamais voir une erreur de notre fait.
     /// Le script se relance sous `lockf` : deux hooks simultanés (sessions ou outils en parallèle) écrivaient
     /// chacun en trois fois et pouvaient entremêler leurs lignes. Le pid du lanceur passe en argument, le parent du
@@ -44,7 +44,10 @@ enum ClaudeHookScript {
         fi
         [ "$1" = locked ] && p=$2 || p=$PPID
         [ "$(/usr/bin/stat -f %z "$f" 2>/dev/null || echo 0)" -gt \(eventsFileCap) ] && : > "$f" 2>/dev/null
-        printf '{"ppid":%s,"ts":%s,"event":' "$p" "$(date +%s)" >> "$f" 2>/dev/null || exit 0
+        # Conversation de l'onglet Code de l'app Claude : le clic dans l'app y ramène. Rien hors de ce format.
+        h=${CLAUDE_CODE_HOST_SESSION_ID:-}
+        case "$h" in local_*) case "$h" in *[!A-Za-z0-9_-]*) h= ;; esac ;; *) h= ;; esac
+        printf '{"ppid":%s,"ts":%s,"host":"%s","event":' "$p" "$(date +%s)" "$h" >> "$f" 2>/dev/null || exit 0
         tr -d '\\n' >> "$f" 2>/dev/null || true
         printf '}\\n' >> "$f" 2>/dev/null || true
         exit 0

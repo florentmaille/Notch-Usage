@@ -140,7 +140,7 @@ final class Surfaces {
                 capsule.update(screen: screen)
             } else {
                 let capsule = CapsulePanelController(screenID: id, screen: screen, model: model)
-                capsule.onTap = { [weak self] in self?.model?.claude.clearDone() }
+                capsule.onTap = { [weak self] in self?.model?.openAttentionSession() }
                 capsule.onCardOpen = { [weak self] in self?.model?.surfaceWillOpen(.capsule(screenID: id)) }
                 capsules[id] = capsule
             }

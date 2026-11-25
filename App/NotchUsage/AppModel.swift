@@ -499,6 +499,13 @@ final class AppModel {
         hover = false
     }
 
+    /// Clic sur l'île ou une pastille : la session la plus pressante s'ouvre (conversation Code de l'app Claude, sinon
+    /// son application), le panneau se referme. Sa coche « terminé » s'efface ; les autres restent.
+    func openAttentionSession() {
+        guard claude.openAttentionSession() else { return }
+        hover = false
+    }
+
     // MARK: Interaction
 
     /// « Réglages » du menu de la barre : le pointeur est loin de l'encoche, le panneau reste ouvert jusqu'à son survol.
