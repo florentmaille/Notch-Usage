@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import NotchUsageCore
 import Observation
@@ -21,6 +22,8 @@ final class ClaudeFollowing {
         var sessionProcess: (Int32) -> Int32 = { ProcessLiveness.sessionProcess(from: $0) }
         /// Identifiant de bundle de l'application qui porte la fenêtre de la session.
         var originApp: (Int32) -> String? = { ProcessLiveness.originApp(of: $0)?.bundleIdentifier }
+        /// Ouvre un lien `claude://` ; faux si aucune application ne le prend.
+        var openURL: (URL) -> Bool = { NSWorkspace.shared.open($0) }
     }
 
     static let followsKey = "followsClaudeCode"
@@ -163,16 +166,32 @@ final class ClaudeFollowing {
         sessions = sessions.expire(now: environment.now(), alive: environment.isAlive, startedAt: environment.startedAt)
     }
 
-    /// Clic sur une ligne du panneau ou du menu : l'application d'où vient la session passe devant ; l'attente reste.
+    /// Clic sur une ligne du panneau ou du menu : la conversation s'ouvre dans l'onglet Code de l'app Claude quand
+    /// la session en vient, sinon l'application d'où vient la session passe devant ; l'attente reste.
     /// Faux si la session n'est plus suivie.
     @discardableResult
     func activateSession(_ id: String) -> Bool {
         guard let session = visibleSessions.sessions[id] else { return false }
+        if let url = session.codeURL, environment.openURL(url) { return true }
         if let app = session.originApp { ProcessLiveness.activate(bundleID: app) }
         return true
     }
 
-    /// Clic sur l'île ou la pastille, popover refermé : les « terminé » s'effacent, les attentes bloquantes restent
+    /// Clic sur l'île ou la pastille : ouvre la session la plus pressante (celle dont l'oreille montre le glyphe) ;
+    /// si elle était « terminé », sa coche s'efface, les autres restent pour le clic suivant. Faux sans attente.
+    @discardableResult
+    func openAttentionSession() -> Bool {
+        guard let session = visibleSessions.waiting.first else { return false }
+        activateSession(session.id)
+        sessions = sessions.clearDone(id: session.id)
+        #if DEBUG
+        demoSessions = demoSessions?.clearDone(id: session.id)
+        #endif
+        onChange()
+        return true
+    }
+
+    /// Popover refermé : les « terminé » qu'il listait s'effacent, les attentes bloquantes restent
     /// (017, FR-002).
     func clearDone() {
         sessions = sessions.clearDone()

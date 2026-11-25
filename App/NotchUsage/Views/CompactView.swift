@@ -8,7 +8,7 @@ struct CompactView: View {
     let signal: NotchSignal
     var beat: Int = 0
     var now: Date = Date()
-    /// Clic sur l'île : efface les sessions Claude « terminé » (017).
+    /// Clic sur l'île : ouvre la session Claude la plus pressante, sa coche « terminé » s'efface (017).
     var onTap: (() -> Void)? = nil
     /// Action VoiceOver : ouvre le panneau, qui ne s'ouvre sinon qu'au survol.
     var onOpen: (() -> Void)? = nil

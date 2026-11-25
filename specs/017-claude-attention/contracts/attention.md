@@ -49,12 +49,15 @@ CLAUDE CODE
 - Libellés : « approval needed » / « attend une approbation », « question pending » / « attend une
   réponse », « finished » / « a terminé ». Durée : « 45 s », « 2 min », « 1 h 10 ».
 - Tri : approbation, question, terminé ; puis la plus ancienne en premier.
-- Clic sur une ligne : active l'application d'origine, ferme le panneau ; l'attente reste.
+- Clic sur une ligne : ouvre la conversation dans l'onglet Code de l'app Claude quand la session en vient
+  (`claude://code/continue?session=local_…`), sinon active l'application d'origine ; ferme le panneau ; l'attente reste.
 - Menu de la barre : mêmes lignes, en items ; clic identique.
 
 ## Clic sur l'île
 
-Efface les sessions « terminé » ; les attentes bloquantes restent. Le reste du clic est celui de la 013.
+Ouvre la session la plus pressante (celle de l'oreille : approbation, question, puis terminé, la plus ancienne
+d'abord), comme un clic sur sa ligne, et ferme le panneau. Si elle était « terminé », sa coche s'efface ; les autres
+restent pour le clic suivant. Même chose sur la pastille. Le popover refermé efface toujours tous les « terminé ».
 
 ## Accessibilité
 

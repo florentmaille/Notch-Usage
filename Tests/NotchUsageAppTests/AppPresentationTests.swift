@@ -296,7 +296,8 @@ struct AppPresentationTests {
     // MARK: Suivi Claude Code, sans processus ni fichier réels
 
     /// Suivi isolé d'`AppModel` : horloge, processus, préférences et fichier de sessions sont fournis par le test.
-    private func following(dir: URL, now: Date, notifies: Bool, alive: @escaping (Int32) -> Bool) -> (ClaudeFollowing, UserDefaults, String) {
+    private func following(dir: URL, now: Date, notifies: Bool, alive: @escaping (Int32) -> Bool,
+                           openURL: @escaping (URL) -> Bool = { _ in true }) -> (ClaudeFollowing, UserDefaults, String) {
         let suite = "notchusage.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.set(notifies, forKey: ClaudeFollowing.notifiesKey)
@@ -310,6 +311,8 @@ struct AppPresentationTests {
         // 101 : le shell qui a lancé le hook ; 500 : le processus de la session, dans le Terminal.
         environment.sessionProcess = { $0 == 101 ? 500 : $0 }
         environment.originApp = { $0 == 500 ? "com.apple.Terminal" : nil }
+        // Jamais de vrai lien ouvert depuis les tests.
+        environment.openURL = openURL
         return (ClaudeFollowing(environment: environment), defaults, suite)
     }
 
@@ -351,6 +354,30 @@ struct AppPresentationTests {
         alive = []
         following.expireDeadSessions()
         #expect(following.sessions.isEmpty && !fm.fileExists(atPath: url.path))
+    }
+
+    /// Clic sur l'île : la session la plus pressante s'ouvre dans l'onglet Code de l'app Claude ; seule sa coche s'efface.
+    @Test func islandTapOpensTheMostPressingCodeConversation() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appending(path: "notchusage-following-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: dir) }
+        let now = Date(timeIntervalSince1970: 1_762_776_000)
+        var opened: [URL] = []
+        let (following, defaults, suite) = following(dir: dir, now: now, notifies: false, alive: { _ in true },
+                                                     openURL: { opened.append($0); return true })
+        defer { defaults.removePersistentDomain(forName: suite) }
+        #expect(!following.openAttentionSession())
+
+        func done(_ id: String, host: String, at: Date) -> ClaudeHookEvent {
+            ClaudeHookEvent(kind: .stop, sessionID: id, cwd: "/tmp/projet", sessionTitle: nil, toolName: nil, promptID: "p1", pid: 101,
+                            receivedAt: at, hostSessionID: host)
+        }
+        following.handle([done("s1", host: "local_aaa", at: now), done("s2", host: "local_bbb", at: now.addingTimeInterval(1))])
+        #expect(following.openAttentionSession())
+        #expect(opened == [URL(string: "claude://code/continue?session=local_aaa")!])
+        #expect(following.sessions.sessions["s1"]?.waiting == nil && following.sessions.sessions["s2"]?.waiting?.kind == .done)
+        #expect(following.openAttentionSession() && opened.last == URL(string: "claude://code/continue?session=local_bbb"))
+        #expect(following.sessions.waiting.isEmpty)
     }
 
     /// Au lancement, les attentes écrites avant la fermeture reviennent, sans celles dont le processus a disparu ;

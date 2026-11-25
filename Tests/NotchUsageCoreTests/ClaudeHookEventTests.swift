@@ -73,4 +73,17 @@ struct ClaudeHookEventTests {
         let sane = #"{"ppid":4242,"ts":1762365600,"event":{"hook_event_name":"Stop","session_id":"abc"}}"#
         #expect(ClaudeHookEvent.decode(line: Substring(sane), readAt: readAt)?.receivedAt == Date(timeIntervalSince1970: 1_762_365_600))
     }
+
+    /// Conversation de l'onglet Code de l'app Claude : gardée au bon format, ignorée sinon ou vide (CLI).
+    @Test func hostSessionIDIsKeptOnlyInTheCodeFormat() {
+        let readAt = Date.iso("2026-11-05T18:00:00Z")
+        func host(_ value: String) -> String? {
+            ClaudeHookEvent.decode(line: Substring(#"{"ppid":1,"ts":1762365600,"host":"\#(value)","event":{"hook_event_name":"Stop","session_id":"abc"}}"#),
+                                   readAt: readAt)?.hostSessionID
+        }
+        #expect(host("local_98967b5d-c1e9-4807-882a-3a4d832d4345") == "local_98967b5d-c1e9-4807-882a-3a4d832d4345")
+        #expect(host("") == nil)
+        #expect(host("local_a&b=c") == nil)
+        #expect(host("cse_123") == nil)
+    }
 }

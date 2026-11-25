@@ -28,9 +28,12 @@ public struct ClaudeHookEvent: Sendable, Equatable {
     /// Processus `claude` (ou son shell) qui a lancé le hook : vivacité et application d'origine.
     public let pid: Int32?
     public let receivedAt: Date
+    /// Identifiant de la conversation dans l'onglet Code de l'app Claude (`local_…`), relevé par le script dans
+    /// `CLAUDE_CODE_HOST_SESSION_ID` ; absent en CLI. Distinct de `sessionID`, celui du processus `claude`.
+    public let hostSessionID: String?
 
     public init(kind: Kind, sessionID: String, cwd: String, sessionTitle: String?, toolName: String?, promptID: String?,
-                pid: Int32?, receivedAt: Date) {
+                pid: Int32?, receivedAt: Date, hostSessionID: String? = nil) {
         self.kind = kind
         self.sessionID = sessionID
         self.cwd = cwd
@@ -39,6 +42,12 @@ public struct ClaudeHookEvent: Sendable, Equatable {
         self.promptID = promptID
         self.pid = pid
         self.receivedAt = receivedAt
+        self.hostSessionID = hostSessionID.flatMap(Self.validHostSessionID)
+    }
+
+    /// Format accepté par le lien `claude://code/continue` de l'app Claude ; toute autre valeur est ignorée.
+    public static func validHostSessionID(_ value: String) -> String? {
+        value.wholeMatch(of: /local_[A-Za-z0-9-]{1,64}/) != nil ? value : nil
     }
 
     public var isQuestion: Bool { kind == .permissionRequest && toolName == Self.questionTool }
@@ -46,7 +55,7 @@ public struct ClaudeHookEvent: Sendable, Equatable {
     /// Même événement, rattaché à un autre processus : l'app remplace le lanceur du hook par le processus de la session.
     public func withPID(_ pid: Int32?) -> ClaudeHookEvent {
         ClaudeHookEvent(kind: kind, sessionID: sessionID, cwd: cwd, sessionTitle: sessionTitle, toolName: toolName, promptID: promptID,
-                        pid: pid, receivedAt: receivedAt)
+                        pid: pid, receivedAt: receivedAt, hostSessionID: hostSessionID)
     }
 
     /// Décode une ligne ; `nil` pour une ligne vide, illisible ou sans `session_id`. Sans enveloppe (ligne écrite à la
@@ -58,7 +67,7 @@ public struct ClaudeHookEvent: Sendable, Equatable {
         if let envelope = try? decoder.decode(Envelope.self, from: data) {
             // Heure aberrante (ligne abîmée) : l'heure de lecture la remplace.
             let at = envelope.ts.flatMap { ResetDateParser.plausible(Date(timeIntervalSince1970: $0)) } ?? readAt
-            return make(envelope.event, pid: envelope.ppid, at: at)
+            return make(envelope.event, pid: envelope.ppid, at: at, host: envelope.host)
         }
         if let payload = try? decoder.decode(Payload.self, from: data) {
             return make(payload, pid: nil, at: readAt)
@@ -66,15 +75,17 @@ public struct ClaudeHookEvent: Sendable, Equatable {
         return nil
     }
 
-    private static func make(_ p: Payload, pid: Int32?, at: Date) -> ClaudeHookEvent? {
+    private static func make(_ p: Payload, pid: Int32?, at: Date, host: String? = nil) -> ClaudeHookEvent? {
         guard let session = p.sessionID, !session.isEmpty else { return nil }
         return ClaudeHookEvent(kind: p.hookEventName.flatMap(Kind.init(rawValue:)) ?? .other, sessionID: session, cwd: p.cwd ?? "",
-                               sessionTitle: p.sessionTitle, toolName: p.toolName, promptID: p.promptID, pid: pid, receivedAt: at)
+                               sessionTitle: p.sessionTitle, toolName: p.toolName, promptID: p.promptID, pid: pid, receivedAt: at,
+                               hostSessionID: host)
     }
 
     private struct Envelope: Decodable {
         let ppid: Int32?
         let ts: Double?
+        let host: String?
         let event: Payload
     }
 

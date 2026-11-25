@@ -167,7 +167,7 @@ Jamais ambre, orange ni rouge, réservés aux paliers de limite.
 - Permission refusée par Esc (le tour s'interrompt sans fin de tour) : l'attente s'efface au prompt suivant ou à la fin de session.
 - Fichier d'événements corrompu ou ligne illisible : la ligne est ignorée, le reste est lu, l'app le note dans ses journaux.
 - Fichier d'événements volumineux (des jours sans lancement) : rattrapé au lancement puis compacté ; l'app ne garde que l'état courant des sessions.
-- Clic sur l'île avec plusieurs sessions : efface les « terminé », épingle le panneau comme en 012 ; les attentes bloquantes ne s'effacent que par l'action dans la session.
+- Clic sur l'île avec plusieurs sessions : ouvre la plus pressante (conversation Code de l'app Claude, sinon son application) et n'efface que sa coche ; les attentes bloquantes ne s'effacent que par l'action dans la session.
 - Hooks installés mais app fermée : les scripts restent muets et rapides (ils écrivent une ligne), aucune erreur côté Claude Code.
 - L'utilisateur édite sa configuration de Claude Code à la main et retire une entrée de l'app : au prochain lancement, l'app constate l'écart, montre le réglage comme « partiel » et propose de réparer.
 - Événements venant de l'app Claude (sessions du Code tab) : suivis comme ceux du terminal si les hooks y sont émis ; à confirmer par le spike ci-dessous.
